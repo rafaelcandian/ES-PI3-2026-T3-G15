@@ -1,198 +1,63 @@
 💰 MesclaInvest
-Projeto Integrador III – Engenharia de Software – PUC-Campinas – 2026
-📌 Sobre o Projeto
 
-O MesclaInvest é um aplicativo mobile desenvolvido na disciplina de Projeto Integrador III, com o objetivo de simular um ecossistema digital de investimentos em startups vinculadas ao Mescla (ecossistema de inovação da PUC-Campinas).
+Projeto Integrador III – Engenharia de Software
+PUC-Campinas – 2026
 
-A proposta do sistema é criar um ambiente digital onde usuários podem:
+👥 Integrantes
 
-Visualizar startups cadastradas
+Arthur Valerio De Santi – RA: 25006924
+Gabriel Benevides Bosso – RA: 24013653
+Guilherme Henrique Moreira – RA: 25006702
+Rafael Antonio Candian – RA: 25016954
+Victória Beatriz Nobre Andrade – RA: 25016398
 
-Consultar informações institucionais e societárias
+📌 Descrição do Projeto
 
-Acompanhar dados simulados de investimento
+O MesclaInvest é um aplicativo mobile desenvolvido com o objetivo de simular um ambiente digital de investimentos em startups do ecossistema Mescla da PUC-Campinas.
 
-Negociar tokens de forma 100% simulada
+A plataforma permite que usuários visualizem startups, acompanhem informações e realizem negociações de tokens de forma totalmente simulada.
 
-Acompanhar valorização dos ativos digitais
+🎯 Objetivo
 
-⚠️ Importante:
-Este projeto possui caráter exclusivamente acadêmico. Não há emissão real de tokens, integração com blockchain real ou movimentação financeira verdadeira.
+Aplicar na prática conceitos de:
 
-🎯 Objetivo Acadêmico
+- Arquitetura de software
+- APIs e backend
+- Desenvolvimento mobile
+- Integração entre sistemas
+- Versionamento com Git/GitHub
 
-O foco do projeto está em:
+🚀 Funcionalidades
 
-Arquitetura de software
+🔐 Cadastro e autenticação de usuários
 
-Modelagem de dados
+🏢 Visualização de startups e seus dados
 
-Desenvolvimento de APIs
+💹 Compra e venda simulada de tokens
 
-Integração entre backend e mobile
-
-Versionamento profissional com Git/GitHub
-
-Organização de tarefas com GitHub Projects
-
-🏗️ Arquitetura do Sistema
-
-O sistema é dividido em três camadas principais:
-
-🔹 Backend
-
-Responsável por:
-
-Regras de negócio
-
-Simulação de negociação de tokens
-
-Autenticação
-
-Controle de saldo fictício
-
-Cálculo de valorização
-
-Exposição de APIs REST
-
-🔹 Frontend (Mobile)
-
-Aplicativo Flutter responsável por:
-
-Interface do usuário
-
-Dashboard de investimentos
-
-Catálogo de startups
-
-Balcão de negociação
-
-Gráficos de valorização
-
-🔹 Banco de Dados
-
-Firebase Firestore (NoSQL)
-
-🚀 Funcionalidades Implementadas
-🔐 1. Autenticação
-
-Cadastro com:
-
-Nome completo
-
-E-mail
-
-CPF
-
-Telefone
-
-Senha
-
-Recuperação de senha
-
-Autenticação Multifator (MFA/2FA) opcional
-
-Sem acesso anônimo
-
-🏢 2. Catálogo de Startups
-
-O usuário pode:
-
-Navegar pelas startups
-
-Ver estágio de desenvolvimento:
-
-🆕 Nova
-
-⚙️ Em operação
-
-📈 Em expansão
-
-Consultar:
-
-Estrutura societária
-
-Percentual dos sócios
-
-Capital aportado (simulado)
-
-Total de tokens emitidos
-
-Sumário executivo
-
-Vídeos demonstrativos
-
-Perguntas e respostas públicas
-
-💹 3. Balcão de Tokens (Simulado)
-
-Carteira digital com saldo fictício
-
-Compra e venda simulada de tokens
-
-Registro de ofertas
-
-Histórico de transações
-
-Simulação inspirada em apps de corretoras
-
-⚠️ Não há integração com:
-
-Cartões
-
-PIX
-
-Banco Central
-
-Blockchain real
-
-Smart contracts
-
-📊 4. Dashboard de Valorização
-
-O investidor pode visualizar:
-
-📅 Diário
-
-📆 Semanal
-
-📈 Mensal
-
-📊 Últimos 6 meses
-
-📌 YTD
-
-A lógica de cálculo da valorização foi definida e implementada pela equipe.
+📊 Acompanhamento de valorização dos ativos
 
 🛠️ Tecnologias Utilizadas
+
+- Backend
+- Node.js
+- TypeScript / JavaScript
+- Express
+- Frontend
+- Flutter (Dart)
+- Banco de Dados
+- Firebase Firestore
+- Versionamento
+- Git e GitHub
+
+▶️ Como Executar (Pré-requisitos)
+
+Node.js
+Flutter instalado
+Firebase configurado
+
+
 Backend
-
-Node.js (LTS)
-
-TypeScript / JavaScript
-
-Express
-
-Firebase Admin SDK
-
-Frontend (Mobile)
-
-Flutter
-
-Dart
-
-Banco de Dados
-
-Firebase Firestore
-
-Versionamento
-
-Git
-
-GitHub
-
-IDEs Permitidas
-
-Visual Studio Code
-
-Android Studio
+--- A adicionar
+Mobile
+--- A adicionar
