@@ -6,9 +6,13 @@ PUC-Campinas – 2026
 👥 Integrantes
 
 Arthur Valerio De Santi – RA: 25006924
+
 Gabriel Benevides Bosso – RA: 24013653
+
 Guilherme Henrique Moreira – RA: 25006702
+
 Rafael Antonio Candian – RA: 25016954
+
 Victória Beatriz Nobre Andrade – RA: 25016398
 
 📌 Descrição do Projeto
@@ -59,5 +63,6 @@ Firebase configurado
 
 Backend
 --- A adicionar
+
 Mobile
 --- A adicionar
