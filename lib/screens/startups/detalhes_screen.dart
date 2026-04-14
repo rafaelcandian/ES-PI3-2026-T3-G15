@@ -7,7 +7,31 @@ class DetalhesStartupPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final StartupData startup = ModalRoute.of(context)!.settings.arguments as StartupData;
+    final dynamic arguments = ModalRoute.of(context)!.settings.arguments;
+
+    if (arguments == null || arguments is! StartupData) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF10184e),
+        appBar: AppBar(
+          title: const Text("Erro"),
+          backgroundColor: const Color(0xFF10184e),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ),
+        body: const Center(
+          child: Text(
+            "Startup não encontrada",
+            style: TextStyle(fontSize: 20, color: Colors.white),
+          ),
+        ),
+      );
+    }
+
+    final StartupData startup = arguments as StartupData;
 
     return Scaffold(
       backgroundColor: const Color(0xFF10184e),
@@ -27,7 +51,11 @@ class DetalhesStartupPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.network(startup.image, height: 200, width: double.infinity, fit: BoxFit.cover),
+              Icon(
+                Icons.business,
+                size: 200,
+                color: Colors.orangeAccent,
+              ),
 
               const SizedBox(height: 20),
 

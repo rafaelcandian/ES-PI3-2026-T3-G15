@@ -1,7 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:mescla_invest/services/autenticacao.dart';
 
-class RecuperarSenhaPage extends StatelessWidget {
+class RecuperarSenhaPage extends StatefulWidget {
   const RecuperarSenhaPage({super.key});
+
+  @override
+  State<RecuperarSenhaPage> createState() => _RecuperarSenhaPageState();
+}
+
+class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
+  final TextEditingController emailController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
+
+  void _sendPasswordResetEmail() async {
+    if (emailController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Por favor, insira seu e-mail.")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    String? errorMessage = await AuthService().resetPassword(emailController.text);
+    setState(() => _isLoading = false);
+
+    if (errorMessage == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email de recuperação enviado!")),
+      );
+      Navigator.pop(context);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +65,7 @@ class RecuperarSenhaPage extends StatelessWidget {
             child: Column(
               children: [
                 const Text(
-                  "Recuperar Senha",
+                  'Recuperar Senha',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -35,7 +76,7 @@ class RecuperarSenhaPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 const Text(
-                  "Enviaremos os passos para o seu e-mail.",
+                  'Enviaremos os passos para o seu e-mail.',
                   style: TextStyle(fontSize: 16, color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
@@ -43,6 +84,7 @@ class RecuperarSenhaPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 TextFormField( // 🔥 melhor que TextField
+                  controller: emailController,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white,
@@ -56,36 +98,32 @@ class RecuperarSenhaPage extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                ElevatedButton(
-  onPressed: () {
-    // Lógica para enviar o e-mail de recuperação de senha
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("E-mail de recuperação enviado!")),
-    );
-    Navigator.pop(context);
-  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent, // corrigido
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 15,
-                      horizontal: 50,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    "Enviar código",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
+                _isLoading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: _sendPasswordResetEmail,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent, // corrigido
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 15,
+                            horizontal: 50,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          "Enviar código",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
 
                 const SizedBox(height: 20),
 
                 TextButton(
-  onPressed: () {
-    Navigator.pop(context);
-  },
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
                   child: const Text(
                     'Não recebeu nada? Tente outro e-mail',
                     style: TextStyle(color: Colors.white),

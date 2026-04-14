@@ -11,7 +11,7 @@ class StartupCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: ListTile(
-        leading: Image.network(data.image, width: 50, fit: BoxFit.cover),
+        leading: Icon(Icons.business, size: 40, color: Colors.orangeAccent),
         title: Text(data.title),
         subtitle: Text(data.subtitle),
         trailing: Text(data.equity),
