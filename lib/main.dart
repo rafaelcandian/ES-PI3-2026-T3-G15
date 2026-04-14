@@ -20,7 +20,7 @@ class MesclaInvestApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF070A1E),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF3D64FF),
+          primary: Color.fromARGB(255, 74, 74, 75),
           secondary: Color(0xFFFFC53D),
           surface: Color(0xFF101730),
         ),
