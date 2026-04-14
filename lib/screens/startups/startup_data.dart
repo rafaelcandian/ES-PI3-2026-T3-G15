@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 class StartupData {
   final String title;
   final String subtitle;

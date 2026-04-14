@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mesclainvest/main.dart';
+import 'package:mescla_invest/main.dart';
 
 void main() {
   testWidgets('Login screen loads correctly', (WidgetTester tester) async {

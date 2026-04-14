@@ -163,9 +163,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (errorMessage == null) {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, 
-        '/catalogo
-        ');
+        Navigator.pushReplacementNamed(context, '/catalogo');
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -176,14 +174,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onForgotPassword() {
-    Navigator.pushNamed(context, 
-    '/recuperacao_senha
-    ');
+    Navigator.pushNamed(context, '/recuperacao_senha');
   }
 
   void _onCreateAccount() {
-    Navigator.pushNamed(context, 
-    '/cadastro
-    ');
+    Navigator.pushNamed(context, '/cadastro');
   }
 }

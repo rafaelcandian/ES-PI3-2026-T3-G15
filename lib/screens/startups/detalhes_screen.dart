@@ -98,7 +98,6 @@ class DetalhesStartupPage extends StatelessWidget {
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Lógica para comprar tokens
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Comprar tokens para ${startup.title}")),
                     );
@@ -113,7 +112,7 @@ class DetalhesStartupPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(\'Comprar tokens\'),
+                  child: const Text('Comprar tokens'),
                 ),
               ),
             ],

@@ -6,11 +6,6 @@ import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
 import 'package:mescla_invest/screens/auth/recuperacao_senha_screen.dart';
 import 'package:mescla_invest/screens/startups/catalogo_screen.dart';
 import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
-import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
-import 'package:mescla_invest/screens/startups/startup_data.dart';
-import 'package:mescla_invest/screens/startups/startup_card.dart';
-
-import 'package:mescla_invest/services/autenticacao.dart';
 
 
 void main() async {
