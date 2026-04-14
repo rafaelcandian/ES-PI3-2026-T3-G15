@@ -57,7 +57,13 @@ class RecuperarSenhaPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 ElevatedButton(
-                  onPressed: () {},
+  onPressed: () {
+    // Lógica para enviar o e-mail de recuperação de senha
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("E-mail de recuperação enviado!")),
+    );
+    Navigator.pop(context);
+  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orangeAccent, // corrigido
                     padding: const EdgeInsets.symmetric(
@@ -77,7 +83,9 @@ class RecuperarSenhaPage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 TextButton(
-                  onPressed: () {},
+  onPressed: () {
+    Navigator.pop(context);
+  },
                   child: const Text(
                     'Não recebeu nada? Tente outro e-mail',
                     style: TextStyle(color: Colors.white),

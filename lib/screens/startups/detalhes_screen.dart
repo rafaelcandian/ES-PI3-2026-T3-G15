@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:mescla_invest/screens/startups/startup_data.dart';
+
 
 class DetalhesStartupPage extends StatelessWidget {
   const DetalhesStartupPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final StartupData startup = ModalRoute.of(context)!.settings.arguments as StartupData;
+
     return Scaffold(
       backgroundColor: const Color(0xFF10184e),
       appBar: AppBar(
-        title: const Text('Detalhes da Oferta'),
+        title: Text(startup.title),
         backgroundColor: const Color(0xFF10184e),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -17,19 +21,19 @@ class DetalhesStartupPage extends StatelessWidget {
           },
         ),
       ),
-      body: SingleChildScrollView( // 🔥 evita overflow
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset('assets/pitch_deck_image.png'),
+              Image.network(startup.image, height: 200, width: double.infinity, fit: BoxFit.cover),
 
               const SizedBox(height: 20),
 
-              const Text(
-                "SolarStream Tech",
-                style: TextStyle(
+              Text(
+                startup.title,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Colors.orangeAccent,
@@ -38,23 +42,23 @@ class DetalhesStartupPage extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              const Text(
-                "Energia Limpa, SaaS B2B, Série A",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+              Text(
+                startup.subtitle,
+                style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
 
               const SizedBox(height: 20),
 
-              const Text(
-                "Valor do Token: R\$ 1.250,00",
-                style: TextStyle(fontSize: 18, color: Colors.white),
+              Text(
+                "Valor do Token: ${startup.tokenValue}",
+                style: const TextStyle(fontSize: 18, color: Colors.white),
               ),
 
               const SizedBox(height: 10),
 
-              const Text(
-                "Meta alcançada: 82%",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+              Text(
+                "Progresso: ${ (startup.progress * 100).toStringAsFixed(0)}% (${startup.goal})",
+                style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
 
               const SizedBox(height: 20),
@@ -70,32 +74,37 @@ class DetalhesStartupPage extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              const Text(
-                "A SolarStream Tech está revolucionando a distribuição de energia solar por meio de algoritmos de otimização em tempo real.",
-                style: TextStyle(color: Colors.white),
+              Text(
+                "A ${startup.title} está revolucionando...", // Conteúdo mais detalhado aqui
+                style: const TextStyle(color: Colors.white),
               ),
 
               const SizedBox(height: 20),
 
-              const Text(
-                "Crescimento: +140% aa",
-                style: TextStyle(color: Colors.white),
+              Text(
+                "Crescimento: ${startup.tag}",
+                style: const TextStyle(color: Colors.white),
               ),
 
               const SizedBox(height: 10),
 
-              const Text(
-                "Clientes: 120+",
-                style: TextStyle(color: Colors.white),
+              Text(
+                "Tokens disponíveis: ${startup.tokens}",
+                style: const TextStyle(color: Colors.white),
               ),
 
               const SizedBox(height: 30),
 
               Center(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // Lógica para comprar tokens
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Comprar tokens para ${startup.title}")),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orangeAccent, // corrigido
+                    backgroundColor: Colors.orangeAccent,
                     padding: const EdgeInsets.symmetric(
                       vertical: 15,
                       horizontal: 50,
@@ -104,7 +113,7 @@ class DetalhesStartupPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('Comprar tokens'),
+                  child: const Text(\'Comprar tokens\'),
                 ),
               ),
             ],

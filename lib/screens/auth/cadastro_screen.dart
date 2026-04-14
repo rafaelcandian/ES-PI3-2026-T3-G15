@@ -1,26 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mescla_invest/services/autenticacao.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        backgroundColor: Color(0xFF10184e),
-        body: Center(
-          child: CadastroPage(),
-        ),
-      ),
-    );
-  }
-}
 
 class CadastroPage extends StatefulWidget {
+  const CadastroPage({super.key});
+
   @override
-  _CadastroPageState createState() => _CadastroPageState();
+  State<CadastroPage> createState() => _CadastroPageState();
 }
 
 class _CadastroPageState extends State<CadastroPage> {
@@ -191,24 +177,38 @@ class _CadastroPageState extends State<CadastroPage> {
   }
 
   // Função para submeter o formulário
-  void _submitForm() {
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Aqui seria onde você colocaria a lógica para enviar os dados ao servidor
-      // Como exemplo, vamos simular um atraso de 2 segundos
-      Future.delayed(Duration(seconds: 2), () {
-        setState(() {
-          _isLoading = false;
-        });
+      String? errorMessage = await AuthService().register(
+        nome: nomeController.text,
+        email: emailController.text,
+        cpf: cpfController.text,
+        telefone: telefoneController.text,
+        senha: senhaController.text,
+      );
 
-        // Aqui você pode mostrar uma mensagem ou navegar para outra tela
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Cadastro realizado com sucesso!")),
-        );
+      setState(() {
+        _isLoading = false;
       });
+
+      if (errorMessage == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Cadastro realizado com sucesso!")),
+        );
+        Navigator.pushReplacementNamed(context, 
+        '/login'
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }
     }
   }
 }

@@ -1,29 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mescla_invest/services/autenticacao.dart';
 
-void main() {
-  runApp(MyApp());
-}
 
-class MyApp extends StatelessWidget {
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: LoginPage(),
-        ),
-      ),
-    );
-  }
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class LoginPage extends StatefulWidget {
-  @override
-  _LoginPageState createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _circleController;
   late AnimationController _cryptoController;
   late Animation<double> _circleAnimation;
@@ -32,32 +20,23 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
-    _circleController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..repeat();
-
-    _circleAnimation = Tween<double>(begin: 0, end: 2 * 3.14).animate(
-      CurvedAnimation(parent: _circleController, curve: Curves.linear),
-    );
-
-    _cryptoController = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
-
-    _cryptoAnimation = Tween<Offset>(begin: Offset(0, 0), end: Offset(0, -50)).animate(
-      CurvedAnimation(
-        parent: _cryptoController,
-        curve: Curves.easeOut,
-      ),
-    );
-
-    _cryptoController.forward().then((_) {
-      _cryptoController.reverse();
-    });
+    _navigateToNextScreen();
   }
+
+  void _navigateToNextScreen() async {
+    await Future.delayed(const Duration(seconds: 3)); // Simula um tempo de carregamento
+
+    if (!mounted) return;
+
+    if (AuthService().currentUser != null) {
+      // Usuário logado, vai para o catálogo
+      Navigator.pushReplacementNamed(context, '/catalogo');
+    } else {
+      // Usuário não logado, vai para a tela de login
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {

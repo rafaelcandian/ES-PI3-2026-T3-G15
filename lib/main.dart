@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mescla_invest/screens/auth/splash_screen.dart';
+import 'package:mescla_invest/screens/auth/login_screen.dart';
+import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
+import 'package:mescla_invest/screens/auth/recuperacao_senha_screen.dart';
+import 'package:mescla_invest/screens/startups/catalogo_screen.dart';
+import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
+import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import 'package:mescla_invest/screens/startups/startup_data.dart';
+import 'package:mescla_invest/screens/startups/startup_card.dart';
+
+import 'package:mescla_invest/services/autenticacao.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,111 +37,16 @@ class MesclaInvestApp extends StatelessWidget {
           surface: Color(0xFF101730),
         ),
       ),
-      home: const StartupCatalogPage(),
+      initialRoute: "/",
+      routes: {
+        "/": (context) => const SplashScreen(),
+        "/login": (context) => const LoginPage(),
+        "/cadastro": (context) => const CadastroPage(),
+        "/recuperacao_senha": (context) => const RecuperarSenhaPage(),
+        "/catalogo": (context) => const CatalogoStartupsPage(),
+        "/detalhes": (context) => const DetalhesStartupPage(),
+      },
     );
   }
 }
 
-class StartupCatalogPage extends StatelessWidget {
-  const StartupCatalogPage({super.key});
-
-  static final List<StartupData> startups = [
-    StartupData(
-      title: 'NeuroPulse AI',
-      subtitle: 'Análise preditiva para saúde neurológica.',
-      tag: 'EXPANSÃO',
-      equity: '12%',
-      tokens: '4.500',
-      tokenValue: 'R\$ 250,00',
-      progress: 0.75,
-      goal: 'R\$ 2.5M',
-      image: 'https://images.unsplash.com/photo-1518770660439-4636190af475',
-    ),
-    StartupData(
-      title: 'VerdeSphere',
-      subtitle: 'Vertical farming automatizada.',
-      tag: 'NOVA',
-      equity: '8.5%',
-      tokens: '1.200',
-      tokenValue: 'R\$ 1.150,00',
-      progress: 0.20,
-      goal: 'R\$ 1.2M',
-      image: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mescla Invest')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: startups.length,
-        itemBuilder: (context, index) {
-          return StartupCard(data: startups[index]);
-        },
-      ),
-      bottomNavigationBar: const BottomNavBar(),
-    );
-  }
-}
-
-class StartupData {
-  final String title;
-  final String subtitle;
-  final String tag;
-  final String equity;
-  final String tokens;
-  final String tokenValue;
-  final double progress;
-  final String goal;
-  final String image;
-
-  const StartupData({
-    required this.title,
-    required this.subtitle,
-    required this.tag,
-    required this.equity,
-    required this.tokens,
-    required this.tokenValue,
-    required this.progress,
-    required this.goal,
-    required this.image,
-  });
-}
-
-class StartupCard extends StatelessWidget {
-  final StartupData data;
-
-  const StartupCard({super.key, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
-        leading: Image.network(data.image, width: 50, fit: BoxFit.cover),
-        title: Text(data.title),
-        subtitle: Text(data.subtitle),
-        trailing: Text(data.equity),
-      ),
-    );
-  }
-}
-
-class BottomNavBar extends StatelessWidget {
-  const BottomNavBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.rocket), label: 'Startups'),
-        BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Wallet'),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Dashboard'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-      ],
-    );
-  }
-}

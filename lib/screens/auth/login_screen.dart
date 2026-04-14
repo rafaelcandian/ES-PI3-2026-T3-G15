@@ -1,25 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mescla_invest/services/autenticacao.dart';
 
-void main() {
-  runApp(const MesclaInvestApp());
-}
-
-class MesclaInvestApp extends StatelessWidget {
-  const MesclaInvestApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Mescla Invest',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF10184e),
-      ),
-      home: const LoginPage(),
-    );
-  }
-}
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -173,29 +154,36 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _submitLogin() {
+  void _submitLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
+      String? errorMessage = await AuthService()
+          .login(emailController.text, senhaController.text);
+      setState(() => _isLoading = false);
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() => _isLoading = false);
-
+      if (errorMessage == null) {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, 
+        '/catalogo
+        ');
+      } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Login realizado com sucesso!")),
+          SnackBar(content: Text(errorMessage)),
         );
-      });
+      }
     }
   }
 
   void _onForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Recuperação de senha não implementada")),
-    );
+    Navigator.pushNamed(context, 
+    '/recuperacao_senha
+    ');
   }
 
   void _onCreateAccount() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Tela de cadastro não implementada")),
-    );
+    Navigator.pushNamed(context, 
+    '/cadastro
+    ');
   }
 }
