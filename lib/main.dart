@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
-  // Garante que o Flutter inicializou tudo antes do Firebase
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicializa o Firebase
   await Firebase.initializeApp();
 
   runApp(const MyApp());
@@ -22,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const LoginPage(), // Substitua MyHomePage por LoginPage
+      home: const LoginPage(),
     );
   }
 }
@@ -52,7 +49,6 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
                 Align(
                   alignment: Alignment.center,
                   child: CircleAvatar(
@@ -67,7 +63,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // Título
                 const Text(
                   "MesclaInvest",
                   style: TextStyle(
@@ -78,15 +73,13 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 30),
 
-                // Formulário de Login
                 Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      // E-mail
                       TextFormField(
                         controller: emailController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'E-mail',
                           hintText: 'seu@exemplo.com',
                           filled: true,
@@ -106,11 +99,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Senha
                       TextFormField(
                         controller: senhaController,
                         obscureText: true,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Senha',
                           filled: true,
                           fillColor: Colors.white,
@@ -127,7 +119,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Botão de Login
                       _isLoading
                           ? const CircularProgressIndicator(
                               valueColor: AlwaysStoppedAnimation<Color>(
@@ -137,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                           : ElevatedButton(
                               onPressed: _submitLogin,
                               style: ElevatedButton.styleFrom(
-                                primary: Colors.orangeAccent,
+                                backgroundColor: Colors.orangeAccent, // corrigido
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 15,
                                   horizontal: 50,
@@ -153,7 +144,6 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                       const SizedBox(height: 20),
 
-                      // Link para recuperação de senha
                       TextButton(
                         onPressed: _onForgotPassword,
                         child: const Text(
@@ -162,7 +152,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
-                      // Link para criação de conta
                       TextButton(
                         onPressed: _onCreateAccount,
                         child: const Text(
@@ -181,20 +170,17 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Função para submeter o login
   void _submitLogin() {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simula um atraso de 2 segundos para o login
       Future.delayed(const Duration(seconds: 2), () {
         setState(() {
           _isLoading = false;
         });
 
-        // Aqui você pode verificar as credenciais e navegar para a tela principal
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login realizado com sucesso!")),
         );
@@ -202,24 +188,19 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Função para recuperação de senha
   void _onForgotPassword() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Recuperação de senha não implementada ainda!"),
       ),
-      home: Scaffold(
-        body: Center(
-          child: Text("Firebase OK"),
-        ),
-      ),
     );
   }
 
-  // Função para criar uma conta
   void _onCreateAccount() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Tela de cadastro não implementada ainda!")),
+      const SnackBar(
+        content: Text("Tela de cadastro não implementada ainda!"),
+      ),
     );
   }
 }
