@@ -170,7 +170,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       : ElevatedButton(
                           onPressed: _submitForm,
                           style: ElevatedButton.styleFrom(
-                            primary: Colors.orangeAccent,
+                            backgroundColor: Colors.orangeAccent,
                             padding: EdgeInsets.symmetric(vertical: 15, horizontal: 50),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
