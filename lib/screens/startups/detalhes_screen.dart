@@ -31,7 +31,7 @@ class DetalhesStartupPage extends StatelessWidget {
       );
     }
 
-    final StartupData startup = arguments as StartupData;
+    final StartupData startup = arguments;
 
     return Scaffold(
       backgroundColor: const Color(0xFF10184e),
