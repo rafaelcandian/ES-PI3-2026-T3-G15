@@ -27,15 +27,21 @@ class MesclaInvestApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF070A1E),
         colorScheme: const ColorScheme.dark(
-          primary: Color.fromARGB(255, 74, 74, 75),
+          primary: Color(0xFF3D64FF),
           secondary: Color(0xFFFFC53D),
           surface: Color(0xFF101730),
+        ),
+        textTheme: const TextTheme(
+          headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+          bodyLarge: TextStyle(fontSize: 16, color: Color(0xFFB0B8D1)),
+          bodyMedium: TextStyle(fontSize: 14, color: Color(0xFF8B97B8)),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
-          labelStyle: TextStyle(color: Colors.black87),
-          hintStyle: TextStyle(color: Colors.grey),
+          labelStyle: const TextStyle(color: Colors.black87),
+          hintStyle: const TextStyle(color: Colors.grey),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10.0),
           ),
