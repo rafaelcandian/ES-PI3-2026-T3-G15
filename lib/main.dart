@@ -31,6 +31,15 @@ class MesclaInvestApp extends StatelessWidget {
           secondary: Color(0xFFFFC53D),
           surface: Color(0xFF101730),
         ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          labelStyle: TextStyle(color: Colors.black87),
+          hintStyle: TextStyle(color: Colors.grey),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        ),
       ),
       initialRoute: "/",
       routes: {

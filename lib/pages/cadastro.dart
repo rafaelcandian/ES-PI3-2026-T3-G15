@@ -15,11 +15,47 @@ class RegisterPage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          TextField(controller: nome),
-          TextField(controller: email),
-          TextField(controller: cpf),
-          TextField(controller: telefone),
-          TextField(controller: senha),
+          TextField(
+            controller: nome,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'Nome Completo',
+            ),
+          ),
+          TextField(
+            controller: email,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'E-mail',
+            ),
+          ),
+          TextField(
+            controller: cpf,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'CPF',
+            ),
+          ),
+          TextField(
+            controller: telefone,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'Telefone',
+            ),
+          ),
+          TextField(
+            controller: senha,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'Senha',
+            ),
+            obscureText: true,
+          ),
 
           ElevatedButton(
             onPressed: () async {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/services/autenticacao.dart';
 
-
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
 
@@ -11,49 +10,64 @@ class CadastroPage extends StatefulWidget {
 
 class _CadastroPageState extends State<CadastroPage> {
   final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false; // Para controlar o estado de carregamento
+  bool _isLoading = false;
 
-  TextEditingController nomeController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController cpfController = TextEditingController();
-  TextEditingController telefoneController = TextEditingController();
-  TextEditingController senhaController = TextEditingController();
+  final TextEditingController nomeController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController cpfController = TextEditingController();
+  final TextEditingController telefoneController = TextEditingController();
+  final TextEditingController senhaController = TextEditingController();
+
+  @override
+  void dispose() {
+    nomeController.dispose();
+    emailController.dispose();
+    cpfController.dispose();
+    telefoneController.dispose();
+    senhaController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Título
-            Text(
-              "Criar conta",
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.orangeAccent,
-              ),
-            ),
-            SizedBox(height: 20),
-
-            // Formulário de Cadastro
-            Form(
+    return Scaffold(
+      backgroundColor: const Color(0xFF10184e),
+      appBar: AppBar(
+        title: const Text('Criar Conta'),
+        backgroundColor: const Color(0xFF10184e),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: SingleChildScrollView(
+            child: Form(
               key: _formKey,
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Nome Completo
+                  const Text(
+                    "Criar conta",
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orangeAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
                   TextFormField(
                     controller: nomeController,
+                    style: TextStyle(color: Colors.black),
+                    cursorColor: Colors.black,
                     decoration: InputDecoration(
                       labelText: 'Nome Completo',
                       hintText: 'Ex: Roberto Silva',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -62,40 +76,34 @@ class _CadastroPageState extends State<CadastroPage> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  // E-mail
                   TextFormField(
                     controller: emailController,
+                    style: TextStyle(color: Colors.black),
+                    cursorColor: Colors.black,
                     decoration: InputDecoration(
                       labelText: 'E-mail',
                       hintText: 'nome@exemplo.com',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty || !value.contains('@')) {
+                      if (value == null ||
+                          value.isEmpty ||
+                          !value.contains('@')) {
                         return 'Por favor, insira um e-mail válido';
                       }
                       return null;
                     },
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  // CPF
                   TextFormField(
                     controller: cpfController,
+                    style: TextStyle(color: Colors.black),
+                    cursorColor: Colors.black,
                     decoration: InputDecoration(
                       labelText: 'CPF',
                       hintText: '000.000.000-00',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -104,19 +112,15 @@ class _CadastroPageState extends State<CadastroPage> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  // Telefone
                   TextFormField(
                     controller: telefoneController,
+                    style: TextStyle(color: Colors.black),
+                    cursorColor: Colors.black,
                     decoration: InputDecoration(
                       labelText: 'Telefone',
                       hintText: '(00) 00000-0000',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -125,19 +129,15 @@ class _CadastroPageState extends State<CadastroPage> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  // Senha
                   TextFormField(
                     controller: senhaController,
                     obscureText: true,
+                    style: TextStyle(color: Colors.black),
+                    cursorColor: Colors.black,
                     decoration: InputDecoration(
                       labelText: 'Senha',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -146,23 +146,27 @@ class _CadastroPageState extends State<CadastroPage> {
                       return null;
                     },
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                  // Botão de Cadastro
                   _isLoading
-                      ? CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                      ? const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.orangeAccent,
+                          ),
                         )
                       : ElevatedButton(
                           onPressed: _submitForm,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orangeAccent,
-                            padding: EdgeInsets.symmetric(vertical: 15, horizontal: 50),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 15,
+                              horizontal: 50,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             "Cadastrar",
                             style: TextStyle(fontSize: 16),
                           ),
@@ -170,13 +174,12 @@ class _CadastroPageState extends State<CadastroPage> {
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Função para submeter o formulário
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -195,16 +198,17 @@ class _CadastroPageState extends State<CadastroPage> {
         _isLoading = false;
       });
 
+      if (!mounted) return;
+
       if (errorMessage == null) {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Cadastro realizado com sucesso!")),
+          const SnackBar(
+            content: Text("Cadastro realizado com sucesso!"),
+          ),
         );
-        Navigator.pushReplacementNamed(context, 
-        '/login'
-        );
+
+        Navigator.pushReplacementNamed(context, '/login');
       } else {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );

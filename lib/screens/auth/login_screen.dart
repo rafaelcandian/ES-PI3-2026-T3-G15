@@ -65,14 +65,11 @@ class _LoginPageState extends State<LoginPage> {
                       // Email
                       TextFormField(
                         controller: emailController,
+                        style: TextStyle(color: Colors.black),
+                        cursorColor: Colors.black,
                         decoration: InputDecoration(
                           labelText: 'E-mail',
                           hintText: 'seu@exemplo.com',
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
                         ),
                         validator: (value) {
                           if (value == null ||
@@ -90,13 +87,10 @@ class _LoginPageState extends State<LoginPage> {
                       TextFormField(
                         controller: senhaController,
                         obscureText: true,
+                        style: TextStyle(color: Colors.black),
+                        cursorColor: Colors.black,
                         decoration: InputDecoration(
                           labelText: 'Senha',
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

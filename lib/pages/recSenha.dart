@@ -10,7 +10,14 @@ class ForgotPage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          TextField(controller: email),
+          TextField(
+            controller: email,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: "E-mail",
+            ),
+          ),
           ElevatedButton(
             onPressed: () async {
               var erro = await auth.resetPassword(email.text);

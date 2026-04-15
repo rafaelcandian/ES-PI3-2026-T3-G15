@@ -85,14 +85,11 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
 
                 TextFormField( // 🔥 melhor que TextField
                   controller: emailController,
+                  style: TextStyle(color: Colors.black),
+                  cursorColor: Colors.black,
                   decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
                     labelText: 'E-mail',
                     hintText: 'exemplo@invest.com.br',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
                   ),
                 ),
 

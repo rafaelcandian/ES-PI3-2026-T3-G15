@@ -11,8 +11,23 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          TextField(controller: emailController),
-          TextField(controller: senhaController),
+          TextField(
+            controller: emailController,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'E-mail',
+            ),
+          ),
+          TextField(
+            controller: senhaController,
+            style: TextStyle(color: Colors.black),
+            cursorColor: Colors.black,
+            decoration: const InputDecoration(
+              labelText: 'Senha',
+            ),
+            obscureText: true,
+          ),
           ElevatedButton(
             onPressed: () async {
               var erro = await auth.login(
