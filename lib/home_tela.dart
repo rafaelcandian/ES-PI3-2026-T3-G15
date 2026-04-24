@@ -1,26 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: LoginPage(),
-        ),
-      ),
-    );
-  }
-}
+import 'app_theme.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
@@ -38,8 +23,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       vsync: this,
     )..repeat();
 
-    _circleAnimation = Tween<double>(begin: 0, end: 2 * 3.14).animate(
-      CurvedAnimation(parent: _circleController, curve: Curves.linear),
+    _circleAnimation = Tween<double>(
+      begin: 0,
+      end: 2 * 3.14,
+    ).animate(
+      CurvedAnimation(
+        parent: _circleController,
+        curve: Curves.linear,
+      ),
     );
 
     _cryptoController = AnimationController(
@@ -47,7 +38,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    _cryptoAnimation = Tween<Offset>(begin: Offset(0, 0), end: Offset(0, -50)).animate(
+    _cryptoAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -1),
+    ).animate(
       CurvedAnimation(
         parent: _cryptoController,
         curve: Curves.easeOut,
@@ -61,32 +55,39 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Positioned(
-          top: 50,
-          child: SlideTransition(
-            position: _cryptoAnimation,
-            child: AnimatedBuilder(
-              animation: _cryptoController,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: _cryptoController.value * 2 * 3.14,
-                  child: Icon(
-                    Icons.monetization_on, // Ícone para criptomoeda
-                    size: 50,
-                    color: Colors.yellow,
-                  ),
-                );
-              },
+    return Scaffold(
+      backgroundColor: AppColors.fundo,
+      body: Center(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              top: 50,
+              child: SlideTransition(
+                position: _cryptoAnimation,
+                child: AnimatedBuilder(
+                  animation: _cryptoController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _cryptoController.value * 2 * 3.14,
+                      child: const Icon(
+                        Icons.monetization_on,
+                        size: 50,
+                        color: AppColors.destaque,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.azul,
+              ),
+            ),
+          ],
         ),
-        CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-        ),
-      ],
+      ),
     );
   }
 

@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'app_theme.dart';
 
-class RecuperarSenhaPage extends StatelessWidget {
-  const RecuperarSenhaPage({super.key});
+class RecuperacaoSenhaTela extends StatelessWidget {
+  const RecuperacaoSenhaTela({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF10184e),
+      backgroundColor: AppColors.fundo,
+
       appBar: AppBar(
         title: const Text('Recuperação de Senha'),
-        backgroundColor: const Color(0xFF10184e),
+        backgroundColor: AppColors.fundo,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Voltar para a tela de login
+            Navigator.pop(context);
           },
         ),
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: SingleChildScrollView(
@@ -25,46 +28,48 @@ class RecuperarSenhaPage extends StatelessWidget {
             children: [
               const Text(
                 "Recuperar Senha",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.destaque,
+                ),
               ),
+
               const SizedBox(height: 20),
+
               const Text(
                 "Enviaremos os passos para o seu e-mail.",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.branco,
+                ),
               ),
+
               const SizedBox(height: 20),
-              TextField(
+
+              const TextField(
                 decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
                   labelText: 'E-mail',
                   hintText: 'exemplo@invest.com.br',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
                 ),
               ),
+
               const SizedBox(height: 20),
+
               ElevatedButton(
                 onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  primary: Colors.orangeAccent,
-                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
                 child: const Text(
                   "Enviar código",
                   style: TextStyle(fontSize: 16),
                 ),
               ),
+
               const SizedBox(height: 20),
+
               TextButton(
                 onPressed: () {},
                 child: const Text(
                   'Não recebeu nada? Tente outro e-mail',
-                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],

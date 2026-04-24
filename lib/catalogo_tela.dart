@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_theme.dart';
 
 class CatalogoStartupsPage extends StatelessWidget {
   const CatalogoStartupsPage({super.key});
@@ -6,10 +7,11 @@ class CatalogoStartupsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF10184e),
+      backgroundColor: AppColors.fundo,
+
       appBar: AppBar(
         title: const Text('Catálogo de Startups'),
-        backgroundColor: const Color(0xFF10184e),
+        backgroundColor: AppColors.fundo,
         actions: [
           IconButton(
             icon: const Icon(Icons.account_circle),
@@ -17,96 +19,114 @@ class CatalogoStartupsPage extends StatelessWidget {
           ),
         ],
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
             const Text(
               "Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.",
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(
+                color: AppColors.branco,
+                fontSize: 16,
+              ),
               textAlign: TextAlign.center,
             ),
+
             const SizedBox(height: 20),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
                   onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.orangeAccent,
-                  ),
                   child: const Text('Todas'),
                 ),
                 ElevatedButton(
                   onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.orangeAccent,
-                  ),
                   child: const Text('Nova'),
                 ),
                 ElevatedButton(
                   onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    primary: Colors.orangeAccent,
-                  ),
                   child: const Text('Operação'),
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
+
             Expanded(
               child: ListView.builder(
                 itemCount: 5,
                 itemBuilder: (context, index) {
                   return Card(
-                    color: const Color(0xFF2D2D44),
+                    color: AppColors.roxo,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                     margin: const EdgeInsets.only(bottom: 20),
+
                     child: Padding(
                       padding: const EdgeInsets.all(15.0),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'NeuroPulse AI',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.branco,
+                            ),
                           ),
+
                           const SizedBox(height: 10),
+
                           const Text(
                             'Análise preditiva para saúde neurológica em tempo real usando deep learning.',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(
+                              color: AppColors.branco,
+                            ),
                           ),
+
                           const SizedBox(height: 10),
+
                           const Text(
                             'Expansão: 12% Equity',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(
+                              color: AppColors.branco,
+                            ),
                           ),
+
                           const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
+
+                          const Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: [
                               Text(
                                 'Tokens disponíveis: 4.500',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                  color: AppColors.branco,
+                                ),
                               ),
                               Text(
                                 'Valor do token: R\$ 250,00',
-                                style: TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                  color: AppColors.branco,
+                                ),
                               ),
                             ],
                           ),
+
                           const SizedBox(height: 10),
+
                           ElevatedButton(
                             onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              primary: Colors.orangeAccent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                            child: const Text(
+                              'Ver detalhes',
                             ),
-                            child: const Text('Ver detalhes'),
                           ),
                         ],
                       ),
