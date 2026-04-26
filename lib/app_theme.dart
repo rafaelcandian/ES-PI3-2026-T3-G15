@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color fundo = Color(0xFF10184E);
-  static const Color roxo = Color(0xFF6F38C5);
-  static const Color azul = Color(0xFF2148C6);
-  static const Color destaque = Color(0xFFFFB74D);
+  static const Color fundo = Color(0xFF090F32);
+  static const Color roxo = Color(0xFF3D2B61);
+  static const Color azul = Color(0xFF424F81);
+  static const Color destaque = Color(0xFFEFC855);
   static const Color branco = Colors.white;
   static const Color erro = Colors.red;
 }
