@@ -1,63 +1,79 @@
 💰 MesclaInvest
 
-Projeto Integrador III – Engenharia de Software
-PUC-Campinas – 2026
+Projeto Integrador III – Engenharia de Software  
+PUC-Campinas – 2026  
+
+---
 
 👥 Integrantes
 
-Arthur Valerio De Santi – RA: 25006924
-Gabriel Benevides Bosso – RA: 24013653
-Guilherme Henrique Moreira – RA: 25006702
-Rafael Antonio Candian – RA: 25016954
-Victória Beatriz Nobre Andrade – RA: 25016398
+Arthur Valerio De Santi – RA: 25006924  
+Gabriel Benevides Bosso – RA: 24013653  
+Guilherme Henrique Moreira – RA: 25006702  
+Rafael Antonio Candian – RA: 25016954  
+Victória Beatriz Nobre Andrade – RA: 25016398  
+
+---
 
 📌 Descrição do Projeto
 
 O MesclaInvest é um aplicativo mobile desenvolvido com o objetivo de simular um ambiente digital de investimentos em startups do ecossistema Mescla da PUC-Campinas.
 
-A plataforma permite que usuários visualizem startups, acompanhem informações e realizem negociações de tokens de forma totalmente simulada.
+A plataforma permite que usuários visualizem startups, acompanhem informações e realizem negociações de tokens de forma simulada.
+
+---
 
 🎯 Objetivo
 
 Aplicar na prática conceitos de:
 
-- Arquitetura de software
-- APIs e backend
-- Desenvolvimento mobile
-- Integração entre sistemas
-- Versionamento com Git/GitHub
+- Arquitetura de software  
+- Desenvolvimento de APIs  
+- Integração backend e frontend  
+- Desenvolvimento mobile com Flutter  
+- Banco de dados NoSQL (Firebase Firestore)  
+- Autenticação de usuários  
+
+---
 
 🚀 Funcionalidades
 
-🔐 Cadastro e autenticação de usuários
+- Cadastro de usuários  
+- Login com autenticação Firebase  
+- Recuperação de senha por e-mail  
+- Listagem de startups  
+- Visualização de detalhes  
+- Simulação de investimento em tokens  
 
-🏢 Visualização de startups e seus dados
-
-💹 Compra e venda simulada de tokens
-
-📊 Acompanhamento de valorização dos ativos
+---
 
 🛠️ Tecnologias Utilizadas
 
-- Backend
-- Node.js
-- TypeScript / JavaScript
-- Express
-- Frontend
+Frontend:
 - Flutter (Dart)
-- Banco de Dados
+
+Backend:
+- Node.js
+- Express
+
+Banco de Dados:
 - Firebase Firestore
-- Versionamento
-- Git e GitHub
+- Firebase Authentication
 
-▶️ Como Executar (Pré-requisitos)
+---
 
-Node.js
-Flutter instalado
-Firebase configurado
+⚙️ Como executar o projeto
 
+Para executar o projeto em ambiente de testes, siga os passos abaixo:
 
-Backend
---- A adicionar
-Mobile
---- A adicionar
+1. Instalar dependências do Flutter:
+
+flutter pub get
+
+2. Executar o projeto:
+
+flutter run
+
+O aplicativo será aberto em um emulador Android ou dispositivo físico conectado.
+
+---
