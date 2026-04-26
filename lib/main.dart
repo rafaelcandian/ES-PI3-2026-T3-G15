@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mescla_invest/screens/auth/splash_screen.dart';
 import 'package:mescla_invest/screens/auth/login_screen.dart';
 import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
@@ -10,7 +10,7 @@ import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  //await Firebase.initializeApp();
+  await Firebase.initializeApp();
 
   runApp(const MesclaInvestApp());
 }

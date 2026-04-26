@@ -9,6 +9,7 @@ class CadastroPage extends StatefulWidget {
 }
 
 class _CadastroPageState extends State<CadastroPage> {
+
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -28,29 +29,44 @@ class _CadastroPageState extends State<CadastroPage> {
     super.dispose();
   }
 
+  bool validarCPF(String cpf) {
+    cpf = cpf.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cpf.length != 11) return false;
+    if (RegExp(r'^(\d)\1*$').hasMatch(cpf)) return false;
+    return true;
+  }
+
+  bool validarTelefone(String telefone) {
+    telefone = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    return telefone.length == 11;
+  }
+
+  bool validarSenha(String senha) {
+    return senha.length >= 6 && RegExp(r'[0-9]').hasMatch(senha);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF10184e),
+
       appBar: AppBar(
         title: const Text('Criar Conta'),
         backgroundColor: const Color(0xFF10184e),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
       ),
+
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20),
+
           child: SingleChildScrollView(
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.disabled,
+
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+
                   const Text(
                     "Criar conta",
                     style: TextStyle(
@@ -59,101 +75,136 @@ class _CadastroPageState extends State<CadastroPage> {
                       color: Colors.orangeAccent,
                     ),
                   ),
+
                   const SizedBox(height: 20),
 
+                  // NOME
                   TextFormField(
                     controller: nomeController,
-                    style: TextStyle(color: Colors.black),
-                    cursorColor: Colors.black,
-                    decoration: InputDecoration(
-                      labelText: 'Nome Completo',
-                      hintText: 'Ex: Roberto Silva',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, insira seu nome completo';
-                      }
-                      return null;
-                    },
+                    style: const TextStyle(color: Colors.black87), // 🔥 MELHORIA
+                    decoration: const InputDecoration(labelText: 'Nome Completo'),
+                    validator: (value) =>
+                        value == null || value.isEmpty
+                            ? 'Informe o nome'
+                            : null,
                   ),
+
                   const SizedBox(height: 10),
 
+                  // EMAIL
                   TextFormField(
                     controller: emailController,
-                    style: TextStyle(color: Colors.black),
-                    cursorColor: Colors.black,
-                    decoration: InputDecoration(
-                      labelText: 'E-mail',
-                      hintText: 'nome@exemplo.com',
-                    ),
-                    validator: (value) {
-                      if (value == null ||
-                          value.isEmpty ||
-                          !value.contains('@')) {
-                        return 'Por favor, insira um e-mail válido';
-                      }
-                      return null;
-                    },
+                    style: const TextStyle(color: Colors.black87), // 🔥 MELHORIA
+                    decoration: const InputDecoration(labelText: 'E-mail'),
+                    validator: (value) =>
+                        value == null || !value.contains('@')
+                            ? 'E-mail inválido'
+                            : null,
                   ),
+
                   const SizedBox(height: 10),
 
+                  // CPF
                   TextFormField(
                     controller: cpfController,
-                    style: TextStyle(color: Colors.black),
-                    cursorColor: Colors.black,
-                    decoration: InputDecoration(
-                      labelText: 'CPF',
-                      hintText: '000.000.000-00',
-                    ),
+                    style: const TextStyle(color: Colors.black87), // 🔥 MELHORIA
+                    decoration: const InputDecoration(labelText: 'CPF'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Por favor, insira seu CPF';
+                        return 'Informe CPF';
+                      }
+                      if (!validarCPF(value)) {
+                        return 'CPF inválido';
                       }
                       return null;
                     },
                   ),
+
                   const SizedBox(height: 10),
 
+                  // TELEFONE
                   TextFormField(
                     controller: telefoneController,
-                    style: TextStyle(color: Colors.black),
-                    cursorColor: Colors.black,
-                    decoration: InputDecoration(
-                      labelText: 'Telefone',
-                      hintText: '(00) 00000-0000',
-                    ),
+                    style: const TextStyle(color: Colors.black87), // 🔥 MELHORIA
+                    decoration: const InputDecoration(labelText: 'Telefone'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Por favor, insira seu telefone';
+                        return 'Informe telefone';
+                      }
+                      if (!validarTelefone(value)) {
+                        return 'Telefone inválido';
                       }
                       return null;
                     },
                   ),
+
                   const SizedBox(height: 10),
 
+                  // SENHA
                   TextFormField(
                     controller: senhaController,
                     obscureText: true,
-                    style: TextStyle(color: Colors.black),
-                    cursorColor: Colors.black,
-                    decoration: InputDecoration(
-                      labelText: 'Senha',
-                    ),
+                    style: const TextStyle(color: Colors.black87), // 🔥 MELHORIA
+                    decoration: const InputDecoration(labelText: 'Senha'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Por favor, insira uma senha';
+                        return 'Informe senha';
+                      }
+                      if (!validarSenha(value)) {
+                        return 'Senha fraca (mín. 6 + número)';
                       }
                       return null;
                     },
                   ),
+
+                  // 🔥 INDICADOR DE SENHA (NOVA PARTE)
+                  const SizedBox(height: 6),
+
+                  AnimatedBuilder(
+                    animation: senhaController,
+                    builder: (context, _) {
+                      final senha = senhaController.text;
+
+                      final temNumero = RegExp(r'[0-9]').hasMatch(senha);
+                      final temMinimo = senha.length >= 6;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "A senha deve conter:",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            "• Mínimo 6 caracteres",
+                            style: TextStyle(
+                              color: temMinimo ? Colors.green : Colors.redAccent,
+                              fontSize: 12,
+                            ),
+                          ),
+
+                          Text(
+                            "• Pelo menos 1 número",
+                            style: TextStyle(
+                              color: temNumero ? Colors.green : Colors.redAccent,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
                   const SizedBox(height: 20),
 
                   _isLoading
-                      ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.orangeAccent,
-                          ),
-                        )
+                      ? const CircularProgressIndicator()
                       : ElevatedButton(
                           onPressed: _submitForm,
                           style: ElevatedButton.styleFrom(
@@ -162,14 +213,8 @@ class _CadastroPageState extends State<CadastroPage> {
                               vertical: 15,
                               horizontal: 50,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
                           ),
-                          child: const Text(
-                            "Cadastrar",
-                            style: TextStyle(fontSize: 16),
-                          ),
+                          child: const Text("Cadastrar"),
                         ),
                 ],
               ),
@@ -181,38 +226,33 @@ class _CadastroPageState extends State<CadastroPage> {
   }
 
   void _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
 
-      String? errorMessage = await AuthService().register(
-        nome: nomeController.text,
-        email: emailController.text,
-        cpf: cpfController.text,
-        telefone: telefoneController.text,
-        senha: senhaController.text,
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    String? errorMessage = await AuthService().register(
+      nome: nomeController.text.trim(),
+      email: emailController.text.trim(),
+      cpf: cpfController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+      telefone: telefoneController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+      senha: senhaController.text,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (errorMessage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Cadastro realizado com sucesso!")),
       );
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (!mounted) return;
-
-      if (errorMessage == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Cadastro realizado com sucesso!"),
-          ),
-        );
-
-        Navigator.pushReplacementNamed(context, '/login');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      }
+      Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
     }
   }
 }

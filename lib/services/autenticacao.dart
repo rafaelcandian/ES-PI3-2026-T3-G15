@@ -1,17 +1,13 @@
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Classe responsável por TODA a lógica de autenticação (backend)
 class AuthService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Instância do Firebase Authentication (MOCK)
-  // final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  // Instância do banco de dados (Firestore) (MOCK)
-  // final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  // CADASTRO DE USUÁRIO
-  
+  // =========================
+  // CADASTRO
+  // =========================
   Future<String?> register({
     required String nome,
     required String email,
@@ -19,41 +15,83 @@ class AuthService {
     required String telefone,
     required String senha,
   }) async {
-    await Future.delayed(const Duration(seconds: 1)); // Simula delay de rede
-    // Apenas validação básica, sem persistência
-    if (email.isEmpty || senha.isEmpty) {
-      return "Preencha todos os campos.";
+    try {
+      // 1. Cria usuário no Firebase Auth
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+
+      String uid = userCredential.user!.uid;
+
+      // 2. Salva dados no Firestore
+      await _db.collection("usuarios").doc(uid).set({
+        "nome": nome,
+        "email": email,
+        "cpf": cpf,
+        "telefone": telefone,
+        "uid": uid,
+        "criado_em": Timestamp.now(),
+      });
+
+      return null; // sucesso
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        return "E-mail já está em uso";
+      } else if (e.code == 'weak-password') {
+        return "Senha muito fraca";
+      } else {
+        return "Erro no cadastro";
+      }
+    } catch (e) {
+      return "Erro inesperado";
     }
-    return null; // Sucesso
   }
 
+  // =========================
   // LOGIN
+  // =========================
   Future<String?> login(String email, String senha) async {
-    await Future.delayed(const Duration(seconds: 1)); // Simula delay de rede
-    if (email == "admin@mescla.com" && senha == "123456") {
-      return null; // Login bem-sucedido
-    } else {
-      return "Login inválido";
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        return "Usuário não encontrado";
+      } else if (e.code == 'wrong-password') {
+        return "Senha incorreta";
+      } else {
+        return "Erro no login";
+      }
     }
   }
 
+  // =========================
   // RECUPERAR SENHA
+  // =========================
   Future<String?> resetPassword(String email) async {
-    await Future.delayed(const Duration(seconds: 1)); // Simula delay de rede
-    return null; // Sucesso
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } catch (e) {
+      return "Erro ao enviar email";
+    }
   }
 
+  // =========================
   // LOGOUT
+  // =========================
   Future<void> logout() async {
-    await Future.delayed(const Duration(seconds: 1)); // Simula delay de rede
-    // Não faz nada no mock
+    await _auth.signOut();
   }
 
+  // =========================
   // USUÁRIO ATUAL
-
-  // User? get currentUser {
-  //   return _auth.currentUser;
-  // }
-  // MOCADO: Sempre retorna null para simular não logado
-  dynamic get currentUser => null;
+  // =========================
+  User? get currentUser => _auth.currentUser;
 }
