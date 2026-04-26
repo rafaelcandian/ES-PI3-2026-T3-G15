@@ -7,47 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:61371515180:android:7d9bd928530601e5f42c89",
-        "android_client_info": {
-          "package_name": "com.example.mesclainvest"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDkn1_huTzu0tPUlSU0BXRor0W6-gHGEPM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:61371515180:android:4849243d85d3e61af42c89",
         "android_client_info": {
           "package_name": "com.example.mesclainvest"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDkn1_huTzu0tPUlSU0BXRor0W6-gHGEPM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:61371515180:android:d59b7ae6a0d95d6df42c89",
-        "android_client_info": {
-          "package_name": "com.mescla.invest"
         }
       },
       "oauth_client": [],

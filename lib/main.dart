@@ -6,11 +6,14 @@ import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
 import 'package:mescla_invest/screens/auth/recuperacao_senha_screen.dart';
 import 'package:mescla_invest/screens/startups/catalogo_screen.dart';
 import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
-
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const MesclaInvestApp());
 }
