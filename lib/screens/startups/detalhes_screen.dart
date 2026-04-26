@@ -200,11 +200,11 @@ class DetalhesStartupPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        startup.tokenValue,
+                        "R\$ ${startup.tokenValue.toStringAsFixed(2)}",
                         style: const TextStyle(
                           color: Color(0xFFFFC53D),
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -221,7 +221,7 @@ class DetalhesStartupPage extends StatelessWidget {
                         style: const TextStyle(
                           color: Color(0xFFFFC53D),
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -236,7 +236,7 @@ class DetalhesStartupPage extends StatelessWidget {
             _buildSectionCard(
               title: "Sumário Executivo",
               child: Text(
-                "A ${startup.title} está revolucionando o setor com tecnologia inovadora. Com ${startup.tokens} tokens disponíveis e uma meta de ${startup.goal}, esta é uma oportunidade de investimento estratégica.",
+                "A ${startup.title} está revolucionando o setor com tecnologia inovadora. Com ${startup.tokens} tokens disponíveis e uma meta de R\$ ${startup.goal.toStringAsFixed(2)}, esta é uma oportunidade de investimento estratégica.",
                 style: const TextStyle(color: Color(0xFFB0B8D1), height: 1.6),
               ),
             ),
@@ -248,11 +248,11 @@ class DetalhesStartupPage extends StatelessWidget {
               title: "Informações da Oferta",
               child: Column(
                 children: [
-                  _buildInfoRow("Tokens Disponíveis", startup.tokens),
+                  _buildInfoRow("Tokens Disponíveis", startup.tokens.toString()),
                   const SizedBox(height: 12),
                   _buildInfoRow("Categoria", startup.tag),
                   const SizedBox(height: 12),
-                  _buildInfoRow("Meta de Captação", startup.goal),
+                  _buildInfoRow("Meta de Captação", "R\$ ${startup.goal.toStringAsFixed(2)}"),
                 ],
               ),
             ),

@@ -73,8 +73,8 @@ class StartupCard extends StatelessWidget {
                 const SizedBox(height: 18),
                 Row(
                   children: [
-                    Expanded(child: _InfoItem(label: 'Tokens disponíveis', value: data.tokens)),
-                    Expanded(child: _InfoItem(label: 'Valor do token', value: data.tokenValue)),
+                    Expanded(child: _InfoItem(label: 'Tokens disponíveis', value: data.tokens.toString())),
+                    Expanded(child: _InfoItem(label: 'Valor do token', value: data.tokenValue.toString())),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -82,7 +82,7 @@ class StartupCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Captação: ${(data.progress * 100).round()}%', style: const TextStyle(fontSize: 12, color: Color(0xFF7D91C2), fontWeight: FontWeight.w600)),
-                    Text(data.goal, style: const TextStyle(fontSize: 12, color: Color(0xFF9CADDD), fontWeight: FontWeight.w600)),
+                    Text(data.goal.toString(), style: const TextStyle(fontSize: 12, color: Color(0xFF9CADDD), fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 8),

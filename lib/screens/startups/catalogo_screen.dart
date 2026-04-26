@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/screens/startups/startup_card.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
+import 'package:mescla_invest/services/startup_service.dart'; // Import the service
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 
 class CatalogoStartupsPage extends StatefulWidget {
   const CatalogoStartupsPage({super.key});
@@ -14,6 +16,7 @@ class CatalogoStartupsPage extends StatefulWidget {
 class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   final List<String> _filters = ['Todas', 'Nova', 'Operação', 'Expansão', 'Destaque'];
   String _selectedFilter = 'Todas';
+  final StartupService _startupService = StartupService(); // Initialize service
 
   List<StartupData> applyFilter(List<StartupData> startups) {
     if (_selectedFilter == 'Todas') return startups;
@@ -165,25 +168,40 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
 
             // lista
             Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.zero,
-                itemCount:
-                    applyFilter(StartupCatalogPage.startups).length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
-                itemBuilder: (context, index) {
-                  final startup =
-                      applyFilter(StartupCatalogPage.startups)[index];
+              child: StreamBuilder<List<StartupData>>(
+                stream: _startupService.getStartups(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Erro: ${snapshot.error}', style: TextStyle(color: Colors.white)));
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('Nenhuma startup encontrada', style: TextStyle(color: Colors.white)));
+                  }
 
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/detalhes',
-                        arguments: startup,
+                  final filteredStartups = applyFilter(snapshot.data!);
+
+                  return ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: filteredStartups.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final startup = filteredStartups[index];
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            '/detalhes',
+                            arguments: startup,
+                          );
+                        },
+                        child: StartupCard(data: startup),
                       );
                     },
-                    child: StartupCard(data: startup),
                   );
                 },
               ),
@@ -198,6 +216,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
     );
   }
 }
+
 
 // ===================== FILTER CHIP =====================
 class FilterChipWidget extends StatelessWidget {
@@ -238,49 +257,5 @@ class FilterChipWidget extends StatelessWidget {
   }
 }
 
-// ===================== DATA STATIC =====================
-class StartupCatalogPage extends StatelessWidget {
-  const StartupCatalogPage({super.key});
 
-  static final List<StartupData> startups = [
-    StartupData(
-      title: 'NeuroPulse AI',
-      subtitle: 'Análise preditiva para saúde neurológica.',
-      tag: 'EXPANSÃO',
-      equity: '12%',
-      tokens: '4.500',
-      tokenValue: 'R\$ 250,00',
-      progress: 0.75,
-      goal: 'R\$ 2.5M',
-      image:
-          'https://images.unsplash.com/photo-1518770660439-4636190af475',
-    ),
-    StartupData(
-      title: 'VerdeSphere',
-      subtitle: 'Vertical farming automatizada.',
-      tag: 'NOVA',
-      equity: '8.5%',
-      tokens: '1.200',
-      tokenValue: 'R\$ 1.150,00',
-      progress: 0.20,
-      goal: 'R\$ 1.2M',
-      image:
-          'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2',
-    ),
-  ];
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mescla Invest')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: startups.length,
-        itemBuilder: (context, index) {
-          return StartupCard(data: startups[index]);
-        },
-      ),
-      bottomNavigationBar: const BottomNavBar(),
-    );
-  }
-}
