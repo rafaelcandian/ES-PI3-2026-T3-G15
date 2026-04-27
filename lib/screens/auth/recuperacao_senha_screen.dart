@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/services/autenticacao.dart';
+import 'app_theme.dart';
 
-class RecuperarSenhaPage extends StatefulWidget {
-  const RecuperarSenhaPage({super.key});
+class RecuperacaoSenhaTela extends StatefulWidget {
+  const RecuperacaoSenhaTela({super.key});
 
   @override
-  State<RecuperarSenhaPage> createState() => _RecuperarSenhaPageState();
+  State<RecuperacaoSenhaTela> createState() => _RecuperacaoSenhaTelaState();
 }
 
-class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
+class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   final TextEditingController emailController = TextEditingController();
+
   bool _isLoading = false;
+
+  final AuthService _auth = AuthService();
 
   @override
   void dispose() {
@@ -18,120 +22,160 @@ class _RecuperarSenhaPageState extends State<RecuperarSenhaPage> {
     super.dispose();
   }
 
-  void _sendPasswordResetEmail() async {
-    if (emailController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Por favor, insira seu e-mail.")),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    String? errorMessage = await AuthService().resetPassword(emailController.text);
-    setState(() => _isLoading = false);
-
-    if (errorMessage == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Email de recuperação enviado!")),
-      );
-      Navigator.pop(context);
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF10184e),
+      backgroundColor: AppColors.fundo,
+
       appBar: AppBar(
-        title: const Text('Recuperação de Senha'),
-        backgroundColor: const Color(0xFF10184e),
+        backgroundColor: AppColors.fundo,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.destaque),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Center( // 🔥 centraliza melhor
+
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const Text(
-                  'Recuperar Senha',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orangeAccent,
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+
+                  const Icon(
+                    Icons.lock_reset_rounded,
+                    color: AppColors.destaque,
+                    size: 60,
                   ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                const Text(
-                  'Enviaremos os passos para o seu e-mail.',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 20),
-
-                TextFormField( // 🔥 melhor que TextField
-                  controller: emailController,
-                  style: TextStyle(color: Colors.black),
-                  cursorColor: Colors.black,
-                  decoration: InputDecoration(
-                    labelText: 'E-mail',
-                    hintText: 'exemplo@invest.com.br',
+                  const Text(
+                    "Recuperar Senha",
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.destaque,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 14),
 
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: _sendPasswordResetEmail,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orangeAccent, // corrigido
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 15,
-                            horizontal: 50,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text(
-                          "Enviar código",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
-
-                const SizedBox(height: 20),
-
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: const Text(
-                    'Não recebeu nada? Tente outro e-mail',
-                    style: TextStyle(color: Colors.white),
+                  const Text(
+                    "Informe seu e-mail cadastrado para receber o código de recuperação.",
                     textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.white70,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 32),
+
+                  TextFormField(
+                    controller: emailController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: "Digite seu e-mail",
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon: const Icon(
+                        Icons.email_outlined,
+                        color: AppColors.destaque,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.08),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  _isLoading
+                      ? const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(AppColors.destaque),
+                        )
+                      : SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton(
+                            onPressed: _sendResetEmail,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.destaque,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const Text(
+                              "Enviar código",
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                  const SizedBox(height: 22),
+
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Não recebeu? Tentar outro e-mail",
+                      style: TextStyle(color: Colors.white60),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _sendResetEmail() async {
+    if (emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Digite seu e-mail")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final error = await _auth.resetPassword(
+        emailController.text.trim(),
+      );
+
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+
+      if (error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Email de recuperação enviado!")),
+        );
+
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error)),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erro: $e")),
+      );
+    }
   }
 }
