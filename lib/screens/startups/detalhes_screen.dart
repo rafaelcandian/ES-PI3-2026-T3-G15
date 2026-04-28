@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
+import 'package:mescla_invest/screens/auth/app_theme.dart';
 
 
 class DetalhesStartupPage extends StatelessWidget {
@@ -11,10 +12,10 @@ class DetalhesStartupPage extends StatelessWidget {
 
     if (arguments == null || arguments is! StartupData) {
       return Scaffold(
-        backgroundColor: const Color(0xFF070A1E),
+        backgroundColor: AppColors.fundo,
         appBar: AppBar(
           title: const Text("Erro"),
-          backgroundColor: const Color(0xFF070A1E),
+          backgroundColor: AppColors.fundo,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -35,9 +36,9 @@ class DetalhesStartupPage extends StatelessWidget {
     final StartupData startup = arguments;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF070A1E),
+      backgroundColor: AppColors.fundo,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF070A1E),
+        backgroundColor: AppColors.fundo,
         elevation: 0,
         title: const Text(
           "Detalhes da Oferta",
@@ -172,7 +173,9 @@ class DetalhesStartupPage extends StatelessWidget {
             const SizedBox(height: 15),
 
             // TAGS
+            //deixar com o alinhamento à esquerda e com espaçamento entre elas
             Wrap(
+              alignment: WrapAlignment.start,
               spacing: 10,
               children: [
                 _buildTag(startup.tag),
@@ -305,6 +308,12 @@ class DetalhesStartupPage extends StatelessWidget {
     return Chip(
       label: Text(text),
       backgroundColor: const Color(0xFF2E3B7C),
+      //colocar borda com radius circular
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(50),
+      ),
+      //colocar borda com cor amarela
+      side: const BorderSide(color: Color(0xFF2E3B7C)),
       labelStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
     );
   }

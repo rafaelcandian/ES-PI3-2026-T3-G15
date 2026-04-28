@@ -14,6 +14,7 @@ class _CadastroPageState extends State<CadastroPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   final AuthService _auth = AuthService();
 
@@ -22,6 +23,7 @@ class _CadastroPageState extends State<CadastroPage> {
   final TextEditingController cpfController = TextEditingController();
   final TextEditingController telefoneController = TextEditingController();
   final TextEditingController senhaController = TextEditingController();
+  final TextEditingController confirmarSenhaController = TextEditingController();
 
   @override
   void dispose() {
@@ -30,6 +32,7 @@ class _CadastroPageState extends State<CadastroPage> {
     cpfController.dispose();
     telefoneController.dispose();
     senhaController.dispose();
+    confirmarSenhaController.dispose();
     super.dispose();
   }
 
@@ -64,13 +67,14 @@ class _CadastroPageState extends State<CadastroPage> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
+          padding: const EdgeInsets.symmetric(horizontal: 28 ),
           child: Center(
             child: SingleChildScrollView(
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
+                    const SizedBox(height: 25),
 
                     const Icon(
                       Icons.person_add_alt_1_rounded,
@@ -92,7 +96,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     const SizedBox(height: 14),
 
                     const Text(
-                      "Preencha seus dados para criar sua conta no MesclaInvest.",
+                      "Preencha com todos os seus dados para criar sua conta no MesclaInvest.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
@@ -104,10 +108,10 @@ class _CadastroPageState extends State<CadastroPage> {
                     const SizedBox(height: 32),
 
                     campoTexto(nomeController, 'Nome Completo', 'Ex: Roberto Silva', Icons.person_outline),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
                     campoTexto(emailController, 'E-mail', 'nome@exemplo.com', Icons.email_outlined),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
                     // CPF
                     TextFormField(
@@ -134,7 +138,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       },
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
                     // TELEFONE
                     TextFormField(
@@ -161,7 +165,7 @@ class _CadastroPageState extends State<CadastroPage> {
                       },
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
 
                     // SENHA (UI dela + sua validação)
                     TextFormField(
@@ -198,7 +202,43 @@ class _CadastroPageState extends State<CadastroPage> {
                       },
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height:  20),
+
+                    TextFormField(
+                      controller: confirmarSenhaController,
+                      obscureText: _obscureConfirmPassword,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: inputDecoration(
+                        'Confirmar senha',
+                        'Digite novamente a senha',
+                        Icons.lock_outline,
+                      ).copyWith(
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: Colors.white60,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                            });
+                          },
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Confirme sua senha';
+                        }
+                        if (value != senhaController.text) {
+                          return 'As senhas não coincidem';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 48),
 
                     _isLoading
                         ? const CircularProgressIndicator(
@@ -214,7 +254,7 @@ class _CadastroPageState extends State<CadastroPage> {
                                 foregroundColor: Colors.black,
                                 elevation: 2,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(50),
                                 ),
                               ),
                               child: const Text(
@@ -226,6 +266,7 @@ class _CadastroPageState extends State<CadastroPage> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 38),
                   ],
                 ),
               ),

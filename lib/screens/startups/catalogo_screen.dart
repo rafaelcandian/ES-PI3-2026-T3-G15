@@ -26,6 +26,20 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
         .toList();
   }
 
+  Future<void> _handleLogout() async {
+    // 🔐 desloga Firebase
+    await FirebaseAuth.instance.signOut();
+
+    // 🔁 limpa navegação e volta pro login
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/login',
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,19 +56,70 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
           children: [
 
             // avatar usuário
-            Container(
-              width: 46,
-              height: 46,
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF182051),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: const Icon(Icons.person, color: Colors.white, size: 24),
+            PopupMenuButton<String>(
+              color: const Color(0xFF182051),
+              position: PopupMenuPosition.under,
+              
+              onSelected: (String result) {
+                if (result == 'logout') {
+                  _handleLogout();
+                } else if (result == 'perfil') {
+                  Navigator.pushNamed(context, '/perfil');
+                } else if (result == 'notificacoes') {
+                  Navigator.pushNamed(context, '/notificacoes');
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'notificacoes',
+                  child: Row(
+                    children: [
+                      Icon(Icons.notifications_none, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Notificações', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(color: Color.fromARGB(33, 255, 255, 255),),
+                const PopupMenuItem<String>(
+                  value: 'perfil',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Ver Perfil', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(color: Color.fromARGB(33, 255, 255, 255),),
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Sair', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+              child: Container(
+                width: 44,
+                height: 44,
+                margin: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF182051),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 24),
+                
+              )
+              ,
             ),
-
             const SizedBox(width: 14),
 
+            //logo
+            /*
             Expanded(
               child: Center(
                 child: Image.asset(
@@ -64,151 +129,129 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                 ),
               ),
             ),
-
-            // notificações
-            Container(
-              width: 44,
-              height: 44,
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C2555),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: const Icon(Icons.notifications_none,
-                  color: Colors.white, size: 24),
-            ),
-
-            // ===================== LOGOUT =====================
-            Container(
-              width: 44,
-              height: 44,
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C2555),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.logout,
-                    color: Colors.white, size: 22),
-
-                onPressed: () async {
-
-                  // 🔐 desloga Firebase
-                  await FirebaseAuth.instance.signOut();
-
-                  // 🔁 limpa navegação e volta pro login
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    '/login',
-                    (route) => false,
-                  );
-                },
-              ),
-            ),
+            */
           ],
         ),
       ),
 
       // ===================== BODY =====================
       backgroundColor: const Color(0xFF070A1E),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            const SizedBox(height: 12),
-
-            const Text(
-              'Catálogo de Startups',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+      body: CustomScrollView(
+        slivers: [
+          // Título e descrição
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Catálogo de Startups',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFFB0B8D1),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                ],
               ),
             ),
+          ),
 
-            const SizedBox(height: 10),
-
-            const Text(
-              'Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFFB0B8D1),
+          // Filtros
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              
+              child: SizedBox(
+                height: 44,
+                
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _filters.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
+                      
+                  itemBuilder: (context, index) {
+                    final label = _filters[index];
+                    
+                    return FilterChipWidget(
+                      
+                      label: label,
+                      selected: _selectedFilter == label,
+                      onTap: () {
+                        setState(() {
+                          _selectedFilter = label;
+                        });
+                      },
+                    );
+                  },
+                ),
               ),
             ),
+          ),
 
-            const SizedBox(height: 22),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 16),
+          ),
 
-            // filtros
-            SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _filters.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final label = _filters[index];
-                  return FilterChipWidget(
-                    label: label,
-                    selected: _selectedFilter == label,
-                    onTap: () {
-                      setState(() {
-                        _selectedFilter = label;
-                      });
-                    },
-                  );
-                },
-              ),
+          // Lista de startups
+          SliverToBoxAdapter(
+            
+            child: StreamBuilder<List<StartupData>>(
+              
+              stream: _startupService.getStartups(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Erro: ${snapshot.error}', style: TextStyle(color: Colors.white)));
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('Nenhuma startup encontrada', style: TextStyle(color: Colors.white)));
+                }
+
+                final filteredStartups = applyFilter(snapshot.data!);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: List.generate(
+                      filteredStartups.length,
+                      (index) {
+                        final startup = filteredStartups[index];
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: index == filteredStartups.length - 1 ? 80 : 32),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/detalhes',
+                                arguments: startup,
+                              );
+                            },
+                            child: StartupCard(data: startup),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
-
-            const SizedBox(height: 16),
-
-            // lista
-            Expanded(
-              child: StreamBuilder<List<StartupData>>(
-                stream: _startupService.getStartups(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Erro: ${snapshot.error}', style: TextStyle(color: Colors.white)));
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('Nenhuma startup encontrada', style: TextStyle(color: Colors.white)));
-                  }
-
-                  final filteredStartups = applyFilter(snapshot.data!);
-
-                  return ListView.separated(
-                    padding: EdgeInsets.zero,
-                    itemCount: filteredStartups.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final startup = filteredStartups[index];
-
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/detalhes',
-                            arguments: startup,
-                          );
-                        },
-                        child: StartupCard(data: startup),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 80),
-          ],
-        ),
+          ),
+        ],
       ),
 
       bottomNavigationBar: const BottomNavBar(),

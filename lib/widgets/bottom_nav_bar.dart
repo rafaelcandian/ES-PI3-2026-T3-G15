@@ -28,9 +28,6 @@ class _BottomNavBarState extends State<BottomNavBar> {
       case 3:
         Navigator.pushNamed(context, '/dashboard');
         break;
-      case 4:
-        Navigator.pushNamed(context, '/perfil');
-        break;
     }
   }
 
@@ -63,10 +60,6 @@ class _BottomNavBarState extends State<BottomNavBar> {
         BottomNavigationBarItem(
           icon: Icon(Icons.bar_chart),
           label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Perfil',
         ),
       ],
     );

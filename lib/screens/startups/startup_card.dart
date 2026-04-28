@@ -104,7 +104,7 @@ class StartupCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFC53D),
                           foregroundColor: const Color(0xFF0F1749),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                         ),

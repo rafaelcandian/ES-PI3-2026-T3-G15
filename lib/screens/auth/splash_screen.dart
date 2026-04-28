@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -46,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // tela inicial simples de carregamento
     return Scaffold(
-      backgroundColor: const Color(0xFF070A1E),
+      backgroundColor: AppColors.fundo,
 
       body: Center(
         child: Column(
