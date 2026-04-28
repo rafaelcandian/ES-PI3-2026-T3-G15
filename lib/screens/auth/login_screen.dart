@@ -81,12 +81,10 @@ class _LoginTelaState extends State<LoginTela>
                     child: Column(
                       children: [
 
-                        const Text(
-                          "MesclaInvest",
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.destaque,
+                        Center(
+                          child: Container(
+                            margin: EdgeInsets.only(bottom: 70),
+                            child: Image.asset('assets/logo01.png', width: 220),
                           ),
                         ),
 
@@ -111,7 +109,7 @@ class _LoginTelaState extends State<LoginTela>
                           },
                         ),
 
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 20),
 
                         TextFormField(
                           controller: senhaController,
@@ -144,7 +142,7 @@ class _LoginTelaState extends State<LoginTela>
                           },
                         ),
 
-                        const SizedBox(height: 25),
+                        const SizedBox(height: 30),
 
                         SizedBox(
                           width: double.infinity,
@@ -155,7 +153,7 @@ class _LoginTelaState extends State<LoginTela>
                               backgroundColor: AppColors.destaque,
                               foregroundColor: Colors.black,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(50),
                               ),
                             ),
                             child: _isLoading
@@ -172,7 +170,7 @@ class _LoginTelaState extends State<LoginTela>
                           ),
                         ),
 
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 15),
 
                         TextButton(
                           onPressed: () {

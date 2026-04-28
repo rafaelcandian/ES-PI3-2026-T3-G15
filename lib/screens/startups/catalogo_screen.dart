@@ -55,13 +55,12 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
 
             const SizedBox(width: 14),
 
-            const Expanded(
-              child: Text(
-                'MESCLA INVEST',
-                style: TextStyle(
-                  letterSpacing: 1.2,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+            Expanded(
+              child: Center(
+                child: Image.asset(
+                  'assets/logo02.png',
+                  //height: 40,
+                  //fit: BoxFit.contain,
                 ),
               ),
             ),

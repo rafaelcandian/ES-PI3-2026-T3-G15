@@ -12,7 +12,6 @@ import 'package:mescla_invest/screens/startups/catalogo_screen.dart';
 import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // New import
 import 'package:mescla_invest/services/startup_service.dart'; // Import StartupService
-import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
