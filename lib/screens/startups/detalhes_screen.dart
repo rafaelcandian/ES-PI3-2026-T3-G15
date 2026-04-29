@@ -18,7 +18,7 @@ class DetalhesStartupPage extends StatelessWidget {
           backgroundColor: AppColors.fundo,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.destaque),
             onPressed: () {
               Navigator.pop(context);
             },
@@ -37,6 +37,7 @@ class DetalhesStartupPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.fundo,
+      extendBody: true,
       appBar: AppBar(
         backgroundColor: AppColors.fundo,
         elevation: 0,
@@ -61,35 +62,43 @@ class DetalhesStartupPage extends StatelessWidget {
           SizedBox(width: 15),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+      bottomNavigationBar: BottomAppBar(
         color: const Color(0xFF070A1E),
+        elevation: 8,
+        padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Expanded(
               child: OutlinedButton(
+                //border color
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Vender tokens de ${startup.title}")),
                   );
                 },
-                child: const Text("Vender tokens"),
+                child: const Text("Vender"),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               flex: 2,
               child: ElevatedButton(
+        
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFFC53D),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(50),
+                  ),
                   foregroundColor: const Color(0xFF0F1749),
+                  
                 ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Comprar tokens para ${startup.title}")),
                   );
                 },
-                child: const Text("Comprar tokens", style: TextStyle(fontWeight: FontWeight.w700)),
+
+                child: const Text("Comprar", style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -297,7 +306,7 @@ class DetalhesStartupPage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 80),
+            const SizedBox(height: 120),
           ],
         ),
       ),

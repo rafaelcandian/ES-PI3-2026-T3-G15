@@ -14,7 +14,8 @@ class CatalogoStartupsPage extends StatefulWidget {
 }
 
 class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
-  final List<String> _filters = ['Todas', 'Nova', 'Operação', 'Expansão', 'Destaque'];
+  //final List<String> _filters = ['Todas', 'Nova', 'Operação', 'Expansão', 'Destaque'];
+  final List<String> _filters = ['Todas', 'Varejo', 'Bancário', 'Logística', 'Agronegócio', 'Supermercado'];
   String _selectedFilter = 'Todas';
   final StartupService _startupService = StartupService(); // Initialize service
 
