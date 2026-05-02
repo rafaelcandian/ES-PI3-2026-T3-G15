@@ -10,6 +10,7 @@ import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
 import 'package:mescla_invest/screens/auth/recuperacao_senha_screen.dart';
 import 'package:mescla_invest/screens/startups/catalogo_screen.dart';
 import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
+import 'package:mescla_invest/screens/dashboard_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // New import
 import 'package:mescla_invest/services/startup_service.dart'; // Import StartupService
 
@@ -56,6 +57,7 @@ class MesclaInvestApp extends StatelessWidget {
         "/recuperacao_senha": (context) => const RecuperacaoSenhaTela(),
         "/catalogo": (context) => const CatalogoStartupsPage(),
         "/detalhes": (context) => const DetalhesStartupPage(),
+        "/dashboard": (context) => const DashboardPage(),
       },
     );
   }
