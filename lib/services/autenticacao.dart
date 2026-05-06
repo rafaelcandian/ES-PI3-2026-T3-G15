@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,7 +19,7 @@ class AuthService {
     try {
       // 1. Cria usuário no Firebase Auth
       UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+      await _auth.createUserWithEmailAndPassword(
         email: email,
         password: senha,
       );
@@ -42,10 +43,13 @@ class AuthService {
       } else if (e.code == 'weak-password') {
         return "Senha muito fraca";
       } else {
-        return "Erro no cadastro";
+        return "Erro no cadastro: ${e.message}";  // Retornando mensagem de erro
       }
+    } on SocketException {
+      // Erro de rede
+      return "Erro de conexão com a internet. Verifique sua rede.";
     } catch (e) {
-      return "Erro inesperado";
+      return "Erro inesperado ao cadastrar: $e";
     }
   }
 
@@ -66,8 +70,13 @@ class AuthService {
       } else if (e.code == 'wrong-password') {
         return "Senha incorreta";
       } else {
-        return "Erro no login";
+        return "Erro no login: ${e.message}";
       }
+    } on SocketException {
+      // Erro de rede
+      return "Erro de conexão com a internet. Verifique sua rede.";
+    } catch (e) {
+      return "Erro inesperado ao realizar login: $e";
     }
   }
 
@@ -77,9 +86,21 @@ class AuthService {
   Future<String?> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      return null;
+      return null; // Sucesso
+    } on FirebaseAuthException catch (e) {
+      // Tratamento de erro específico do Firebase
+      if (e.code == 'invalid-email') {
+        return 'E-mail inválido.';
+      } else if (e.code == 'user-not-found') {
+        return 'Usuário não encontrado.';
+      }
+      return 'Erro ao enviar o e-mail de recuperação: ${e.message}';
+    } on SocketException {
+      // Erro de rede (sem conexão com a internet)
+      return 'Erro de conexão com a internet. Verifique sua rede.';
     } catch (e) {
-      return "Erro ao enviar email";
+      // Erro genérico para qualquer outro tipo de falha
+      return 'Erro inesperado ao enviar o e-mail: $e';
     }
   }
 

@@ -53,7 +53,7 @@ class MesclaInvestApp extends StatelessWidget {
       routes: {
         "/": (context) => const SplashScreen(),
         "/login": (context) => const LoginTela(),
-        "/cadastro": (context) => const CadastroPage(),
+        "/cadastro": (context) => const CadastroTela(),
         "/recuperacao_senha": (context) => const RecuperacaoSenhaTela(),
         "/catalogo": (context) => const CatalogoStartupsPage(),
         "/detalhes": (context) => const DetalhesStartupPage(),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/services/autenticacao.dart';
-import 'app_theme.dart';
+import 'package:mescla_invest/screens/auth/app_theme.dart';
 
 class RecuperacaoSenhaTela extends StatefulWidget {
   const RecuperacaoSenhaTela({super.key});
@@ -11,7 +11,6 @@ class RecuperacaoSenhaTela extends StatefulWidget {
 
 class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   final TextEditingController emailController = TextEditingController();
-
   bool _isLoading = false;
 
   final AuthService _auth = AuthService();
@@ -26,7 +25,6 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.fundo,
-
       appBar: AppBar(
         backgroundColor: AppColors.fundo,
         elevation: 0,
@@ -35,7 +33,6 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -43,13 +40,11 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-
                   const Icon(
                     Icons.lock_reset_rounded,
                     color: AppColors.destaque,
                     size: 60,
                   ),
-
                   const SizedBox(height: 20),
 
                   const Text(
@@ -75,6 +70,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
 
                   const SizedBox(height: 32),
 
+                  // Campo de E-mail
                   TextFormField(
                     controller: emailController,
                     style: const TextStyle(color: Colors.white),
@@ -92,38 +88,48 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
                         borderSide: BorderSide.none,
                       ),
                     ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Informe o e-mail";
+                      }
+                      if (!value.contains("@")) {
+                        return "E-mail inválido";
+                      }
+                      return null;
+                    },
                   ),
 
                   const SizedBox(height: 28),
 
                   _isLoading
                       ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(AppColors.destaque),
-                        )
+                    valueColor: AlwaysStoppedAnimation(AppColors.destaque),
+                  )
                       : SizedBox(
-                          width: double.infinity,
-                          height: 55,
-                          child: ElevatedButton(
-                            onPressed: _sendResetEmail,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.destaque,
-                              foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: const Text(
-                              "Enviar código",
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _sendResetEmail,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.destaque,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
+                      ),
+                      child: const Text(
+                        "Enviar código",
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 22),
 
+                  // Link para tentar outro e-mail
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
