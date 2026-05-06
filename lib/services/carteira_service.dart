@@ -29,15 +29,15 @@ class CarteiraService {
   }
 
   // 4. Metodo para adicionar saldo ficticio
-  Future<String?> addSaldo(double valor) async {
+  Future<String?> addBalance(double valor) async {
     if (valor <= 0) return "Valor invalido";
     try {
       await _firestore.collection('usuarios').doc(_uid).update({
-        "balance": FieldValue.increment(valor),
+        "saldo": FieldValue.increment(valor),
       });
       return null;
     } catch (e) {
-      return "Erro ao adicionar saldo";
+      return "Erro: $e";
     }
   }
 }

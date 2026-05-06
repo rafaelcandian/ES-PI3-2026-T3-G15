@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mescla_invest/screens/startups/carteira_teste_screen.dart';
 
 import 'screens/auth/app_theme.dart';
 import 'firebase_options.dart';
@@ -58,6 +59,7 @@ class MesclaInvestApp extends StatelessWidget {
         "/catalogo": (context) => const CatalogoStartupsPage(),
         "/detalhes": (context) => const DetalhesStartupPage(),
         "/dashboard": (context) => const DashboardPage(),
+        '/carteira-teste-screen': (context) => const CarteiraTesteScreen(),
       },
     );
   }
