@@ -4,6 +4,41 @@ import 'app_theme.dart';
 import 'cadastro_screen.dart';
 import 'recuperacao_senha_screen.dart';
 
+// ─── Mensagens de erro padronizadas ──────────────────────────────────────────
+class _Erros {
+  // Validação de campo — e-mail
+  static const emailVazio      = 'Informe seu e-mail.';
+  static const emailInvalido   = 'E-mail inválido. Ex: nome@dominio.com';
+
+  // Validação de campo — senha
+  static const senhaVazia      = 'Informe sua senha.';
+  static const senhaCurta      = 'A senha deve ter no mínimo 6 caracteres.';
+
+  // Erros retornados pelo Firebase / AuthService
+  static String firebase(String? code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'Nenhuma conta encontrada com esse e-mail.';
+      case 'wrong-password':
+        return 'Senha incorreta. Tente novamente.';
+      case 'invalid-email':
+        return 'Formato de e-mail inválido.';
+      case 'user-disabled':
+        return 'Esta conta foi desativada. Entre em contato com o suporte.';
+      case 'too-many-requests':
+        return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+      case 'network-request-failed':
+        return 'Sem conexão com a internet. Verifique sua rede.';
+      case 'invalid-credential':
+        return 'E-mail ou senha incorretos. Verifique e tente novamente.';
+      case 'operation-not-allowed':
+        return 'Login com e-mail desativado. Contate o suporte.';
+      default:
+        return 'Ocorreu um erro inesperado. Tente novamente.';
+    }
+  }
+}
+
 class LoginTela extends StatefulWidget {
   const LoginTela({super.key});
 
@@ -14,16 +49,22 @@ class LoginTela extends StatefulWidget {
 class _LoginTelaState extends State<LoginTela>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController senhaController = TextEditingController();
-  bool _isLoading = false;
-  bool _obscurePassword = true;
+  final _emailController = TextEditingController();
+  final _senhaController = TextEditingController();
 
-  final AuthService _auth = AuthService();
+  bool _isLoading      = false;
+  bool _obscurePassword = true;
+  bool _emailFocused   = false;
+  bool _senhaFocused   = false;
+
+  // Controla se já tentou submeter (ativa validação em tempo real após 1ª tentativa)
+  bool _autoValidate = false;
+
+  final _auth = AuthService();
 
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late Animation<double>   _fadeAnimation;
+  late Animation<Offset>   _slideAnimation;
 
   @override
   void initState() {
@@ -48,12 +89,13 @@ class _LoginTelaState extends State<LoginTela>
 
   @override
   void dispose() {
-    emailController.dispose();
-    senhaController.dispose();
+    _emailController.dispose();
+    _senhaController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
+  // ─── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,6 +110,9 @@ class _LoginTelaState extends State<LoginTela>
                 position: _slideAnimation,
                 child: Form(
                   key: _formKey,
+                  autovalidateMode: _autoValidate
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
                   child: Column(
                     children: [
                       _buildBrandSection(),
@@ -95,17 +140,11 @@ class _LoginTelaState extends State<LoginTela>
     );
   }
 
-  // ─── BRAND ──────────────────────────────────────────────────────────────────
-
+  // ─── BRAND ────────────────────────────────────────────────────────────────
   Widget _buildBrandSection() {
     return Column(
       children: [
-        // Logo feita pelo seu amigo
-        Image.asset(
-          'assets/logo01.png',
-          width: 200,
-          fit: BoxFit.contain,
-        ),
+        Image.asset('assets/logo01.png', width: 200, fit: BoxFit.contain),
         const SizedBox(height: 10),
         Text(
           'O FUTURO DOS SEUS INVESTIMENTOS',
@@ -120,8 +159,7 @@ class _LoginTelaState extends State<LoginTela>
     );
   }
 
-  // ─── CARD ────────────────────────────────────────────────────────────────────
-
+  // ─── CARD ─────────────────────────────────────────────────────────────────
   Widget _buildLoginCard() {
     return Container(
       width: double.infinity,
@@ -141,8 +179,7 @@ class _LoginTelaState extends State<LoginTela>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Bem-vindo',
+          const Text('Bem-vindo',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w600,
@@ -150,8 +187,7 @@ class _LoginTelaState extends State<LoginTela>
             ),
           ),
           const SizedBox(height: 5),
-          Text(
-            'Acesse sua conta para continuar.',
+          Text('Acesse sua conta para continuar.',
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withOpacity(0.5),
@@ -160,18 +196,30 @@ class _LoginTelaState extends State<LoginTela>
           ),
           const SizedBox(height: 24),
 
-          // E-mail
+          // ── E-mail
           _fieldLabel('E-mail'),
           const SizedBox(height: 7),
-          _buildTextField(
-            controller: emailController,
-            icon: Icons.email_outlined,
-            hint: 'seu@email.com',
-            keyboardType: TextInputType.emailAddress,
+          Focus(
+            onFocusChange: (v) => setState(() => _emailFocused = v),
+            child: _buildTextField(
+              controller: _emailController,
+              icon: Icons.email_outlined,
+              hint: 'seu@email.com',
+              keyboardType: TextInputType.emailAddress,
+              focused: _emailFocused,
+              validator: (v) {
+                final val = v?.trim() ?? '';
+                if (val.isEmpty) return _Erros.emailVazio;
+                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(val)) {
+                  return _Erros.emailInvalido;
+                }
+                return null;
+              },
+            ),
           ),
           const SizedBox(height: 16),
 
-          // Senha + "Esqueci" na mesma linha
+          // ── Senha + "Esqueci" na mesma linha
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -183,8 +231,7 @@ class _LoginTelaState extends State<LoginTela>
                     builder: (_) => const RecuperacaoSenhaTela(),
                   ),
                 ),
-                child: const Text(
-                  'Esqueci minha senha',
+                child: const Text('Esqueci minha senha',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.destaque,
@@ -195,60 +242,47 @@ class _LoginTelaState extends State<LoginTela>
             ],
           ),
           const SizedBox(height: 7),
-          _buildTextField(
-            controller: senhaController,
-            icon: Icons.lock_outline,
-            hint: 'Digite sua senha',
-            obscureText: _obscurePassword,
-            showToggle: true,
+          Focus(
+            onFocusChange: (v) => setState(() => _senhaFocused = v),
+            child: _buildTextField(
+              controller: _senhaController,
+              icon: Icons.lock_outline,
+              hint: 'Digite sua senha',
+              obscureText: _obscurePassword,
+              showToggle: true,
+              focused: _senhaFocused,
+              validator: (v) {
+                final val = v ?? '';
+                if (val.isEmpty) return _Erros.senhaVazia;
+                if (val.length < 6) return _Erros.senhaCurta;
+                return null;
+              },
+            ),
           ),
           const SizedBox(height: 22),
 
-          // Botão Entrar
           _buildEntrarButton(),
           const SizedBox(height: 22),
 
-          // Divider "ou"
-          Row(
-            children: [
-              Expanded(
-                child: Divider(
-                  color: Colors.white.withOpacity(0.1),
-                  thickness: 0.5,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  'ou',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.3),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Divider(
-                  color: Colors.white.withOpacity(0.1),
-                  thickness: 0.5,
-                ),
-              ),
-            ],
-          ),
+          // ── Divider
+          Row(children: [
+            Expanded(child: Divider(color: Colors.white.withOpacity(0.1), thickness: 0.5)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text('ou',
+                  style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.3))),
+            ),
+            Expanded(child: Divider(color: Colors.white.withOpacity(0.1), thickness: 0.5)),
+          ]),
           const SizedBox(height: 16),
 
           Center(
-            child: Text(
-              'Ainda não tem uma conta?',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.4),
-              ),
+            child: Text('Ainda não tem uma conta?',
+              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.4)),
             ),
           ),
           const SizedBox(height: 12),
 
-          // Botão Criar Conta
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -260,11 +294,9 @@ class _LoginTelaState extends State<LoginTela>
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.white.withOpacity(0.12)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                    borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
-                'Criar Conta',
+              child: Text('Criar Conta',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -279,7 +311,6 @@ class _LoginTelaState extends State<LoginTela>
   }
 
   // ─── BOTÃO ENTRAR ─────────────────────────────────────────────────────────
-
   Widget _buildEntrarButton() {
     return Container(
       width: double.infinity,
@@ -305,15 +336,11 @@ class _LoginTelaState extends State<LoginTela>
           child: Center(
             child: _isLoading
                 ? const SizedBox(
-              width: 22,
-              height: 22,
+              width: 22, height: 22,
               child: CircularProgressIndicator(
-                color: Colors.black,
-                strokeWidth: 2.5,
-              ),
+                  color: Colors.black, strokeWidth: 2.5),
             )
-                : const Text(
-              'Entrar',
+                : const Text('Entrar',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -328,10 +355,8 @@ class _LoginTelaState extends State<LoginTela>
   }
 
   // ─── HELPERS ──────────────────────────────────────────────────────────────
-
   Widget _fieldLabel(String label) {
-    return Text(
-      label,
+    return Text(label,
       style: TextStyle(
         fontSize: 12,
         color: Colors.white.withOpacity(0.6),
@@ -344,24 +369,26 @@ class _LoginTelaState extends State<LoginTela>
     required TextEditingController controller,
     required IconData icon,
     required String hint,
+    required bool focused,
     TextInputType keyboardType = TextInputType.text,
     bool obscureText = false,
     bool showToggle = false,
+    String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: showToggle ? _obscurePassword : obscureText,
       keyboardType: keyboardType,
       style: const TextStyle(color: Colors.white, fontSize: 14),
+      validator: validator,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.3),
-          fontSize: 13,
-        ),
+        hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
         prefixIcon: Icon(
           icon,
-          color: Colors.white.withOpacity(0.4),
+          color: focused
+              ? AppColors.destaque.withOpacity(0.85)
+              : Colors.white.withOpacity(0.4),
           size: 20,
         ),
         suffixIcon: showToggle
@@ -387,17 +414,13 @@ class _LoginTelaState extends State<LoginTela>
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Colors.white.withOpacity(0.07),
-            width: 1,
-          ),
+          borderSide:
+          BorderSide(color: Colors.white.withOpacity(0.07), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: AppColors.destaque.withOpacity(0.5),
-            width: 1.5,
-          ),
+              color: AppColors.destaque.withOpacity(0.5), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -407,48 +430,112 @@ class _LoginTelaState extends State<LoginTela>
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.erro, width: 1.5),
         ),
-        errorStyle: const TextStyle(color: AppColors.erro, fontSize: 11),
+        // Mensagem de erro inline — pequena, vermelha, abaixo do campo
+        errorStyle: const TextStyle(
+          color: AppColors.erro,
+          fontSize: 11,
+          height: 1.4,
+        ),
       ),
-      validator: (value) {
-        if (value?.isEmpty ?? true) return 'Campo obrigatório';
-        return null;
-      },
     );
   }
 
   // ─── LOGIN ────────────────────────────────────────────────────────────────
+  Future<void> _submitLogin() async {
+    // Ativa validação em tempo real a partir da 1ª tentativa de submit
+    setState(() => _autoValidate = true);
 
-  void _submitLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Vibração leve para sinalizar erro de formulário
+      // HapticFeedback.lightImpact();
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       final error = await _auth.login(
-        emailController.text.trim(),
-        senhaController.text.trim(),
+        _emailController.text.trim(),
+        _senhaController.text.trim(),
       );
-      setState(() => _isLoading = false);
       if (!mounted) return;
+      setState(() => _isLoading = false);
 
       if (error == null) {
         Navigator.pushReplacementNamed(context, '/catalogo');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error, style: const TextStyle(color: Colors.white)),
-            backgroundColor: const Color(0xFF1A2045),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        // error pode ser um código Firebase (ex: 'wrong-password')
+        // ou já uma mensagem — tratamos os dois casos
+        _showErrorSnack(_Erros.firebase(error));
+      }
+    } on Exception catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Tenta extrair o código do erro Firebase do toString()
+      final raw = e.toString();
+      final code = _extractFirebaseCode(raw);
+      _showErrorSnack(_Erros.firebase(code));
+    }
+  }
+
+  // Extrai o código de erro Firebase de strings como
+  // "[firebase_auth/wrong-password] ..."
+  String? _extractFirebaseCode(String raw) {
+    final match = RegExp(r'\[firebase_auth/([^\]]+)\]').firstMatch(raw);
+    return match?.group(1);
+  }
+
+  void _showErrorSnack(String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(children: [
+          const Icon(Icons.error_outline_rounded,
+              color: AppColors.erro, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
           ),
-        );
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro: $e')),
-      );
-    }
+        ]),
+        backgroundColor: const Color(0xFF1A2045),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: AppColors.erro.withOpacity(0.4),
+            width: 0.5,
+          ),
+        ),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        duration: const Duration(seconds: 4),
+        elevation: 0,
+        // Ação opcional para casos de "esqueci a senha"
+        action: _shouldShowRecoveryAction(message)
+            ? SnackBarAction(
+          label: 'Recuperar',
+          textColor: AppColors.destaque,
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (_) => const RecuperacaoSenhaTela()),
+          ),
+        )
+            : null,
+      ),
+    );
+  }
+
+  // Mostra atalho "Recuperar" no snack quando o erro é de credencial
+  bool _shouldShowRecoveryAction(String message) {
+    return message.contains('Senha incorreta') ||
+        message.contains('E-mail ou senha incorretos') ||
+        message.contains('Nenhuma conta encontrada');
   }
 }

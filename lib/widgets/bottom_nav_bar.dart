@@ -8,6 +8,9 @@ class BottomNavBar extends StatefulWidget {
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
+
+  // Criando um getter para acessar _items de fora
+  static List<_NavItem> get items => items;
 }
 
 class _BottomNavBarState extends State<BottomNavBar>
@@ -22,7 +25,7 @@ class _BottomNavBarState extends State<BottomNavBar>
       icon: Icons.home_outlined,
       activeIcon: Icons.home_rounded,
       label: 'Início',
-      route: '/home',
+      route: '/catalogo',
     ),
     _NavItem(
       icon: Icons.storefront_outlined,
@@ -34,7 +37,13 @@ class _BottomNavBarState extends State<BottomNavBar>
       icon: Icons.account_balance_wallet_outlined,
       activeIcon: Icons.account_balance_wallet_rounded,
       label: 'Carteira',
-      route: '/wallet',
+      route: '/carteira',
+    ),
+    _NavItem(
+      icon: Icons.person_outline_rounded,
+      activeIcon: Icons.person,
+      label: 'Perfil',
+      route: '/perfil',
     ),
   ];
 
@@ -83,7 +92,8 @@ class _BottomNavBarState extends State<BottomNavBar>
     setState(() => _selectedIndex = index);
     _controllers[index].forward();
 
-    Navigator.pushNamed(context, _items[index].route);
+    // Substituindo a tela atual pela nova página ao invés de empilhar
+    Navigator.pushReplacementNamed(context, _items[index].route);
   }
 
   @override
