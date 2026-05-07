@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mescla_invest/screens/startups/startup_data.dart';
+import 'package:mescla_invest/screens/startups/startup_data.dart'; // Certifique-se de que o StartupData também está correto
 
 class StartupCard extends StatelessWidget {
-  final StartupData data;
+  final StartupData data; // Dados que você está passando
 
-  const StartupCard({super.key, required this.data});
+  const StartupCard({super.key, required this.data}); // Construtor
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +13,11 @@ class StartupCard extends StatelessWidget {
         color: const Color(0xFF101731),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 20, offset: const Offset(0, 10)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.22),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
       child: Column(
@@ -33,7 +37,7 @@ class StartupCard extends StatelessWidget {
                       child: const Icon(Icons.image_not_supported, color: Colors.grey),
                     );
                   }),
-                  Container(color: Colors.black.withValues(alpha: 0.25)),
+                  Container(color: Colors.black.withOpacity(0.25)),
                   Positioned(
                     left: 16,
                     top: 16,
@@ -52,7 +56,7 @@ class StartupCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF050A1D).withValues(alpha: 0.85),
+                        color: const Color(0xFF050A1D).withOpacity(0.85),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text('${data.equity} Equity', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFFD57E))),
