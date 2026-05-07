@@ -33,7 +33,14 @@ setGlobalOptions({ maxInstances: 10 });
 //   response.send("Hello from Firebase!");
 // });
 
-export const getSaldo = onRequest(async (req, res) => {
+// RELACIONADO AO CARTEIRA SERVICE
+
+// retorna saldo e tokens do usuario
+export const getBalance = onRequest(async (req, res) => {
+    if(req.method !== "POST"){
+        res.status(405).send("Método não permitido");
+    }
+
     const uid = req.query.uid as string;
     if(!uid){
         res.status(400).json({error: "uid obrigatorio"});
@@ -49,16 +56,17 @@ export const getSaldo = onRequest(async (req, res) => {
 
         const data = doc.data()!;
         res.json({
-            saldo: data.saldo  ?? 0,
-            tokens: data.tokens ?? {},
+            saldo: data.saldo  ?? 0, // define como valor padrão 0 caso o saldo seja nulo (operador de coalescência)
+            tokens: data.tokens ?? {}, // define um map vazio ({}) caso o tokens seja nulo
         });
     }catch(e){
         res.status(500).json({error: "Erro interno"});
     }
 });
 
-export const loadCarteira = onRequest(async (req, res) => {
-    if(req.method !== "POST"){
+// Carrega a carteira
+export const loadWallet = onRequest(async (req, res) => {
+    if(req.method !== "POST"){ // verifica se o metodo é POST
         res.status(405).json({error: "Metodo não permitido"});
         return;
     }
@@ -76,5 +84,96 @@ export const loadCarteira = onRequest(async (req, res) => {
         res.json({success: true, valorAdicionado: valor});
     }catch(e){
         res.status(500).json({error: "Erro ao carregar carteira"});
+    }
+});
+
+// função auxiliar para validar o saldo na carteira em comparação com o valor do token que deseja comprar
+async function validateBalance(uid: string, valor: number): Promise<boolean>{
+    const doc = await admin.firestore().collection("usuarios").doc(uid).get();
+    if(!doc.exists) return false;
+    const saldo = doc.data()!.saldo ?? 0; // define como valor padrão 0 caso o saldo seja nulo
+    return saldo >= valor;
+}
+
+// retorna se tem saldo suficiente
+export const verifyBalance = onRequest(async (req, res) =>{
+    const uid = req.query.uid as string;
+    const valor = parseFloat(req.query.valor as string); // transforma o valor (string) em float removendo os espaços em branco no inicio e fim
+    // retorna NaN(Not a Number) se o primeiro caractere for invalido
+
+    if(!uid || isNaN(valor)){ // verifica se o uid ou valor estão presentes, se qualquer um dos dois não estiverem de acordo causa erro
+        res.status(400).json({error: "uid e valor obrigatorios"});
+        return;
+    }
+
+    const suf = await validateBalance(uid, valor); // puxa função auxiliar
+    res.json({suf, valor});
+});
+
+// RELACIONADO AO BALCAO SERVICE
+
+// criar oferta
+export const createOffer = onRequest(async(req, res) => {
+    if(req.method !== "POST"){
+        res.status(405).json({error: "metodo não permitido"});
+        return;
+    }
+
+    const {uid, startupId, type, quantity, pricePerToken} = req.body;
+
+    if(!uid || !startupId || !type || !quantity || !pricePerToken){
+        res.status(400).json({error: "campos obrigatorios faltando"});
+        return;
+    }
+
+    if(quantity <= 0 || pricePerToken <= 0){
+        res.status(400).json({error: "quantidade e preço devem ser positivos"});
+        return;
+    }
+
+    const totalPrice = (quantity * pricePerToken);
+
+    try{
+        const userDoc = await admin.firestore().collection("usuarios").doc(uid).get();
+        if(!userDoc.exists){
+            res.status(404).json({error: "usuario não encontrado"});
+            return;
+        }
+
+        const userData = userDoc.data();
+
+        // valida saldo para compra
+        if(type === "buy"){
+            const saldo = userData!.saldo ?? 0;
+            if(saldo < totalPrice){
+                res.status(400).json({error: "Saldo insuficiente"});
+                return;
+            }
+        }
+
+        if(type === "sell"){
+            const tokens = userData!.tokens ?? {};
+            const tokensStartup = tokens[startupId] ?? 0;
+            if(tokensStartup < quantity){
+                res.status(400).json({error: "tokens insuficientes"});
+                return;
+            }
+        }
+
+        // criar oferta
+        await admin.firestore().collection("orders").add({
+            userId: uid,
+            startupId,
+            type,
+            quantity,
+            pricePerToken,
+            totalPrice,
+            status: "open",
+            createdAt: admin.firestore.Timestamp.now(),
+        });
+
+        res.json({sucess: true});
+    }catch(e){
+        res.status(500).json({error: "Erro: $e"})
     }
 });

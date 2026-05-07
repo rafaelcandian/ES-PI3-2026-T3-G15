@@ -9,26 +9,26 @@ class CarteiraService {
       .currentUser! // O "!" garante que vai ser retornado um valor não nulo
       .uid;
 
-  // 1. Retorna o documento usuario
+  // Retorna o documento usuario
   Stream<DocumentSnapshot> getUserStream() {
     return _firestore.collection('usuarios').doc(_uid).snapshots();
   }
 
-  // 2. Retorna o saldo do usuario
+  // Retorna o saldo do usuario
   Future<double> getBalance() async {
     final doc = await _firestore.collection('usuarios').doc(_uid).get();
     return (doc.data() as Map<String, dynamic>)['saldo'] ??
         0.0; // se for nulo vai retornar 0
   }
 
-  // 3. Retorna os tokens do usuario
+  // Retorna os tokens do usuario
   Future<Map<String, dynamic>> getTokens() async {
     final doc = await _firestore.collection('usuarios').doc(_uid).get();
     return (doc.data() as Map<String, dynamic>)['tokens'] ??
         {}; // se for nulo retorna uma lista vazia
   }
 
-  // 4. Metodo para adicionar saldo ficticio
+  // Metodo para adicionar saldo ficticio
   Future<String?> addBalance(double valor) async {
     if (valor <= 0) return "Valor invalido";
     try {
@@ -39,5 +39,11 @@ class CarteiraService {
     } catch (e) {
       return "Erro: $e";
     }
+  }
+
+  // Metodo para verificar se usuario tem saldo suficiente
+  Future<bool> hasSufBalance(double valor) async {
+    final saldo = await getBalance();
+    return saldo <= valor;
   }
 }
