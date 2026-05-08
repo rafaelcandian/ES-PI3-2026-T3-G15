@@ -161,7 +161,7 @@ export const createOffer = onRequest(async(req, res) => {
         }
 
         // criar oferta
-        await admin.firestore().collection("orders").add({
+        const newOfferRef = await admin.firestore().collection("orders").add({
             userId: uid,
             startupId,
             type,
@@ -172,8 +172,96 @@ export const createOffer = onRequest(async(req, res) => {
             createdAt: admin.firestore.Timestamp.now(),
         });
 
+        await tryMatching(newOfferRef.id, {
+            userId: uid,
+            startupId,
+            type,
+            quantity,
+            pricePerToken,
+        });
+
         res.json({sucess: true});
     }catch(e){
         res.status(500).json({error: "Erro: $e"})
     }
 });
+
+// Matching
+/*  Sempre que for criada uma oferta de compra, o sistema vai procurar se existe uma oferta de venda equivalente
+    isso seria o matching, quando acontece varias operações acontecem, debitar saldo comprador, creditar saldo do vendedor
+    transferir os tokens, trocar o status, etc. Se alguma operação falhar tudo precisa ser revertido para evitar problemas
+*/
+
+// função chamada depois de criar uma oferta
+async function tryMatching(newOfferId: string, newOffer: any): Promise<void> {
+    const firestoreAdm = admin.firestore();
+  const opositeType = newOffer.type === "buy" ? "sell" : "buy"; // ternario, se o tipo da nova oferta for "buy" ele vai voltar como sell, se não fica como buy
+    const offerSnapshot = await firestoreAdm.collection("orders").where("startupId", "==", newOffer.startupId).where("type", "==", opositeType).where("status", "==", "open").orderBy("createdAt", "asc").get();
+
+    if(offerSnapshot.empty) return;
+
+    for(const offerDoc of offerSnapshot.docs){
+        const offer = offerDoc.data();
+
+        // verifica compatibilidade do preço
+        const compatiblePrice = newOffer.type === "buy" ? newOffer.pricePerToken >= offer.pricePerToken : newOffer.pricePerToken <= offer.pricePerToken;
+
+        if(!compatiblePrice) continue; // se não for compativel ele continua (obviamente)
+
+        const buyerId = newOffer.type === "buy" ? newOffer.userId : offer.userId;
+        const sellerId = newOffer.type === "sell" ? newOffer.userId : offer.userId;
+        const price = offer.pricePerToken;
+        const quantity = Math.min(newOffer.quantity, offer.quantity);
+        const total = quantity * price;
+
+        await firestoreAdm.runTransaction(async(t) => {
+            const buyerRef = firestoreAdm.collection("usuarios").doc(buyerId);
+            const sellerRef = firestoreAdm.collection("usuarios").doc(sellerId);
+            const newOfferRef = firestoreAdm.collection("orders").doc(newOfferId);
+            const offerRef = firestoreAdm.collection("orders").doc(offerDoc.id);
+
+            const buyerDoc = await t.get(buyerRef);
+            const sellerDoc = await t.get(sellerRef);
+
+            const buyerTokens = buyerDoc.data()?.tokens ?? {};
+            const sellerTokens = sellerDoc.data()?.tokens ?? {};
+
+            // debitar saldo do comprador
+            t.update(buyerRef, {
+                saldo: admin.firestore.FieldValue.increment(-total),
+            });
+
+            // adicionar saldo do vendedor
+            t.update(sellerRef, {
+                saldo: admin.firestore.FieldValue.increment(total)
+            });
+
+            // remover tokens do vendedor
+            t.update(sellerRef, {
+                ['tokens.${newOffer.startupId}']: Math.max(0, (sellerTokens[newOffer.startupId] ?? 0) - quantity),
+            });
+
+            // adicionar tokens do comprador
+            t.update(buyerRef, {
+                ['tokens.${newOffer.startupId']: (buyerTokens[newOffer.startupId] ?? 0) + quantity,
+            });
+
+            // troca o status para filled
+            t.update(newOfferRef, {status:"filled"});
+            t.update(offerRef, {status: "filled"});
+
+            // faz o registro da transação
+            const regRef = firestoreAdm.collection("transactions").doc();
+            t.set(regRef, {
+                buyerId: buyerId,
+                sellerId: sellerId,
+                startupId: newOffer.startupId,
+                quantity: quantity,
+                pricePerToken: price,
+                totalPrice: total,
+                createdAt: admin.firestore.Timestamp.now(),
+            });
+        });
+        break;
+    }
+}

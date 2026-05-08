@@ -7,10 +7,9 @@ class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   Future<void> _handleLogout(BuildContext context) async {
-    //await FirebaseAuth.instance.signOut();
+    await FirebaseAuth.instance.signOut();
     if (context.mounted) {
-      //Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-      Navigator.pushNamed(context, '/carteira-teste-screen'); //apenas para teste
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
 
