@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 
 import '../../models/balcao_model.dart';
 import '../auth/app_theme.dart';
@@ -99,6 +100,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
       child: Scaffold(
         backgroundColor: AppColors.fundoEscuro,
         extendBody: true,
+        appBar: const AppBarPadrao(titulo: 'Minha Carteira'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 2),
         body: Stack(
           children: [
@@ -111,8 +113,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
                   const SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _TopBar(),
-                        SizedBox(height: 24),
                         _Header(),
                         SizedBox(height: 20),
                       ],
@@ -634,19 +634,11 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 14),
           _HeaderEyebrow(text: 'VISÃO GERAL DA CARTEIRA'),
           SizedBox(height: 14),
-          Text(
-            'Minha Carteira',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textoPrincipal,
-              height: 1.15,
-              letterSpacing: -0.4,
-            ),
-          ),
-          SizedBox(height: 8),
+          
+
           Text(
             'Acompanhe seus ativos, saldo disponível e movimentações simuladas.',
             style: TextStyle(

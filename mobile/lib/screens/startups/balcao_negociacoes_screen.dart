@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import '../../models/balcao_model.dart';
 import '../auth/app_theme.dart';
 
@@ -194,6 +195,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       child: Scaffold(
         backgroundColor: AppColors.fundo,
         extendBody: true,
+        appBar: const AppBarPadrao(titulo: 'Balcão de Tokens'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 1),
         body: Stack(
           children: [
@@ -206,8 +208,6 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                   const SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _TopBar(),
-                        SizedBox(height: 24),
                         _PageHeader(),
                         SizedBox(height: 20),
                         _SaldoOperacionalCard(),
@@ -431,19 +431,10 @@ class _PageHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 14),
           _HeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
           SizedBox(height: 14),
-          Text(
-            'Balcão de Tokens',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.15,
-              letterSpacing: -0.4,
-            ),
-          ),
-          SizedBox(height: 8),
+
           Text(
             'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
             style: TextStyle(

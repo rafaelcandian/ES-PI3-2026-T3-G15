@@ -38,7 +38,7 @@ class _BottomNavBarState extends State<BottomNavBar>
       icon: Icons.account_balance_wallet_outlined,
       activeIcon: Icons.account_balance_wallet_rounded,
       label: 'Carteira',
-      route: '/carteira',
+      route: '/wallet',
     ),
     _NavItem(
       icon: Icons.person_outline_rounded,

@@ -17,6 +17,7 @@ import 'package:mescla_invest/services/startup_service.dart'; // Import StartupS
 import 'package:mescla_invest/screens/testes/balcao_teste_screen.dart';
 import 'package:mescla_invest/screens/startups/carteira_screen.dart';
 import 'package:mescla_invest/screens/startups/perfil_screen.dart';
+import 'package:mescla_invest/screens/startups/balcao_negociacoes_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,7 @@ class MesclaInvestApp extends StatelessWidget {
         "/detalhes": (context) => const DetalhesStartupPage(),
         "/dashboard": (context) => const DashboardPage(),
         '/balcao-teste': (context) => const BalcaoTesteScreen(), //para teste
+        '/balcao': (context) => const BalcaoDeNegociacoesScreen(),
         '/home': (context) => const CatalogoStartupsPage(),
         '/wallet': (context) => const CarteiraPage(),
         '/perfil': (context) => const PerfilPage(),

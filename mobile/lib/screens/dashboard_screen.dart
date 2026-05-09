@@ -2,97 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mescla_invest/screens/auth/app_theme.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
-
-  Future<void> _handleLogout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    if (context.mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
       backgroundColor: AppColors.fundo,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            PopupMenuButton<String>(
-              color: const Color(0xFF182051),
-              position: PopupMenuPosition.under,
-              onSelected: (String result) {
-                if (result == 'logout') {
-                  _handleLogout(context);
-                } else if (result == 'perfil') {
-                  Navigator.pushNamed(context, '/perfil');
-                } else if (result == 'notificacoes') {
-                  Navigator.pushNamed(context, '/notificacoes');
-                }
-              },
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem<String>(
-                  value: 'notificacoes',
-                  child: Row(
-                    children: [
-                      Icon(Icons.notifications_none, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        'Notificações',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(
-                  color: Color.fromARGB(33, 255, 255, 255),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'perfil',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text('Ver Perfil', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(
-                  color: Color.fromARGB(33, 255, 255, 255),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Sair', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-              child: Container(
-                width: 44,
-                height: 44,
-                margin: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF182051),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Icon(Icons.person, color: Colors.white, size: 24),
-              ),
-            ),
-            const SizedBox(width: 14),
-          ],
-        ),
-      ),
+      appBar: const AppBarPadrao(titulo: 'Dashboard'),
       bottomNavigationBar: const BottomNavBar(),
       body: SafeArea(
         child: SingleChildScrollView(

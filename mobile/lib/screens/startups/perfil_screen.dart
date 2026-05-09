@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import '../auth/app_theme.dart';
 
 enum AppearanceMode {
@@ -50,6 +51,7 @@ class _PerfilPageState extends State<PerfilPage> {
       child: Scaffold(
         backgroundColor: AppColors.fundoEscuro,
         extendBody: true,
+        appBar: const AppBarPadrao(titulo: 'Perfil'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 3),
         body: Stack(
           children: [
@@ -62,10 +64,6 @@ class _PerfilPageState extends State<PerfilPage> {
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _TopBar(
-                          onSettingsTap: _showSettingsModal,
-                        ),
-                        const SizedBox(height: 24),
                         const _Header(),
                         const SizedBox(height: 20),
                       ],
@@ -587,19 +585,10 @@ class _Header extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 14),
           _HeaderEyebrow(text: 'CONFIGURAÇÕES DA CONTA'),
           SizedBox(height: 14),
-          Text(
-            'Perfil',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textoPrincipal,
-              height: 1.15,
-              letterSpacing: -0.4,
-            ),
-          ),
-          SizedBox(height: 8),
+          
           Text(
             'Gerencie sua conta, preferências, privacidade e segurança.',
             style: TextStyle(
