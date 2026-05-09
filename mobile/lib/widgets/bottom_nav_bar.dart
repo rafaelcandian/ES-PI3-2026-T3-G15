@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 
 class BottomNavBar extends StatefulWidget {
-  const BottomNavBar({super.key});
+  const BottomNavBar({super.key, this.selectedIndex = 1});
+
+  final int selectedIndex;
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
 }
 
 class _BottomNavBarState extends State<BottomNavBar> {
-  int _selectedIndex = 1;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.selectedIndex;
+  }
 
   void _onTap(int index) {
     setState(() {
@@ -26,8 +34,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
         Navigator.pushNamed(context, '/wallet');
         break;
       case 3:
-        //Navigator.pushNamed(context, '/dashboard');
-        Navigator.pushNamed(context, '/balcao-teste'); //para teste
+        Navigator.pushNamed(context, '/dashboard');
         break;
     }
   }
@@ -36,15 +43,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
-
       backgroundColor: const Color(0xFF070A1E),
       selectedItemColor: const Color(0xFFFFC53D),
       unselectedItemColor: Colors.white54,
-
       type: BottomNavigationBarType.fixed,
-
       onTap: _onTap,
-
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),

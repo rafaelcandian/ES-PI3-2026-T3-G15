@@ -1,8 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 
-class PerfilPage extends StatelessWidget {
+class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
+
+  @override
+  State<PerfilPage> createState() => _PerfilPageState();
+}
+
+class _PerfilPageState extends State<PerfilPage> {
+  Map<String, dynamic>? _userData;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(uid)
+        .get();
+
+    if (doc.exists) {
+      setState(() {
+        _userData = doc.data();
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,41 +44,38 @@ class PerfilPage extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 20,
-                left: 20,
-                right: 20,
-                bottom: 24,
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Header(),
-                  SizedBox(height: 22),
-
-                  _ProfileCard(),
-                  SizedBox(height: 18),
-
-                  _AppearanceSection(),
-                  SizedBox(height: 18),
-
-                  _SecuritySection(),
-                  SizedBox(height: 18),
-
-                  _NotificationsSection(),
-                  SizedBox(height: 18),
-
-                  _PrivacySection(),
-                  SizedBox(height: 22),
-
-                  _AccountActions(),
-                ],
-              ),
-            ),
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: _C.gold),
+                  )
+                : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 20,
+                      left: 20,
+                      right: 20,
+                      bottom: 24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _Header(),
+                        const SizedBox(height: 22),
+                        _ProfileCard(userData: _userData),
+                        const SizedBox(height: 18),
+                        const _AppearanceSection(),
+                        const SizedBox(height: 18),
+                        const _SecuritySection(),
+                        const SizedBox(height: 18),
+                        const _NotificationsSection(),
+                        const SizedBox(height: 18),
+                        const _PrivacySection(),
+                        const SizedBox(height: 22),
+                        const _AccountActions(),
+                      ],
+                    ),
+                  ),
           ),
-
           const BottomNavBar(selectedIndex: 3),
         ],
       ),
@@ -54,22 +84,23 @@ class PerfilPage extends StatelessWidget {
 }
 
 class _C {
-  static const bg           = Color(0xFF020818);
-  static const surface      = Color(0xFF0B1230);
+  static const bg            = Color(0xFF020818);
+  static const surface       = Color(0xFF0B1230);
   static const surfaceRaised = Color(0xFF0F1840);
-  static const card         = Color(0xFF0D1535);
-  static const gold         = Color(0xFFEFCD57);
-  static const goldDim      = Color(0xFFB89A2E);
-  static const goldGlow     = Color(0x22EFCD57);
-  static const goldBorder   = Color(0x33EFCD57);
-  static const white        = Colors.white;
-  static const white70      = Colors.white70;
-  static const white50      = Color(0x80FFFFFF);
-  static const white30      = Color(0x4DFFFFFF);
-  static const white12      = Color(0x1FFFFFFF);
-  static const white06      = Color(0x0FFFFFFF);
-  static const blue         = Color(0xFF1A3A8F);
+  static const card          = Color(0xFF0D1535);
+  static const gold          = Color(0xFFEFCD57);
+  static const goldDim       = Color(0xFFB89A2E);
+  static const goldGlow      = Color(0x22EFCD57);
+  static const goldBorder    = Color(0x33EFCD57);
+  static const white         = Colors.white;
+  static const white70       = Colors.white70;
+  static const white50       = Color(0x80FFFFFF);
+  static const white30       = Color(0x4DFFFFFF);
+  static const white12       = Color(0x1FFFFFFF);
+  static const white06       = Color(0x0FFFFFFF);
+  static const blue          = Color(0xFF1A3A8F);
 }
+
 class _Header extends StatelessWidget {
   const _Header();
 
@@ -109,10 +140,16 @@ class _Header extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
+  final Map<String, dynamic>? userData;
+
+  const _ProfileCard({required this.userData});
 
   @override
   Widget build(BuildContext context) {
+    final nome     = userData?['nome']     as String? ?? 'Usuário';
+    final email    = userData?['email']    as String? ?? '';
+    final telefone = userData?['telefone'] as String? ?? '';
+
     return _SectionCard(
       child: Column(
         children: [
@@ -160,40 +197,32 @@ class _ProfileCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
-          const Text(
-            'Guilherme Moraes',
-            style: TextStyle(
+          Text(
+            nome,
+            style: const TextStyle(
               color: _C.white,
               fontSize: 22,
               fontWeight: FontWeight.w900,
             ),
           ),
-
           const SizedBox(height: 5),
-
-          const Text(
-            'guilherme@example.com',
-            style: TextStyle(
+          Text(
+            email,
+            style: const TextStyle(
               color: _C.white50,
               fontSize: 13,
             ),
           ),
-
           const SizedBox(height: 4),
-
-          const Text(
-            '+55 19 99999-9999',
-            style: TextStyle(
+          Text(
+            telefone,
+            style: const TextStyle(
               color: _C.white30,
               fontSize: 12,
             ),
           ),
-
           const SizedBox(height: 16),
-
           SizedBox(
             height: 38,
             child: ElevatedButton(
@@ -252,10 +281,7 @@ class _AppearanceSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: _C.white06),
                   ),
-                  child: const Icon(
-                    Icons.dark_mode_outlined,
-                    color: _C.white30,
-                  ),
+                  child: const Icon(Icons.dark_mode_outlined, color: _C.white30),
                 ),
               ),
               const SizedBox(width: 10),
@@ -267,10 +293,7 @@ class _AppearanceSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: _C.gold.withOpacity(0.35)),
                   ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    color: _C.gold,
-                  ),
+                  child: const Icon(Icons.check_circle_rounded, color: _C.gold),
                 ),
               ),
             ],
@@ -369,36 +392,22 @@ class _AccountActions extends StatelessWidget {
                 ),
               ),
               onPressed: () {},
-              icon: const Icon(
-                Icons.logout_rounded,
-                color: _C.white70,
-                size: 18,
-              ),
+              icon: const Icon(Icons.logout_rounded, color: _C.white70, size: 18),
               label: const Text(
                 'Sair da conta',
-                style: TextStyle(
-                  color: _C.white,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(color: _C.white, fontWeight: FontWeight.w800),
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
           TextButton(
             onPressed: () {},
             child: const Text(
               'Excluir conta',
-              style: TextStyle(
-                color: _C.white50,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: _C.white50, fontSize: 12),
             ),
           ),
-
           const SizedBox(height: 4),
-
           const Text(
             'MesclaInvest • v1.0.0',
             style: TextStyle(
@@ -418,11 +427,7 @@ class _SectionCard extends StatelessWidget {
   final IconData? icon;
   final Widget child;
 
-  const _SectionCard({
-    this.title,
-    this.icon,
-    required this.child,
-  });
+  const _SectionCard({this.title, this.icon, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -472,10 +477,7 @@ class _ThemePill extends StatelessWidget {
   final String label;
   final bool active;
 
-  const _ThemePill({
-    required this.label,
-    required this.active,
-  });
+  const _ThemePill({required this.label, required this.active});
 
   @override
   Widget build(BuildContext context) {
@@ -505,10 +507,7 @@ class _ActionRow extends StatelessWidget {
   final String title;
   final bool danger;
 
-  const _ActionRow({
-    required this.title,
-    this.danger = false,
-  });
+  const _ActionRow({required this.title, this.danger = false});
 
   @override
   Widget build(BuildContext context) {
@@ -533,11 +532,7 @@ class _ActionRow extends StatelessWidget {
               ),
             ),
           ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: _C.white30,
-            size: 20,
-          ),
+          const Icon(Icons.chevron_right_rounded, color: _C.white30, size: 20),
         ],
       ),
     );
@@ -574,10 +569,7 @@ class _ToggleRow extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: _C.white30,
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: _C.white30, fontSize: 10),
               ),
             ],
           ),
@@ -611,10 +603,7 @@ class _CheckRow extends StatelessWidget {
   final String title;
   final bool checked;
 
-  const _CheckRow({
-    required this.title,
-    required this.checked,
-  });
+  const _CheckRow({required this.title, required this.checked});
 
   @override
   Widget build(BuildContext context) {
