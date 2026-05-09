@@ -1,72 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import '../../models/balcao_model.dart';
+import '../auth/app_theme.dart';
 
-// ─── Design Tokens ────────────────────────────────────────────────────────────
-class _C {
-  static const bg = Color(0xFF020818);
-  static const surface = Color(0xFF0B1230);
-  static const surfaceUp = Color(0xFF0F1840);
-  static const surfaceRaised = Color(0xFF0F1840);
-  static const card = Color(0xFF0D1535);
-
-  static const gold = Color(0xFFEFCD57);
-  static const goldSoft = Color(0xFFFFE680);
-  static const goldDim = Color(0xFFB89A2E);
-  static const goldGlow = Color(0x22EFCD57);
-  static const goldBorder = Color(0x33EFCD57);
-
-  static const roxo = Color(0xFF6F38C5);
-  static const azul = Color(0xFF2148C6);
-  static const blue = Color(0xFF1A3A8F);
-
-  static const white = Colors.white;
-  static const white70 = Colors.white70;
-  static const white50 = Color(0x80FFFFFF);
-  static const white30 = Color(0x4DFFFFFF);
-  static const white12 = Color(0x1FFFFFFF);
-  static const white06 = Color(0x0FFFFFFF);
-}
-
-enum ModoNegociacao { compra, venda }
-
-enum TipoOferta { compra, venda }
-
-class Oferta {
-  final TipoOferta tipo;
-  final int quantidade;
-  final double preco;
-  final String empresa;
-  final String simbolo;
-  final double variacao;
-  final String volume;
-  final double spread;
-
-  const Oferta({
-    required this.tipo,
-    required this.quantidade,
-    required this.preco,
-    required this.empresa,
-    required this.simbolo,
-    required this.variacao,
-    required this.volume,
-    required this.spread,
-  });
-}
-
-class AtivoUsuario {
-  final String empresa;
-  final String simbolo;
-  final int quantidade;
-
-  const AtivoUsuario({
-    required this.empresa,
-    required this.simbolo,
-    required this.quantidade,
-  });
-}
+import '../ordens/ordem_exe_screen.dart';
 
 class BalcaoDeNegociacoesScreen extends StatefulWidget {
   const BalcaoDeNegociacoesScreen({super.key});
@@ -77,14 +16,14 @@ class BalcaoDeNegociacoesScreen extends StatefulWidget {
 }
 
 class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   ModoNegociacao _modo = ModoNegociacao.compra;
   String _busca = '';
 
   final TextEditingController _searchController = TextEditingController();
 
-  late AnimationController _fadeCtrl;
-  late Animation<double> _fadeAnim;
+  late final AnimationController _fadeCtrl;
+  late final Animation<double> _fadeAnim;
 
   final List<Oferta> _ofertasCompra = const [
     Oferta(
@@ -157,16 +96,19 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       empresa: 'NeuroPulse AI',
       simbolo: 'NPA',
       quantidade: 120,
+      precoMedio: 22.40,
     ),
     AtivoUsuario(
       empresa: 'BioSync',
       simbolo: 'BIO',
       quantidade: 80,
+      precoMedio: 26.10,
     ),
     AtivoUsuario(
       empresa: 'QuantLedger',
       simbolo: 'QLG',
       quantidade: 45,
+      precoMedio: 23.70,
     ),
   ];
 
@@ -199,7 +141,12 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
 
     HapticFeedback.selectionClick();
 
-    setState(() => _modo = modo);
+    setState(() {
+      _modo = modo;
+      _busca = '';
+      _searchController.clear();
+    });
+
     _fadeCtrl.forward(from: 0);
   }
 
@@ -227,6 +174,17 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
     return filtradas;
   }
 
+  List<AtivoUsuario> get _ativosFiltrados {
+    final query = _busca.trim().toLowerCase();
+
+    if (query.isEmpty) return _ativosUsuario;
+
+    return _ativosUsuario.where((ativo) {
+      return ativo.empresa.toLowerCase().contains(query) ||
+          ativo.simbolo.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCompra = _modo == ModoNegociacao.compra;
@@ -234,73 +192,87 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: _C.bg,
+        backgroundColor: AppColors.fundo,
+        extendBody: true,
+        bottomNavigationBar: const BottomNavBar(selectedIndex: 1),
         body: Stack(
           children: [
             const _AtmosphericBackground(),
-
-            Column(
-              children: [
-                const _TopBar(),
-
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 16),
+            SafeArea(
+              bottom: false,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 12),
-
-                        const _PageHeader(),
-
-                        const SizedBox(height: 18),
-
-                        const _SaldoOperacionalCard(),
-
-                        const SizedBox(height: 18),
-
-                        _TradeControlPanel(
-                          controller: _searchController,
-                          modo: _modo,
-                          onModoChanged: _trocarModo,
-                          onSearchChanged: (value) {
-                            setState(() => _busca = value);
-                          },
-                        ),
-
-                        if (!isCompra) ...[
-                          const SizedBox(height: 18),
-                          _AtivosUsuarioCard(ativos: _ativosUsuario),
-                        ],
-
-                        const SizedBox(height: 22),
-
-                        _SectionLabel(
-                          label: isCompra
-                              ? 'MELHORES OFERTAS PARA COMPRA'
-                              : 'MELHORES OFERTAS PARA VENDA',
-                          hint: isCompra
-                              ? 'Ordenado do menor para o maior preço'
-                              : 'Ordenado do maior para o menor preço',
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        FadeTransition(
-                          opacity: _fadeAnim,
-                          child: _OfertasList(
-                            ofertas: _ofertasFiltradas,
-                            modo: _modo,
-                          ),
-                        ),
+                        _TopBar(),
+                        SizedBox(height: 24),
+                        _PageHeader(),
+                        SizedBox(height: 20),
+                        _SaldoOperacionalCard(),
+                        SizedBox(height: 18),
                       ],
                     ),
                   ),
-                ),
 
-                const BottomNavBar(selectedIndex: 1),
-              ],
+                  SliverToBoxAdapter(
+                    child: _TradeControlPanel(
+                      controller: _searchController,
+                      modo: _modo,
+                      onModoChanged: _trocarModo,
+                      onSearchChanged: (value) {
+                        setState(() {
+                          _busca = value;
+                        });
+                      },
+                    ),
+                  ),
+
+                  if (!isCompra)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 18),
+                        child: _AtivosUsuarioCard(
+                          ativos: _ativosFiltrados,
+                        ),
+                      ),
+                    ),
+
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 22),
+                      child: _SectionLabel(
+                        label: isCompra
+                            ? 'MELHORES OFERTAS PARA COMPRA'
+                            : 'MELHORES OFERTAS PARA VENDA',
+                        hint: isCompra
+                            ? 'Ordens disponíveis para você comprar tokens'
+                            : 'Ordens disponíveis para você vender seus tokens',
+                      ),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 12),
+                  ),
+
+                  SliverToBoxAdapter(
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: _OfertasList(
+                        ofertas: _ofertasFiltradas,
+                        modo: _modo,
+                        ofertasDisponiveis: _ofertasFiltradas,
+                      ),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 120),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -309,7 +281,6 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
   }
 }
 
-// ─── Background ───────────────────────────────────────────────────────────────
 class _AtmosphericBackground extends StatelessWidget {
   const _AtmosphericBackground();
 
@@ -319,16 +290,16 @@ class _AtmosphericBackground extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            top: -110,
-            right: -80,
+            top: -130,
+            right: -100,
             child: Container(
-              width: 270,
-              height: 270,
+              width: 330,
+              height: 330,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    _C.gold.withOpacity(0.14),
+                    AppColors.azul.withOpacity(0.20),
                     Colors.transparent,
                   ],
                 ),
@@ -336,16 +307,33 @@ class _AtmosphericBackground extends StatelessWidget {
             ),
           ),
           Positioned(
-            bottom: 160,
-            left: -130,
+            top: 160,
+            left: -100,
             child: Container(
-              width: 280,
-              height: 280,
+              width: 260,
+              height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    _C.roxo.withOpacity(0.24),
+                    AppColors.destaque.withOpacity(0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 80,
+            right: -100,
+            child: Container(
+              width: 290,
+              height: 290,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.roxo.withOpacity(0.16),
                     Colors.transparent,
                   ],
                 ),
@@ -358,80 +346,73 @@ class _AtmosphericBackground extends StatelessWidget {
   }
 }
 
-// ─── Top Bar ──────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
   const _TopBar();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 12,
-        left: 20,
-        right: 20,
-        bottom: 14,
-      ),
-      decoration: BoxDecoration(
-        color: _C.surface.withOpacity(0.92),
-        border: const Border(
-          bottom: BorderSide(
-            color: _C.white06,
-            width: 0.5,
-          ),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
       child: Row(
         children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [_C.roxo, _C.azul],
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'MESCLAINVEST',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.destaque,
+                  letterSpacing: 2.4,
+                ),
               ),
-              border: Border.all(
-                color: _C.gold.withOpacity(0.45),
-                width: 0.8,
+              SizedBox(height: 3),
+              Text(
+                'Balcão de negociação',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white54,
+                  letterSpacing: 0.3,
+                ),
               ),
-            ),
-            child: const Icon(
-              Icons.rocket_launch_rounded,
-              color: _C.white,
-              size: 18,
-            ),
+            ],
           ),
-
-          const SizedBox(width: 12),
-
-          const Text(
-            'MESCLAINVEST',
-            style: TextStyle(
-              fontFamily: 'Syne',
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: _C.gold,
-              letterSpacing: 2.7,
-            ),
-          ),
-
           const Spacer(),
-
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _C.white06,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _C.white12,
-                width: 0.7,
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/perfil');
+            },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.destaque.withOpacity(0.35),
+                  width: 1.4,
+                ),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.08),
+                    Colors.white.withOpacity(0.03),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ),
-            child: const Icon(
-              Icons.notifications_outlined,
-              color: _C.gold,
-              size: 20,
+              child: const Icon(
+                Icons.person_rounded,
+                color: AppColors.destaque,
+                size: 23,
+              ),
             ),
           ),
         ],
@@ -440,35 +421,35 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
 class _PageHeader extends StatelessWidget {
   const _PageHeader();
 
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _HeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
+          SizedBox(height: 14),
           Text(
-            'Balcão',
+            'Balcão de Tokens',
             style: TextStyle(
-              fontFamily: 'Syne',
-              fontSize: 36,
-              fontWeight: FontWeight.w900,
-              color: _C.white,
-              height: 1,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              height: 1.15,
               letterSpacing: -0.4,
             ),
           ),
           SizedBox(height: 8),
           Text(
-            'Negocie tokens simulados de startups do ecossistema Mescla.',
+            'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
             style: TextStyle(
-              fontSize: 14,
-              color: _C.white50,
-              height: 1.45,
+              fontSize: 13,
+              color: Colors.white70,
+              height: 1.5,
             ),
           ),
         ],
@@ -477,66 +458,109 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
-// ─── Saldo Operacional ────────────────────────────────────────────────────────
+class _HeaderEyebrow extends StatelessWidget {
+  final String text;
+
+  const _HeaderEyebrow({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 14,
+          decoration: BoxDecoration(
+            color: AppColors.destaque,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppColors.destaque,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SaldoOperacionalCard extends StatelessWidget {
   const _SaldoOperacionalCard();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
         decoration: BoxDecoration(
-          color: _C.card,
+          color: Colors.white.withOpacity(0.06),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: _C.white12,
-            width: 0.8,
+            color: Colors.white.withOpacity(0.08),
           ),
           boxShadow: [
             BoxShadow(
-              color: _C.gold.withOpacity(0.08),
-              blurRadius: 26,
-              offset: const Offset(0, 10),
+              color: Colors.black.withOpacity(0.45),
+              blurRadius: 32,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
         child: Row(
           children: [
-            Expanded(
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.destaque.withOpacity(0.12),
+                border: Border.all(
+                  color: AppColors.destaque.withOpacity(0.28),
+                  width: 1,
+                ),
+              ),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.destaque,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   _SmallLabel(text: 'SALDO DISPONÍVEL'),
-                  SizedBox(height: 8),
+                  SizedBox(height: 5),
                   Text(
                     'R\$ 12.750,00',
                     style: TextStyle(
-                      fontFamily: 'Syne',
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      color: _C.gold,
-                      height: 1,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.destaque,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: 4),
                   Text(
                     'Saldo fictício para ordens simuladas',
                     style: TextStyle(
-                      color: _C.white30,
+                      color: Colors.white54,
                       fontSize: 12,
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            SizedBox(
-              width: 96,
-              height: 60,
-              child: CustomPaint(
-                painter: _MiniChartPainter(),
               ),
             ),
           ],
@@ -546,7 +570,6 @@ class _SaldoOperacionalCard extends StatelessWidget {
   }
 }
 
-// ─── Search + Mode Controls ───────────────────────────────────────────────────
 class _TradeControlPanel extends StatelessWidget {
   final TextEditingController controller;
   final ModoNegociacao modo;
@@ -562,17 +585,27 @@ class _TradeControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hint = modo == ModoNegociacao.compra
+        ? 'Buscar startup para comprar...'
+        : 'Buscar ativo para vender...';
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _C.surface.withOpacity(0.88),
-          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: _C.white06,
-            width: 0.6,
+            color: Colors.white.withOpacity(0.08),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.28),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           children: [
@@ -580,63 +613,72 @@ class _TradeControlPanel extends StatelessWidget {
               controller: controller,
               onChanged: onSearchChanged,
               style: const TextStyle(
-                color: _C.white,
+                color: Colors.white,
                 fontSize: 14,
               ),
-              cursorColor: _C.gold,
+              cursorColor: AppColors.destaque,
               decoration: InputDecoration(
-                hintText: 'Buscar startup ou ticker...',
-                hintStyle: const TextStyle(
-                  color: _C.white30,
-                  fontSize: 13,
-                ),
+                hintText: hint,
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: _C.white30,
+                  color: Colors.white38,
                   size: 20,
                 ),
+                suffixIcon: controller.text.isEmpty
+                    ? null
+                    : IconButton(
+                  onPressed: () {
+                    controller.clear();
+                    onSearchChanged('');
+                  },
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white38,
+                    size: 18,
+                  ),
+                ),
                 filled: true,
-                fillColor: _C.white06,
+                fillColor: Colors.white.withOpacity(0.06),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 12,
+                  vertical: 14,
+                ),
+                hintStyle: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 13,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: _C.white06,
-                    width: 0.6,
+                  borderSide: BorderSide(
+                    color: Colors.white.withOpacity(0.08),
+                    width: 1,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide(
-                    color: _C.gold.withOpacity(0.55),
-                    width: 0.8,
+                    color: AppColors.destaque.withOpacity(0.55),
+                    width: 1.2,
                   ),
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             Row(
               children: [
                 _ModeButton(
-                  label: 'Comprar tokens',
+                  label: 'Comprar',
                   icon: Icons.add_rounded,
                   active: modo == ModoNegociacao.compra,
-                  activeColor: _C.gold,
+                  isPrimary: true,
                   onTap: () => onModoChanged(ModoNegociacao.compra),
                 ),
-
                 const SizedBox(width: 8),
-
                 _ModeButton(
-                  label: 'Vender tokens',
+                  label: 'Vender',
                   icon: Icons.swap_horiz_rounded,
                   active: modo == ModoNegociacao.venda,
-                  activeColor: _C.azul,
+                  isPrimary: false,
                   onTap: () => onModoChanged(ModoNegociacao.venda),
                 ),
               ],
@@ -652,24 +694,38 @@ class _ModeButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool active;
-  final Color activeColor;
+  final bool isPrimary;
   final VoidCallback onTap;
 
   const _ModeButton({
     required this.label,
     required this.icon,
     required this.active,
-    required this.activeColor,
+    required this.isPrimary,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final activeGradient = isPrimary
+        ? const LinearGradient(
+      colors: [
+        Color(0xFFFFD88A),
+        AppColors.destaque,
+      ],
+    )
+        : const LinearGradient(
+      colors: [
+        AppColors.azul,
+        AppColors.roxo,
+      ],
+    );
+
     final textColor = active
-        ? activeColor == _C.gold
-        ? _C.surface
-        : _C.white
-        : _C.white50;
+        ? isPrimary
+        ? AppColors.fundo
+        : Colors.white
+        : Colors.white70;
 
     return Expanded(
       child: GestureDetector(
@@ -678,21 +734,26 @@ class _ModeButton extends StatelessWidget {
           duration: const Duration(milliseconds: 220),
           height: 44,
           decoration: BoxDecoration(
-            gradient: active
-                ? LinearGradient(
-              colors: activeColor == _C.gold
-                  ? [_C.gold, _C.goldSoft]
-                  : [_C.azul, _C.roxo],
-            )
-                : null,
-            color: active ? null : _C.white06,
+            gradient: active ? activeGradient : null,
+            color: active ? null : Colors.white.withOpacity(0.06),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: active
-                  ? activeColor.withOpacity(0.55)
-                  : _C.white06,
-              width: 0.7,
+                  ? AppColors.destaque.withOpacity(0.25)
+                  : Colors.white.withOpacity(0.08),
+              width: 0.8,
             ),
+            boxShadow: active
+                ? [
+              BoxShadow(
+                color: isPrimary
+                    ? AppColors.destaque.withOpacity(0.22)
+                    : AppColors.azul.withOpacity(0.24),
+                blurRadius: 16,
+                offset: const Offset(0, 5),
+              ),
+            ]
+                : [],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -707,8 +768,8 @@ class _ModeButton extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: textColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
@@ -719,87 +780,53 @@ class _ModeButton extends StatelessWidget {
   }
 }
 
-// ─── User Assets ──────────────────────────────────────────────────────────────
 class _AtivosUsuarioCard extends StatelessWidget {
   final List<AtivoUsuario> ativos;
 
-  const _AtivosUsuarioCard({required this.ativos});
+  const _AtivosUsuarioCard({
+    required this.ativos,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (ativos.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 22),
+        child: _EmptyState(
+          icon: Icons.inventory_2_outlined,
+          title: 'Nenhum ativo encontrado para venda.',
+          subtitle: 'Tente buscar por outro nome ou ticker.',
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _C.surface.withOpacity(0.82),
-          borderRadius: BorderRadius.circular(22),
+          color: Colors.white.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: _C.azul.withOpacity(0.25),
-            width: 0.7,
+            color: Colors.white.withOpacity(0.08),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.28),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SmallLabel(text: 'SEUS ATIVOS DISPONÍVEIS PARA VENDA'),
-
-            const SizedBox(height: 12),
-
-            SizedBox(
-              height: 78,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: ativos.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, index) {
-                  final ativo = ativos[index];
-
-                  return Container(
-                    width: 128,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _C.white06,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _C.white06,
-                        width: 0.6,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          ativo.simbolo,
-                          style: const TextStyle(
-                            color: _C.gold,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${ativo.quantidade} tokens',
-                          style: const TextStyle(
-                            color: _C.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          ativo.empresa,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _C.white30,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+            const _HeaderEyebrow(text: 'ATIVOS DISPONÍVEIS PARA VENDA'),
+            const SizedBox(height: 14),
+            ...ativos.map(
+                  (ativo) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _AtivoVendaTile(ativo: ativo),
               ),
             ),
           ],
@@ -809,7 +836,105 @@ class _AtivosUsuarioCard extends StatelessWidget {
   }
 }
 
-// ─── Section Label ────────────────────────────────────────────────────────────
+class _AtivoVendaTile extends StatelessWidget {
+  final AtivoUsuario ativo;
+
+  const _AtivoVendaTile({
+    required this.ativo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final valorEstimado = ativo.quantidade * ativo.precoMedio;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.destaque.withOpacity(0.11),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.destaque.withOpacity(0.24),
+              ),
+            ),
+            child: Center(
+              child: Text(
+                ativo.simbolo,
+                style: const TextStyle(
+                  color: AppColors.destaque,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ativo.empresa,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${ativo.quantidade} tokens disponíveis',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'Valor estimado',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'R\$ ${valorEstimado.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: AppColors.destaque,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionLabel extends StatelessWidget {
   final String label;
   final String hint;
@@ -822,35 +947,24 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: _C.white30,
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  height: 0.5,
-                  color: _C.white06,
-                ),
-              ),
-            ],
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.white38,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             hint,
             style: const TextStyle(
-              color: _C.white30,
+              color: Colors.white38,
               fontSize: 11,
             ),
           ),
@@ -860,43 +974,49 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ─── Offers List ──────────────────────────────────────────────────────────────
 class _OfertasList extends StatelessWidget {
   final List<Oferta> ofertas;
   final ModoNegociacao modo;
+  final List<Oferta> ofertasDisponiveis;
 
   const _OfertasList({
     required this.ofertas,
     required this.modo,
+    required this.ofertasDisponiveis,
   });
 
   @override
   Widget build(BuildContext context) {
     if (ofertas.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-        child: Center(
-          child: Text(
-            'Nenhuma startup encontrada.',
-            style: TextStyle(
-              color: _C.white30,
-              fontSize: 14,
-            ),
-          ),
+        padding: EdgeInsets.symmetric(horizontal: 22, vertical: 28),
+        child: _EmptyState(
+          icon: Icons.search_off_rounded,
+          title: 'Nenhuma startup encontrada.',
+          subtitle: 'Tente buscar por outro nome ou ticker.',
         ),
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: ofertas.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (ctx, i) => _OfertaCard(
-        oferta: ofertas[i],
-        modo: modo,
-        position: i + 1,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        children: ofertas.asMap().entries.map((entry) {
+          final index = entry.key;
+          final oferta = entry.value;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == ofertas.length - 1 ? 0 : 12,
+            ),
+            child: _OfertaCard(
+              oferta: oferta,
+              modo: modo,
+              position: index + 1,
+              ofertasDisponiveis: ofertasDisponiveis,
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -906,11 +1026,13 @@ class _OfertaCard extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
   final int position;
+  final List<Oferta> ofertasDisponiveis;
 
   const _OfertaCard({
     required this.oferta,
     required this.modo,
     required this.position,
+    required this.ofertasDisponiveis,
   });
 
   @override
@@ -923,26 +1045,32 @@ class _OfertaCardState extends State<_OfertaCard> {
   @override
   Widget build(BuildContext context) {
     final isCompra = widget.modo == ModoNegociacao.compra;
-    final accent = isCompra ? _C.gold : _C.azul;
+    final accent = isCompra ? AppColors.destaque : AppColors.azul;
+
     final variationColor =
-    widget.oferta.variacao >= 0 ? _C.gold : _C.white50;
+    widget.oferta.variacao >= 0 ? AppColors.destaque : Colors.white70;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
+      onTapDown: (_) {
+        setState(() => _pressed = true);
+      },
       onTapUp: (_) {
         setState(() => _pressed = false);
 
-        showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          isScrollControlled: true,
-          builder: (_) => _TradeModal(
-            oferta: widget.oferta,
-            modo: widget.modo,
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrdemExeScreen(
+              oferta: widget.oferta,
+              modo: widget.modo,
+              ofertasDisponiveis: widget.ofertasDisponiveis,
+            ),
           ),
         );
       },
-      onTapCancel: () => setState(() => _pressed = false),
+      onTapCancel: () {
+        setState(() => _pressed = false);
+      },
       child: AnimatedScale(
         scale: _pressed ? 0.985 : 1.0,
         duration: const Duration(milliseconds: 120),
@@ -951,40 +1079,37 @@ class _OfertaCardState extends State<_OfertaCard> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _C.card.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(18),
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: _C.white06,
-                  width: 0.6,
+                  color: Colors.white.withOpacity(0.08),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: accent.withOpacity(0.12),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withOpacity(0.32),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 46,
+                    height: 46,
                     decoration: BoxDecoration(
                       color: accent.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: accent.withOpacity(0.35),
-                        width: 0.8,
+                        color: accent.withOpacity(0.32),
                       ),
                     ),
                     child: Center(
                       child: Text(
                         widget.oferta.simbolo,
                         style: TextStyle(
-                          fontFamily: 'Syne',
                           fontSize:
-                          widget.oferta.simbolo.length > 3 ? 9 : 11,
+                          widget.oferta.simbolo.length > 3 ? 9 : 12,
                           fontWeight: FontWeight.w900,
                           color: accent,
                           letterSpacing: 0.5,
@@ -992,9 +1117,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1002,24 +1125,21 @@ class _OfertaCardState extends State<_OfertaCard> {
                         Row(
                           children: [
                             _Badge(
-                              label: isCompra ? 'ASK' : 'BID',
+                              label: isCompra ? 'VENDA' : 'COMPRA',
                               color: accent,
-                              darkText: isCompra,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '#${widget.position}',
                               style: const TextStyle(
-                                color: _C.white30,
+                                color: Colors.white38,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
                         ),
-
-                        const SizedBox(height: 6),
-
+                        const SizedBox(height: 7),
                         Text(
                           widget.oferta.empresa,
                           maxLines: 1,
@@ -1027,12 +1147,10 @@ class _OfertaCardState extends State<_OfertaCard> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
-                            color: _C.white,
+                            color: Colors.white,
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
                         Wrap(
                           spacing: 10,
                           runSpacing: 4,
@@ -1055,24 +1173,19 @@ class _OfertaCardState extends State<_OfertaCard> {
                       ],
                     ),
                   ),
-
                   const SizedBox(width: 10),
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
                         'R\$ ${widget.oferta.preco.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontFamily: 'Syne',
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
-                          color: _C.gold,
+                          color: AppColors.destaque,
                         ),
                       ),
-
                       const SizedBox(height: 4),
-
                       Row(
                         children: [
                           Icon(
@@ -1093,17 +1206,23 @@ class _OfertaCardState extends State<_OfertaCard> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 10),
-
                       Container(
-                        width: 92,
-                        height: 34,
+                        width: 86,
+                        height: 32,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isCompra
-                                ? [_C.gold, _C.goldSoft]
-                                : [_C.azul, _C.roxo],
+                          gradient: isCompra
+                              ? const LinearGradient(
+                            colors: [
+                              Color(0xFFFFD88A),
+                              AppColors.destaque,
+                            ],
+                          )
+                              : const LinearGradient(
+                            colors: [
+                              AppColors.azul,
+                              AppColors.roxo,
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1111,10 +1230,10 @@ class _OfertaCardState extends State<_OfertaCard> {
                           child: Text(
                             isCompra ? 'COMPRAR' : 'VENDER',
                             style: TextStyle(
-                              color: isCompra ? _C.surface : _C.white,
+                              color: isCompra ? AppColors.fundo : Colors.white,
                               fontWeight: FontWeight.w900,
                               fontSize: 10,
-                              letterSpacing: 0.8,
+                              letterSpacing: 0.7,
                             ),
                           ),
                         ),
@@ -1124,11 +1243,10 @@ class _OfertaCardState extends State<_OfertaCard> {
                 ],
               ),
             ),
-
             Positioned(
               left: 0,
-              top: 14,
-              bottom: 14,
+              top: 16,
+              bottom: 16,
               child: Container(
                 width: 3,
                 decoration: BoxDecoration(
@@ -1144,209 +1262,12 @@ class _OfertaCardState extends State<_OfertaCard> {
   }
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
-class _TradeModal extends StatelessWidget {
-  final Oferta oferta;
-  final ModoNegociacao modo;
-
-  const _TradeModal({
-    required this.oferta,
-    required this.modo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isCompra = modo == ModoNegociacao.compra;
-    final accent = isCompra ? _C.gold : _C.azul;
-    final total = oferta.preco * oferta.quantidade;
-    final taxa = total * 0.004;
-
-    return Container(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 14,
-        bottom: MediaQuery.of(context).padding.bottom + 24,
-      ),
-      decoration: const BoxDecoration(
-        color: _C.surface,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(30),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 44,
-            height: 4,
-            decoration: BoxDecoration(
-              color: _C.white12,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-
-          const SizedBox(height: 22),
-
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: accent.withOpacity(0.13),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: accent.withOpacity(0.35),
-                    width: 0.8,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    oferta.simbolo,
-                    style: TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      oferta.empresa,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _C.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isCompra
-                          ? 'Você está prestes a comprar tokens'
-                          : 'Você está prestes a vender tokens',
-                      style: const TextStyle(
-                        color: _C.white30,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _TradeInfo(
-                label: 'PREÇO',
-                value: 'R\$ ${oferta.preco.toStringAsFixed(2)}',
-              ),
-              _TradeInfo(
-                label: 'TOKENS',
-                value: '${oferta.quantidade}',
-              ),
-              _TradeInfo(
-                label: 'SPREAD',
-                value: '${oferta.spread.toStringAsFixed(1)}%',
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: _C.card,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _C.white06,
-                width: 0.5,
-              ),
-            ),
-            child: Column(
-              children: [
-                _TradeSummaryRow(
-                  label: 'Subtotal',
-                  value: 'R\$ ${total.toStringAsFixed(2)}',
-                ),
-                const SizedBox(height: 12),
-                _TradeSummaryRow(
-                  label: 'Taxa simulada',
-                  value: 'R\$ ${taxa.toStringAsFixed(2)}',
-                ),
-                const SizedBox(height: 12),
-                const _TradeSummaryRow(
-                  label: 'Liquidação',
-                  value: 'Instantânea',
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 26),
-
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isCompra
-                          ? 'Compra simulada executada com sucesso.'
-                          : 'Venda simulada executada com sucesso.',
-                    ),
-                    backgroundColor: _C.surfaceUp,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              child: Text(
-                isCompra ? 'EXECUTAR COMPRA' : 'EXECUTAR VENDA',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 15,
-                  letterSpacing: 1,
-                  color: isCompra ? _C.surface : _C.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Small Components ─────────────────────────────────────────────────────────
 class _SmallLabel extends StatelessWidget {
   final String text;
 
-  const _SmallLabel({required this.text});
+  const _SmallLabel({
+    required this.text,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1354,7 +1275,7 @@ class _SmallLabel extends StatelessWidget {
       text,
       style: const TextStyle(
         fontSize: 10,
-        color: _C.white50,
+        color: Colors.white38,
         letterSpacing: 1.5,
         fontWeight: FontWeight.w800,
       ),
@@ -1365,12 +1286,10 @@ class _SmallLabel extends StatelessWidget {
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
-  final bool darkText;
 
   const _Badge({
     required this.label,
     required this.color,
-    this.darkText = false,
   });
 
   @override
@@ -1418,14 +1337,14 @@ class _MiniInfo extends StatelessWidget {
           TextSpan(
             text: '$label: ',
             style: const TextStyle(
-              color: _C.white30,
+              color: Colors.white38,
               fontSize: 10,
             ),
           ),
           TextSpan(
             text: value,
             style: const TextStyle(
-              color: _C.white50,
+              color: Colors.white70,
               fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
@@ -1436,119 +1355,61 @@ class _MiniInfo extends StatelessWidget {
   }
 }
 
-class _TradeInfo extends StatelessWidget {
-  final String label;
-  final String value;
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
 
-  const _TradeInfo({
-    required this.label,
-    required this.value,
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: _C.white30,
-            fontSize: 10,
-            letterSpacing: 1.5,
-            fontWeight: FontWeight.w700,
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 26,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
         ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: _C.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 15,
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: Colors.white38,
+            size: 42,
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white38,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
-}
-
-class _TradeSummaryRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _TradeSummaryRow({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: _C.white50,
-            fontSize: 13,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: _C.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MiniChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = _C.white06
-      ..strokeWidth = 1;
-
-    for (int i = 1; i < 4; i++) {
-      final y = size.height * (i / 4);
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
-    }
-
-    final paint = Paint()
-      ..shader = const LinearGradient(
-        colors: [_C.gold, _C.goldSoft],
-      ).createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
-      ..strokeWidth = 2.4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path();
-
-    for (int i = 0; i < 18; i++) {
-      final x = size.width * (i / 17);
-      final raw = math.sin(i * 0.75) * 0.24 + math.cos(i * 0.38) * 0.12;
-      final y = size.height * (0.55 - raw);
-
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -1,7 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+
+import '../../models/balcao_model.dart';
+import '../auth/app_theme.dart';
+import '../ordens/ordem_exe_screen.dart';
 
 class CarteiraPage extends StatefulWidget {
   const CarteiraPage({super.key});
@@ -13,155 +19,607 @@ class CarteiraPage extends StatefulWidget {
 class _CarteiraPageState extends State<CarteiraPage> {
   String selectedTimePeriod = '1 mês';
 
-  final List<double> data = [0.22, 0.34, 0.28, 0.52, 0.47, 0.72, 0.66, 0.88];
+  final List<double> data = [
+    0.28,
+    0.34,
+    0.31,
+    0.48,
+    0.44,
+    0.62,
+    0.58,
+    0.76,
+    0.71,
+    0.88,
+  ];
+
+  final List<AtivoCarteira> ativos = const [
+    AtivoCarteira(
+      nome: 'NeuroPulse AI',
+      simbolo: 'NPA',
+      tokens: 120,
+      valorToken: 25.50,
+      precoMedio: 22.40,
+      variacao: 3.2,
+      volume: '2.8k',
+      spread: 0.7,
+    ),
+    AtivoCarteira(
+      nome: 'BioSync',
+      simbolo: 'BIO',
+      tokens: 80,
+      valorToken: 29.50,
+      precoMedio: 26.10,
+      variacao: 7.3,
+      volume: '4.2k',
+      spread: 0.6,
+    ),
+    AtivoCarteira(
+      nome: 'QuantLedger',
+      simbolo: 'QLG',
+      tokens: 45,
+      valorToken: 24.50,
+      precoMedio: 23.70,
+      variacao: -1.4,
+      volume: '1.4k',
+      spread: 1.1,
+    ),
+  ];
+
+  double get patrimonioTotal {
+    return ativos.fold<double>(
+      0,
+          (total, ativo) => total + ativo.valorTotal,
+    );
+  }
+
+  int get tokensTotais {
+    return ativos.fold<int>(
+      0,
+          (total, ativo) => total + ativo.tokens,
+    );
+  }
+
+  double get variacaoMedia {
+    if (ativos.isEmpty) return 0;
+
+    final soma = ativos.fold<double>(
+      0,
+          (total, ativo) => total + ativo.variacao,
+    );
+
+    return soma / ativos.length;
+  }
+
+  double get saldoDisponivel => 12750.00;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _C.bg,
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 20,
-                left: 20,
-                right: 20,
-                bottom: 24,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _TopBar(),
-                  const SizedBox(height: 28),
-
-                  const _Header(),
-                  const SizedBox(height: 22),
-
-                  const _PatrimonioCard(),
-                  const SizedBox(height: 18),
-
-                  _GraficoCard(
-                    data: data,
-                    selectedTimePeriod: selectedTimePeriod,
-                    onPeriodChanged: (period) {
-                      setState(() => selectedTimePeriod = period);
-                    },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.fundoEscuro,
+        extendBody: true,
+        bottomNavigationBar: const BottomNavBar(selectedIndex: 2),
+        body: Stack(
+          children: [
+            const _AtmosphericBackground(),
+            SafeArea(
+              bottom: false,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        _TopBar(),
+                        SizedBox(height: 24),
+                        _Header(),
+                        SizedBox(height: 20),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 22),
-
-                  const _SectionTitle('Seus ativos'),
-                  const SizedBox(height: 12),
-
-                  const _AtivoCard(
-                    nome: 'NeuroPulse AI',
-                    simbolo: 'NPA',
-                    tokens: 120,
-                    valorToken: 'R\$ 25,50',
-                    variacao: '+3.2%',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AtivoCard(
-                    nome: 'BioSync',
-                    simbolo: 'BIO',
-                    tokens: 80,
-                    valorToken: 'R\$ 29,50',
-                    variacao: '+7.3%',
-                  ),
-                  const SizedBox(height: 10),
-                  const _AtivoCard(
-                    nome: 'QuantLedger',
-                    simbolo: 'QLG',
-                    tokens: 45,
-                    valorToken: 'R\$ 24,50',
-                    variacao: '-1.4%',
+                  SliverToBoxAdapter(
+                    child: _PatrimonioCard(
+                      patrimonioTotal: patrimonioTotal,
+                      saldoDisponivel: saldoDisponivel,
+                      tokensTotais: tokensTotais,
+                      variacaoMedia: variacaoMedia,
+                    ),
                   ),
 
-                  const SizedBox(height: 22),
-
-                  const _SectionTitle('Últimas movimentações'),
-                  const SizedBox(height: 12),
-
-                  const _MovimentacaoTile(
-                    titulo: 'Compra executada',
-                    descricao: '100 tokens NPA',
-                    valor: '- R\$ 2.500,00',
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 18),
                   ),
-                  const _MovimentacaoTile(
-                    titulo: 'Venda executada',
-                    descricao: '50 tokens QLG',
-                    valor: '+ R\$ 1.250,00',
+
+                  SliverToBoxAdapter(
+                    child: _GraficoCard(
+                      data: data,
+                      selectedTimePeriod: selectedTimePeriod,
+                      onPeriodChanged: (period) {
+                        setState(() => selectedTimePeriod = period);
+                      },
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 22),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: _SectionLabel(
+                      label: 'SEUS ATIVOS',
+                      hint: 'Acompanhe seus tokens e a valorização por startup.',
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 12),
+                  ),
+
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                    sliver: SliverList.separated(
+                      itemCount: ativos.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final ativo = ativos[index];
+
+                        return _AtivoCard(
+                          ativo: ativo,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AtivoDetalheScreen(
+                                  ativo: ativo,
+                                  historico: data,
+                                  ofertasDisponiveis: _ofertasDoAtivo(ativo),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 24),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: _SectionLabel(
+                      label: 'ÚLTIMAS MOVIMENTAÇÕES',
+                      hint: 'Histórico recente das operações simuladas.',
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 12),
+                  ),
+
+                  const SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 22),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate.fixed([
+                        _MovimentacaoTile(
+                          titulo: 'Compra executada',
+                          descricao: '100 tokens NPA',
+                          valor: '- R\$ 2.500,00',
+                        ),
+                        SizedBox(height: 10),
+                        _MovimentacaoTile(
+                          titulo: 'Venda executada',
+                          descricao: '50 tokens QLG',
+                          valor: '+ R\$ 1.250,00',
+                        ),
+                      ]),
+                    ),
+                  ),
+
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 120),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          const BottomNavBar(selectedIndex: 2),
+  List<Oferta> _ofertasDoAtivo(AtivoCarteira ativo) {
+    return [
+      Oferta(
+        tipo: TipoOferta.venda,
+        quantidade: ativo.tokens,
+        preco: ativo.valorToken,
+        empresa: ativo.nome,
+        simbolo: ativo.simbolo,
+        variacao: ativo.variacao,
+        volume: ativo.volume,
+        spread: ativo.spread,
+      ),
+      Oferta(
+        tipo: TipoOferta.venda,
+        quantidade: math.max(1, (ativo.tokens * 0.65).round()),
+        preco: ativo.valorToken + 0.80,
+        empresa: ativo.nome,
+        simbolo: ativo.simbolo,
+        variacao: ativo.variacao,
+        volume: ativo.volume,
+        spread: ativo.spread + 0.3,
+      ),
+      Oferta(
+        tipo: TipoOferta.compra,
+        quantidade: math.max(1, (ativo.tokens * 0.45).round()),
+        preco: ativo.valorToken - 0.60,
+        empresa: ativo.nome,
+        simbolo: ativo.simbolo,
+        variacao: ativo.variacao,
+        volume: ativo.volume,
+        spread: ativo.spread + 0.2,
+      ),
+    ];
+  }
+}
+
+// ─── Modelo interno da carteira ─────────────────────────────────────────────
+
+class AtivoCarteira {
+  final String nome;
+  final String simbolo;
+  final int tokens;
+  final double valorToken;
+  final double precoMedio;
+  final double variacao;
+  final String volume;
+  final double spread;
+
+  const AtivoCarteira({
+    required this.nome,
+    required this.simbolo,
+    required this.tokens,
+    required this.valorToken,
+    required this.precoMedio,
+    required this.variacao,
+    required this.volume,
+    required this.spread,
+  });
+
+  double get valorTotal => tokens * valorToken;
+
+  double get lucroPrejuizo => (valorToken - precoMedio) * tokens;
+}
+
+// ─── Tela de detalhe do ativo ───────────────────────────────────────────────
+
+class AtivoDetalheScreen extends StatefulWidget {
+  final AtivoCarteira ativo;
+  final List<double> historico;
+  final List<Oferta> ofertasDisponiveis;
+
+  const AtivoDetalheScreen({
+    super.key,
+    required this.ativo,
+    required this.historico,
+    required this.ofertasDisponiveis,
+  });
+
+  @override
+  State<AtivoDetalheScreen> createState() => _AtivoDetalheScreenState();
+}
+
+class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
+  String selectedTimePeriod = '1 mês';
+
+  bool get _positivo => widget.ativo.variacao >= 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.fundoEscuro,
+      body: Stack(
+        children: [
+          const _AtmosphericBackground(),
+          SafeArea(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: AppColors.textoPrincipal,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Detalhe do ativo',
+                          style: TextStyle(
+                            color: AppColors.destaque,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate(
+                      [
+                        _AtivoHeroCard(ativo: widget.ativo),
+                        const SizedBox(height: 18),
+
+                        _GraficoCard(
+                          data: widget.historico,
+                          selectedTimePeriod: selectedTimePeriod,
+                          onPeriodChanged: (period) {
+                            setState(() => selectedTimePeriod = period);
+                          },
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        _DetalheMetricasCard(
+                          ativo: widget.ativo,
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        _InfoCard(
+                          title: 'Acompanhamento do ativo',
+                          children: [
+                            _InfoRow(
+                              label: 'Preço médio de compra',
+                              value:
+                              'R\$ ${widget.ativo.precoMedio.toStringAsFixed(2)}',
+                            ),
+                            _InfoRow(
+                              label: 'Preço atual',
+                              value:
+                              'R\$ ${widget.ativo.valorToken.toStringAsFixed(2)}',
+                              destaque: true,
+                            ),
+                            _InfoRow(
+                              label: 'Resultado acumulado',
+                              value:
+                              '${widget.ativo.lucroPrejuizo >= 0 ? '+' : '-'} R\$ ${widget.ativo.lucroPrejuizo.abs().toStringAsFixed(2)}',
+                            ),
+                            _InfoRow(
+                              label: 'Variação',
+                              value:
+                              '${_positivo ? '+' : ''}${widget.ativo.variacao.toStringAsFixed(1)}%',
+                              destaque: true,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _OutlineActionButton(
+                                label: 'Vender',
+                                onTap: () => _abrirOrdem(
+                                  context,
+                                  ModoNegociacao.venda,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: _PrimaryActionButton(
+                                label: 'Comprar mais',
+                                onTap: () => _abrirOrdem(
+                                  context,
+                                  ModoNegociacao.compra,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _abrirOrdem(BuildContext context, ModoNegociacao modo) {
+    final oferta = Oferta(
+      tipo: modo == ModoNegociacao.compra
+          ? TipoOferta.venda
+          : TipoOferta.compra,
+      quantidade: widget.ativo.tokens,
+      preco: widget.ativo.valorToken,
+      empresa: widget.ativo.nome,
+      simbolo: widget.ativo.simbolo,
+      variacao: widget.ativo.variacao,
+      volume: widget.ativo.volume,
+      spread: widget.ativo.spread,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrdemExeScreen(
+          oferta: oferta,
+          modo: modo,
+          ofertasDisponiveis: widget.ofertasDisponiveis,
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Componentes gerais ─────────────────────────────────────────────────────
+
+class _AtmosphericBackground extends StatelessWidget {
+  const _AtmosphericBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -150,
+            right: -110,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.azul.withOpacity(0.20),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 180,
+            left: -100,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.destaque.withOpacity(0.06),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 80,
+            right: -100,
+            child: Container(
+              width: 290,
+              height: 290,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.roxo.withOpacity(0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _C {
-  static const bg           = Color(0xFF020818);
-  static const surface      = Color(0xFF0B1230);
-  static const surfaceRaised = Color(0xFF0F1840);
-  static const card         = Color(0xFF0D1535);
-  static const gold         = Color(0xFFEFCD57);
-  static const goldDim      = Color(0xFFB89A2E);
-  static const goldGlow     = Color(0x22EFCD57);
-  static const goldBorder   = Color(0x33EFCD57);
-  static const white        = Colors.white;
-  static const white70      = Colors.white70;
-  static const white50      = Color(0x80FFFFFF);
-  static const white30      = Color(0x4DFFFFFF);
-  static const white12      = Color(0x1FFFFFFF);
-  static const white06      = Color(0x0FFFFFFF);
-  static const blue         = Color(0xFF1A3A8F);
-}
 class _TopBar extends StatelessWidget {
   const _TopBar();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: _C.gold, width: 1),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.destaque.withOpacity(0.35),
+                width: 1.4,
+              ),
+              gradient: const LinearGradient(
+                colors: [
+                  AppColors.campo,
+                  AppColors.card,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppColors.destaque,
+              size: 21,
+            ),
           ),
-          child: const Icon(Icons.account_balance_wallet_rounded, color: _C.gold, size: 18),
-        ),
-        const Spacer(),
-        const Text(
-          'MESCLAINVEST',
-          style: TextStyle(
-            fontFamily: 'Syne',
-            color: _C.gold,
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2.6,
+          const Spacer(),
+          const Column(
+            children: [
+              Text(
+                'MESCLAINVEST',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.destaque,
+                  letterSpacing: 2.4,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                'Carteira digital',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textoMuitoFraco,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
           ),
-        ),
-        const Spacer(),
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: _C.card,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _C.white12),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/perfil');
+            },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.bordaClara,
+                  width: 1,
+                ),
+                color: AppColors.card,
+              ),
+              child: const Icon(
+                Icons.person_rounded,
+                color: AppColors.destaque,
+                size: 22,
+              ),
+            ),
           ),
-          child: const Icon(Icons.notifications_outlined, color: _C.gold, size: 20),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -171,26 +629,65 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderEyebrow(text: 'VISÃO GERAL DA CARTEIRA'),
+          SizedBox(height: 14),
+          Text(
+            'Minha Carteira',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textoPrincipal,
+              height: 1.15,
+              letterSpacing: -0.4,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Acompanhe seus ativos, saldo disponível e movimentações simuladas.',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderEyebrow extends StatelessWidget {
+  final String text;
+
+  const _HeaderEyebrow({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        Text(
-          'Carteira',
-          style: TextStyle(
-            fontFamily: 'Syne',
-            color: _C.white,
-            fontSize: 36,
-            fontWeight: FontWeight.w900,
-            height: 1,
+        Container(
+          width: 3,
+          height: 14,
+          decoration: BoxDecoration(
+            color: AppColors.destaque,
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(width: 8),
         Text(
-          'Resumo dos seus ativos digitais simulados.',
-          style: TextStyle(
-            color: _C.white50,
-            fontSize: 14,
-            height: 1.4,
+          text,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppColors.destaque,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -199,61 +696,74 @@ class _Header extends StatelessWidget {
 }
 
 class _PatrimonioCard extends StatelessWidget {
-  const _PatrimonioCard();
+  final double patrimonioTotal;
+  final double saldoDisponivel;
+  final int tokensTotais;
+  final double variacaoMedia;
+
+  const _PatrimonioCard({
+    required this.patrimonioTotal,
+    required this.saldoDisponivel,
+    required this.tokensTotais,
+    required this.variacaoMedia,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: _C.white12, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: _C.gold.withOpacity(0.08),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'PATRIMÔNIO TOTAL',
-            style: TextStyle(
-              color: _C.white50,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.8,
+    final positiva = variacaoMedia >= 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: _cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'PATRIMÔNIO TOTAL',
+              style: TextStyle(
+                color: AppColors.textoMuitoFraco,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.8,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'R\$ 1.125.000,00',
-            style: TextStyle(
-              fontFamily: 'Syne',
-              color: _C.gold,
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
+            const SizedBox(height: 10),
+            Text(
+              'R\$ ${patrimonioTotal.toStringAsFixed(2)}',
+              style: const TextStyle(
+                color: AppColors.destaque,
+                fontSize: 31,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: const [
-              Expanded(
-                child: _ResumoItem(label: 'Saldo disponível', value: 'R\$ 12.750,00'),
-              ),
-              Expanded(
-                child: _ResumoItem(label: 'Tokens totais', value: '4.500'),
-              ),
-              Expanded(
-                child: _ResumoItem(label: 'Variação', value: '+3.2%'),
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: _ResumoItem(
+                    label: 'Saldo disponível',
+                    value: 'R\$ ${saldoDisponivel.toStringAsFixed(2)}',
+                  ),
+                ),
+                Expanded(
+                  child: _ResumoItem(
+                    label: 'Tokens totais',
+                    value: '$tokensTotais',
+                  ),
+                ),
+                Expanded(
+                  child: _ResumoItem(
+                    label: 'Variação',
+                    value:
+                    '${positiva ? '+' : ''}${variacaoMedia.toStringAsFixed(1)}%',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -263,19 +773,28 @@ class _ResumoItem extends StatelessWidget {
   final String label;
   final String value;
 
-  const _ResumoItem({required this.label, required this.value});
+  const _ResumoItem({
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: _C.white30, fontSize: 10)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textoMuitoFraco,
+            fontSize: 10,
+          ),
+        ),
         const SizedBox(height: 5),
         Text(
           value,
           style: const TextStyle(
-            color: _C.white,
+            color: AppColors.textoPrincipal,
             fontWeight: FontWeight.w800,
             fontSize: 13,
           ),
@@ -300,166 +819,507 @@ class _GraficoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final periods = ['1h', '24h', '1 sem', '1 mês', '6 meses', '1 ano'];
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _C.white12, width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Valorização da carteira',
-            style: TextStyle(
-              color: _C.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: _cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _HeaderEyebrow(text: 'VALORIZAÇÃO DA CARTEIRA'),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: LineChartPainter(data: data),
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 170,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: LineChartPainter(data: data),
-            ),
-          ),
-          const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: periods.map((period) {
-                final active = selectedTimePeriod == period;
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: periods.map((period) {
+                  final active = selectedTimePeriod == period;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => onPeriodChanged(period),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                      decoration: BoxDecoration(
-                        color: active ? _C.gold : _C.white06,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Text(
-                        period,
-                        style: TextStyle(
-                          color: active ? _C.surface : _C.white50,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => onPeriodChanged(period),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active ? AppColors.destaque : AppColors.campo,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: active
+                                ? AppColors.destaque
+                                : AppColors.bordaClara,
+                          ),
+                        ),
+                        child: Text(
+                          period,
+                          style: TextStyle(
+                            color: active
+                                ? AppColors.card
+                                : AppColors.textoFraco,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  final String title;
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final String hint;
 
-  const _SectionTitle(this.title);
+  const _SectionLabel({
+    required this.label,
+    required this.hint,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title.toUpperCase(),
-      style: const TextStyle(
-        color: _C.white30,
-        fontSize: 10,
-        letterSpacing: 2,
-        fontWeight: FontWeight.w800,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textoMuitoFraco,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hint,
+            style: const TextStyle(
+              color: AppColors.textoMuitoFraco,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _AtivoCard extends StatelessWidget {
-  final String nome;
-  final String simbolo;
-  final int tokens;
-  final String valorToken;
-  final String variacao;
+  final AtivoCarteira ativo;
+  final VoidCallback onTap;
 
   const _AtivoCard({
-    required this.nome,
-    required this.simbolo,
-    required this.tokens,
-    required this.valorToken,
-    required this.variacao,
+    required this.ativo,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final negative = variacao.startsWith('-');
+    final negative = ativo.variacao < 0;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _C.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _C.white06, width: 0.7),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: _C.gold.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _C.gold.withOpacity(0.35)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppColors.bordaClara,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.24),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-            child: Center(
-              child: Text(
-                simbolo,
-                style: const TextStyle(
-                  color: _C.gold,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _TickerBox(
+              simbolo: ativo.simbolo,
+              color: AppColors.destaque,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ativo.nome,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textoPrincipal,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${ativo.tokens} tokens • R\$ ${ativo.valorToken.toStringAsFixed(2)}/token',
+                    style: const TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: AppColors.textoPrincipal,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '${negative ? '' : '+'}${ativo.variacao.toStringAsFixed(1)}%',
+                  style: TextStyle(
+                    color: negative
+                        ? AppColors.textoFraco
+                        : AppColors.destaque,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AtivoHeroCard extends StatelessWidget {
+  final AtivoCarteira ativo;
+
+  const _AtivoHeroCard({
+    required this.ativo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final negative = ativo.variacao < 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          _TickerBox(
+            simbolo: ativo.simbolo,
+            color: negative ? AppColors.azul : AppColors.destaque,
+            size: 62,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  nome,
+                  ativo.nome,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _C.white,
-                    fontSize: 14,
+                    color: AppColors.textoPrincipal,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 7),
                 Text(
-                  '$tokens tokens • $valorToken/token',
-                  style: const TextStyle(color: _C.white30, fontSize: 12),
+                  '${ativo.tokens} tokens em carteira',
+                  style: const TextStyle(
+                    color: AppColors.textoMuitoFraco,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: AppColors.destaque,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ],
             ),
           ),
-          Text(
-            variacao,
-            style: TextStyle(
-              color: negative ? _C.white50 : _C.gold,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
+        ],
+      ),
+    );
+  }
+}
+
+class _DetalheMetricasCard extends StatelessWidget {
+  final AtivoCarteira ativo;
+
+  const _DetalheMetricasCard({
+    required this.ativo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: _cardDecoration(),
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ResumoItem(
+              label: 'Tokens',
+              value: '${ativo.tokens}',
+            ),
+          ),
+          Expanded(
+            child: _ResumoItem(
+              label: 'Preço atual',
+              value: 'R\$ ${ativo.valorToken.toStringAsFixed(2)}',
+            ),
+          ),
+          Expanded(
+            child: _ResumoItem(
+              label: 'Variação',
+              value:
+              '${ativo.variacao >= 0 ? '+' : ''}${ativo.variacao.toStringAsFixed(1)}%',
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _InfoCard({
+    required this.title,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.campo,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.bordaClara,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _HeaderEyebrow(text: title.toUpperCase()),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool destaque;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.destaque = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 11),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: destaque
+                  ? AppColors.textoPrincipal
+                  : AppColors.textoFraco,
+              fontSize: destaque ? 14 : 13,
+              fontWeight: destaque ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: destaque
+                    ? AppColors.destaque
+                    : AppColors.textoPrincipal,
+                fontSize: destaque ? 16 : 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrimaryActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _PrimaryActionButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              AppColors.destaqueClaro,
+              AppColors.destaqueEscuro,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.destaque.withOpacity(0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            child: Center(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.card,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlineActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _OutlineActionButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.destaque,
+          side: const BorderSide(
+            color: AppColors.bordaDestaque,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TickerBox extends StatelessWidget {
+  final String simbolo;
+  final Color color;
+  final double size;
+
+  const _TickerBox({
+    required this.simbolo,
+    required this.color,
+    this.size = 46,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(size * 0.30),
+        border: Border.all(
+          color: color.withOpacity(0.32),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          simbolo,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w900,
+            fontSize: size > 50 ? 14 : 12,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
     );
   }
@@ -481,18 +1341,19 @@ class _MovimentacaoTile extends StatelessWidget {
     final entrada = valor.startsWith('+');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _C.surface,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _C.white06),
+        border: Border.all(
+          color: AppColors.bordaClara,
+        ),
       ),
       child: Row(
         children: [
           Icon(
             entrada ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-            color: _C.gold,
+            color: AppColors.destaque,
             size: 18,
           ),
           const SizedBox(width: 12),
@@ -503,7 +1364,7 @@ class _MovimentacaoTile extends StatelessWidget {
                 Text(
                   titulo,
                   style: const TextStyle(
-                    color: _C.white,
+                    color: AppColors.textoPrincipal,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -511,7 +1372,10 @@ class _MovimentacaoTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   descricao,
-                  style: const TextStyle(color: _C.white30, fontSize: 11),
+                  style: const TextStyle(
+                    color: AppColors.textoMuitoFraco,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -519,7 +1383,7 @@ class _MovimentacaoTile extends StatelessWidget {
           Text(
             valor,
             style: const TextStyle(
-              color: _C.white,
+              color: AppColors.textoPrincipal,
               fontWeight: FontWeight.w800,
               fontSize: 12,
             ),
@@ -530,47 +1394,134 @@ class _MovimentacaoTile extends StatelessWidget {
   }
 }
 
+BoxDecoration _cardDecoration() {
+  return BoxDecoration(
+    color: AppColors.card,
+    borderRadius: BorderRadius.circular(24),
+    border: Border.all(
+      color: AppColors.bordaClara,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.32),
+        blurRadius: 28,
+        offset: const Offset(0, 12),
+      ),
+    ],
+  );
+}
+
+// ─── Gráfico ────────────────────────────────────────────────────────────────
+
 class LineChartPainter extends CustomPainter {
   final List<double> data;
 
-  LineChartPainter({required this.data});
+  LineChartPainter({
+    required this.data,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+
     final gridPaint = Paint()
-      ..color = _C.white06
+      ..color = AppColors.bordaClara
       ..strokeWidth = 1;
 
     for (int i = 1; i < 4; i++) {
       final y = size.height * (i / 4);
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        gridPaint,
+      );
     }
 
-    final paint = Paint()
+    final minValue = data.reduce(math.min);
+    final maxValue = data.reduce(math.max);
+    final range = (maxValue - minValue).abs() < 0.01 ? 1.0 : maxValue - minValue;
+
+    final points = <Offset>[];
+    final space = size.width / (data.length - 1);
+
+    for (int i = 0; i < data.length; i++) {
+      final normalized = (data[i] - minValue) / range;
+      final x = i * space;
+      final y = size.height - (normalized * size.height * 0.82) - 12;
+
+      points.add(Offset(x, y));
+    }
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+
+    for (int i = 1; i < points.length; i++) {
+      final previous = points[i - 1];
+      final current = points[i];
+
+      final controlPointX = (previous.dx + current.dx) / 2;
+
+      path.cubicTo(
+        controlPointX,
+        previous.dy,
+        controlPointX,
+        current.dy,
+        current.dx,
+        current.dy,
+      );
+    }
+
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final fillPaint = Paint()
       ..shader = LinearGradient(
-        colors: [_C.gold, _C.goldDim],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          AppColors.destaque.withOpacity(0.20),
+          AppColors.destaque.withOpacity(0.00),
+        ],
+      ).createShader(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+      )
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(fillPath, fillPaint);
+
+    final linePaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [
+          AppColors.destaqueClaro,
+          AppColors.destaqueEscuro,
+        ],
+      ).createShader(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+      )
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final space = size.width / (data.length - 1);
-    final path = Path();
+    canvas.drawPath(path, linePaint);
 
-    for (int i = 0; i < data.length; i++) {
-      final x = i * space;
-      final y = size.height - (data[i] * size.height);
+    final dotPaint = Paint()
+      ..color = AppColors.destaque
+      ..style = PaintingStyle.fill;
 
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
+    final lastPoint = points.last;
+    canvas.drawCircle(lastPoint, 5, dotPaint);
 
-    canvas.drawPath(path, paint);
+    final dotBorderPaint = Paint()
+      ..color = AppColors.card
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    canvas.drawCircle(lastPoint, 5, dotBorderPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant LineChartPainter oldDelegate) {
+    return oldDelegate.data != data;
+  }
 }

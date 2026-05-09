@@ -242,7 +242,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                                 arguments: startup,
                               );
                             },
-                            child: StartupCard(data: startup),
+                            child: StartupCard(data: startup, onDetailsTap: () {  },),
                           ),
                         );
                       },
