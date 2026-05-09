@@ -26,7 +26,8 @@ class _BottomNavBarState extends State<BottomNavBar> {
         Navigator.pushNamed(context, '/wallet');
         break;
       case 3:
-        Navigator.pushNamed(context, '/dashboard');
+        //Navigator.pushNamed(context, '/dashboard');
+        Navigator.pushNamed(context, '/balcao-teste'); //para teste
         break;
     }
   }

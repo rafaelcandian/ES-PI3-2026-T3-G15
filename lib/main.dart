@@ -14,12 +14,14 @@ import 'package:mescla_invest/screens/dashboard_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // New import
 import 'package:mescla_invest/services/startup_service.dart'; // Import StartupService
 
+import 'package:mescla_invest/screens/testes/balcao_teste_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  try {
+  /*try {
     // Attempt to sign in with email and password
     await FirebaseAuth.instance.signInWithEmailAndPassword(
       email: 'guilhermehmoreira12@gmail.com',
@@ -30,12 +32,11 @@ void main() async {
     // Seed initial data if the collection is empty (this will now run after authentication)
     await StartupService().seedStartups();
     print('Startup seeding completed.');
-
   } on FirebaseAuthException catch (e) {
     print("Firebase Auth Error during login: ${e.code} - ${e.message}");
   } catch (e) {
     print("General Error during login or seeding: $e");
-  }
+  }*/
 
   runApp(const MesclaInvestApp());
 }
@@ -58,6 +59,7 @@ class MesclaInvestApp extends StatelessWidget {
         "/catalogo": (context) => const CatalogoStartupsPage(),
         "/detalhes": (context) => const DetalhesStartupPage(),
         "/dashboard": (context) => const DashboardPage(),
+        '/balcao-teste': (context) => const BalcaoTesteScreen(), //para teste
       },
     );
   }

@@ -44,6 +44,6 @@ class CarteiraService {
   // Metodo para verificar se usuario tem saldo suficiente
   Future<bool> hasSufBalance(double valor) async {
     final saldo = await getBalance();
-    return saldo <= valor;
+    return saldo >= valor;
   }
 }

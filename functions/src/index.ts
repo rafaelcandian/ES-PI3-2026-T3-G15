@@ -39,6 +39,7 @@ setGlobalOptions({ maxInstances: 10 });
 export const getBalance = onRequest(async (req, res) => {
     if(req.method !== "POST"){
         res.status(405).send("Método não permitido");
+        return;
     }
 
     const uid = req.query.uid as string;
@@ -88,7 +89,7 @@ export const loadWallet = onRequest(async (req, res) => {
 });
 
 // função auxiliar para validar o saldo na carteira em comparação com o valor do token que deseja comprar
-async function validateBalance(uid: string, valor: number): Promise<boolean>{
+async function validateBalance(uid: string, valor: number): Promise<boolean>{ // garante que vai retornar um dado boolean
     const doc = await admin.firestore().collection("usuarios").doc(uid).get();
     if(!doc.exists) return false;
     const saldo = doc.data()!.saldo ?? 0; // define como valor padrão 0 caso o saldo seja nulo
@@ -110,7 +111,7 @@ export const verifyBalance = onRequest(async (req, res) =>{
     res.json({suf, valor});
 });
 
-// RELACIONADO AO BALCAO SERVICE
+// RELACIONADO AO BALCAO_SERVICE
 
 // criar oferta
 export const createOffer = onRequest(async(req, res) => {
@@ -193,7 +194,7 @@ export const createOffer = onRequest(async(req, res) => {
 */
 
 // função chamada depois de criar uma oferta
-async function tryMatching(newOfferId: string, newOffer: any): Promise<void> {
+async function tryMatching(newOfferId: string, newOffer: any): Promise<void> { // garante que devolve um dado quando termina (no caso aqui não garante pq é void)
     const firestoreAdm = admin.firestore();
   const opositeType = newOffer.type === "buy" ? "sell" : "buy"; // ternario, se o tipo da nova oferta for "buy" ele vai voltar como sell, se não fica como buy
     const offerSnapshot = await firestoreAdm.collection("orders").where("startupId", "==", newOffer.startupId).where("type", "==", opositeType).where("status", "==", "open").orderBy("createdAt", "asc").get();
@@ -208,13 +209,13 @@ async function tryMatching(newOfferId: string, newOffer: any): Promise<void> {
 
         if(!compatiblePrice) continue; // se não for compativel ele continua (obviamente)
 
-        const buyerId = newOffer.type === "buy" ? newOffer.userId : offer.userId;
+        const buyerId = newOffer.type === "buy" ? newOffer.userId : offer.userId; // ternario
         const sellerId = newOffer.type === "sell" ? newOffer.userId : offer.userId;
         const price = offer.pricePerToken;
-        const quantity = Math.min(newOffer.quantity, offer.quantity);
+        const quantity = Math.min(newOffer.quantity, offer.quantity); // vai retornar o menor valor entre os dois argumentos
         const total = quantity * price;
 
-        await firestoreAdm.runTransaction(async(t) => {
+        await firestoreAdm.runTransaction(async(t) => { // vai transcrever os arquivos do firebase (collections e documents)
             const buyerRef = firestoreAdm.collection("usuarios").doc(buyerId);
             const sellerRef = firestoreAdm.collection("usuarios").doc(sellerId);
             const newOfferRef = firestoreAdm.collection("orders").doc(newOfferId);
@@ -237,13 +238,18 @@ async function tryMatching(newOfferId: string, newOffer: any): Promise<void> {
             });
 
             // remover tokens do vendedor
+            // remover tokens do vendedor
             t.update(sellerRef, {
-                ['tokens.${newOffer.startupId}']: Math.max(0, (sellerTokens[newOffer.startupId] ?? 0) - quantity),
+                [`tokens.${newOffer.startupId}`]: Math.max(
+                    0,
+                    (sellerTokens[newOffer.startupId] ?? 0) - quantity
+                ),
             });
 
             // adicionar tokens do comprador
             t.update(buyerRef, {
-                ['tokens.${newOffer.startupId']: (buyerTokens[newOffer.startupId] ?? 0) + quantity,
+                [`tokens.${newOffer.startupId}`]:
+                    (buyerTokens[newOffer.startupId] ?? 0) + quantity,
             });
 
             // troca o status para filled
