@@ -1,10 +1,14 @@
 import 'dart:math' as math;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
+import 'package:mescla_invest/services/carteira_service.dart';
+import 'package:mescla_invest/services/startup_service.dart';
 
 import '../../models/balcao_model.dart';
 import '../auth/app_theme.dart';
@@ -33,65 +37,125 @@ class _CarteiraPageState extends State<CarteiraPage> {
     0.88,
   ];
 
-  final List<AtivoCarteira> ativos = const [
-    AtivoCarteira(
-      nome: 'NeuroPulse AI',
-      simbolo: 'NPA',
-      tokens: 120,
-      valorToken: 25.50,
-      precoMedio: 22.40,
-      variacao: 3.2,
-      volume: '2.8k',
-      spread: 0.7,
-    ),
-    AtivoCarteira(
-      nome: 'BioSync',
-      simbolo: 'BIO',
-      tokens: 80,
-      valorToken: 29.50,
-      precoMedio: 26.10,
-      variacao: 7.3,
-      volume: '4.2k',
-      spread: 0.6,
-    ),
-    AtivoCarteira(
-      nome: 'QuantLedger',
-      simbolo: 'QLG',
-      tokens: 45,
-      valorToken: 24.50,
-      precoMedio: 23.70,
-      variacao: -1.4,
-      volume: '1.4k',
-      spread: 1.1,
-    ),
-  ];
+  double _saldo = 0.0;
+  List<AtivoCarteira> _ativos = [];
+  List<Map<String, dynamic>> _movimentacoes = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final carteiraService = CarteiraService();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      
+      if (uid == null) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+
+      final saldo = await carteiraService.getBalance();
+      final tokensMap = await carteiraService.getTokens();
+
+      List<AtivoCarteira> ativosTemp = [];
+      final firestore = FirebaseFirestore.instance;
+
+      for (var entry in tokensMap.entries) {
+        final startupId = entry.key;
+        final quantidade = entry.value;
+
+        if (quantidade > 0) {
+          final doc = await firestore.collection('startups').doc(startupId).get();
+          if (doc.exists) {
+            final data = doc.data()!;
+            final title = data['title'] ?? 'Startup';
+            final tokenValue = (data['tokenValue'] ?? 0.0).toDouble();
+
+            ativosTemp.add(AtivoCarteira(
+              nome: title,
+              simbolo: title.length >= 3 ? title.substring(0, 3).toUpperCase() : title.toUpperCase(),
+              tokens: (quantidade as num).toInt(),
+              valorToken: tokenValue,
+              precoMedio: tokenValue,
+              variacao: 0.0,
+              volume: '0',
+              spread: 0.0,
+            ));
+          }
+        }
+      }
+
+      final compras = await firestore
+          .collection('transactions')
+          .where('buyerId', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .limit(5)
+          .get();
+
+      final vendas = await firestore
+          .collection('transactions')
+          .where('sellerId', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .limit(5)
+          .get();
+
+      final todasMovs = [...compras.docs, ...vendas.docs];
+      todasMovs.sort((a, b) => 
+        (b.data()['createdAt'] as Timestamp)
+        .compareTo(a.data()['createdAt'] as Timestamp));
+
+      List<Map<String, dynamic>> movsTemp = todasMovs
+          .take(5)
+          .map((doc) => doc.data())
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _saldo = saldo;
+          _ativos = ativosTemp;
+          _movimentacoes = movsTemp;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
 
   double get patrimonioTotal {
-    return ativos.fold<double>(
+    return _ativos.fold<double>(
       0,
           (total, ativo) => total + ativo.valorTotal,
     );
   }
 
   int get tokensTotais {
-    return ativos.fold<int>(
+    return _ativos.fold<int>(
       0,
           (total, ativo) => total + ativo.tokens,
     );
   }
 
   double get variacaoMedia {
-    if (ativos.isEmpty) return 0;
+    if (_ativos.isEmpty) return 0;
 
-    final soma = ativos.fold<double>(
+    final soma = _ativos.fold<double>(
       0,
           (total, ativo) => total + ativo.variacao,
     );
 
-    return soma / ativos.length;
+    return soma / _ativos.length;
   }
 
-  double get saldoDisponivel => 12750.00;
+  double get saldoDisponivel => _saldo;
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +169,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
         body: Stack(
           children: [
             const _AtmosphericBackground(),
-            SafeArea(
+            if (_loading)
+              const Center(
+                child: CircularProgressIndicator(color: AppColors.destaque),
+              )
+            else
+              SafeArea(
               bottom: false,
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -160,10 +229,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     sliver: SliverList.separated(
-                      itemCount: ativos.length,
+                      itemCount: _ativos.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final ativo = ativos[index];
+                        final ativo = _ativos[index];
 
                         return _AtivoCard(
                           ativo: ativo,
@@ -199,23 +268,37 @@ class _CarteiraPageState extends State<CarteiraPage> {
                     child: SizedBox(height: 12),
                   ),
 
-                  const SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: 22),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate.fixed([
-                        _MovimentacaoTile(
-                          titulo: 'Compra executada',
-                          descricao: '100 tokens NPA',
-                          valor: '- R\$ 2.500,00',
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                    sliver: _movimentacoes.isEmpty 
+                      ? const SliverToBoxAdapter(
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Text(
+                                'Nenhuma movimentação recente.',
+                                style: TextStyle(color: AppColors.textoFraco),
+                              ),
+                            ),
+                          ),
+                        )
+                      : SliverList.separated(
+                          itemCount: _movimentacoes.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final mov = _movimentacoes[index];
+                            final uid = FirebaseAuth.instance.currentUser?.uid;
+                            final isBuy = mov['buyerId'] == uid;
+                            final quantity = mov['quantity'] ?? 0;
+                            final totalPrice = mov['totalPrice']?.toDouble() ?? 0.0;
+                            
+                            return _MovimentacaoTile(
+                              titulo: isBuy ? 'Compra executada' : 'Venda executada',
+                              descricao: '$quantity tokens',
+                              valor: '${isBuy ? '-' : '+'} R\$ ${totalPrice.toStringAsFixed(2)}',
+                            );
+                          },
                         ),
-                        SizedBox(height: 10),
-                        _MovimentacaoTile(
-                          titulo: 'Venda executada',
-                          descricao: '50 tokens QLG',
-                          valor: '+ R\$ 1.250,00',
-                        ),
-                      ]),
-                    ),
                   ),
 
                   const SliverToBoxAdapter(
