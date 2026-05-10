@@ -9,19 +9,21 @@ import {
   getWallet,
   deposit
 } from '../controllers/user.controller';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import { validateBody } from '../middlewares/validate.middleware';
 
 const router = Router();
 
 // Rota para criar um novo usuário
-router.post('/users', createUser);
+router.post('/users', validateBody(['uid', 'nome', 'email', 'cpf', 'telefone']), createUser);
 
 // Rota para buscar o perfil de um usuário específico
-router.get('/users/:uid', getProfile);
+router.get('/users/:uid', authMiddleware, getProfile);
 
 // Rota para buscar apenas a carteira (saldo e tokens) de um usuário
-router.get('/users/:uid/wallet', getWallet);
+router.get('/users/:uid/wallet', authMiddleware, getWallet);
 
 // Rota para adicionar saldo na carteira do usuário
-router.post('/users/:uid/deposit', deposit);
+router.post('/users/:uid/deposit', authMiddleware, validateBody(['valor']), deposit);
 
 export default router;
