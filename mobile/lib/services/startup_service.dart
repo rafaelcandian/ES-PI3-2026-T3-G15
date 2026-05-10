@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 
 class StartupService {
@@ -25,7 +26,8 @@ class StartupService {
             "tokenValue": 1.00,
             "progress": 0.65,
             "goal": 800000.00, // Converted from "R$ 800.000"
-            "image": "https://images.unsplash.com/photo-1550751827-4bd374c3f58b", // Default image added
+            "image": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/logos%2FShopLink.jpeg?alt=media&token=bec0ea63-f925-45c7-aad8-07d1ab04ee0f",
+            "video": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/videos%2FShopLink.mp4?alt=media&token=288d33a6-8732-493f-8efa-0ce27d5b832d"
           },
           {
             "title": "FinNova Bank Tech S.A.",
@@ -36,7 +38,8 @@ class StartupService {
             "tokenValue": 1.00,
             "progress": 0.80,
             "goal": 2000000.00, // Converted from "R$ 2.000.000"
-            "image": "https://images.unsplash.com/photo-1620616147171-46ad2f0e0c09", // Default image added
+            "image": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/logos%2FFinNova.jpeg?alt=media&token=b2c452fd-d6f4-41bd-a33d-20ed49f23d03",
+            "video": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/videos%2FFinNova.mp4?alt=media&token=5ffba202-3f1b-43b7-b522-8bbb63ea9a5b"
           },
           {
             "title": "LogiSmart Solutions S.A.",
@@ -47,7 +50,8 @@ class StartupService {
             "tokenValue": 1.00,
             "progress": 0.55,
             "goal": 1200000.00, // Converted from "R$ 1.200.000"
-            "image": "https://images.unsplash.com/photo-1563811802958-693081e74f1c", // Default image added
+            "image": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/logos%2FLogiSmart.jpeg?alt=media&token=4b6cc6dd-bcc6-4d0c-82ab-28a202b06fc6",
+            "video": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/videos%2FLogiSmart.mp4?alt=media&token=ee50bb54-f140-4100-9c2c-e116b8b4b272"
           },
           {
             "title": "AgroVision Tech S.A.",
@@ -58,7 +62,8 @@ class StartupService {
             "tokenValue": 1.00,
             "progress": 0.70,
             "goal": 1500000.00, // Converted from "R$ 1.500.000"
-            "image": "https://images.unsplash.com/photo-1543329094-07d23d8c2b7f", // Default image added
+            "image": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/logos%2FAgroVision.jpeg?alt=media&token=14cee889-78bc-474d-a103-20a32a3e2808",
+            "video": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/videos%2FAgroVision.mp4?alt=media&token=d3bdc98d-4f47-4dd5-8d08-cbcd9b534150"
           },
           {
             "title": "SmartMarket Connect S.A.",
@@ -69,7 +74,8 @@ class StartupService {
             "tokenValue": 1.00,
             "progress": 0.60,
             "goal": 900000.00, // Converted from "R$ 900.000"
-            "image": "https://images.unsplash.com/photo-1594918732002-eb82845c48b2", // Default image added
+            "image": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/logos%2FSmartMarket.jpeg?alt=media&token=a97e5c96-2c5b-4903-a617-31c5a5b8af4a",
+            "video": "https://firebasestorage.googleapis.com/v0/b/es-pi3-2026-t3-g15.firebasestorage.app/o/videos%2FSmartMarket.mp4?alt=media&token=69ba4f42-d339-4eb7-9b53-84bbe69194de"
           },
         ];
 
