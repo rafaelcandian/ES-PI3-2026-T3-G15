@@ -4,4 +4,9 @@
 
 export {createUser} from "./handlers/createUser";
 export {getUserDetails} from "./handlers/getUserDetails";
-export {getBalance, loadWallet, verifyBalance} from "./handlers/walletHandlers";
+export {
+  getBalance,
+  loadWallet,
+  verifyBalance,
+  getWalletChart,
+} from "./handlers/walletHandlers";

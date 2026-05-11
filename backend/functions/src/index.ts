@@ -38,6 +38,7 @@ export {
   getBalance,
   loadWallet,
   verifyBalance,
+  getWalletChart,
 } from "./users/index";
 
 // RELACIONADO AO MÓDULO DE STARTUPS
