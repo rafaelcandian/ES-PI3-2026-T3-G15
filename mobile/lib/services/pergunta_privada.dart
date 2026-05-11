@@ -27,7 +27,7 @@ class PerguntaPrivadaService {
     }
 
     await _firestore
-        .collection('startups')
+        .collection('main_screens')
         .doc(startupId)
         .collection('perguntasPrivadas')
         .add({
@@ -47,7 +47,7 @@ class PerguntaPrivadaService {
     required String startupId,
   }) {
     return _firestore
-        .collection('startups')
+        .collection('main_screens')
         .doc(startupId)
         .collection('perguntasPrivadas')
         .orderBy('createdAt', descending: true)

@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'package:mescla_invest/services/autenticacao.dart';
-import '../../themes/app_theme.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
+
+import 'package:mescla_invest/widgets/auth/auth_card.dart';
+import 'package:mescla_invest/widgets/auth/auth_field_label.dart';
+import 'package:mescla_invest/widgets/auth/auth_footer.dart';
+import 'package:mescla_invest/widgets/auth/auth_header.dart';
+import 'package:mescla_invest/widgets/auth/auth_section_label.dart';
+import 'package:mescla_invest/widgets/auth/auth_text_field.dart';
+
+import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
+import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -13,29 +24,23 @@ class CadastroPage extends StatefulWidget {
 class _CadastroPageState extends State<CadastroPage>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-
   final AuthService _auth = AuthService();
+
+  final nomeController = TextEditingController();
+  final emailController = TextEditingController();
+  final cpfController = TextEditingController();
+  final telefoneController = TextEditingController();
+  final senhaController = TextEditingController();
+  final confirmarSenhaController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _aceitouTermos = false;
 
-  final TextEditingController nomeController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController cpfController = TextEditingController();
-  final TextEditingController telefoneController = TextEditingController();
-  final TextEditingController senhaController = TextEditingController();
-  final TextEditingController confirmarSenhaController = TextEditingController();
-
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
-
-  static const Color _cardColor = Color(0xFF0F1440);
-  static const Color _fieldColor = Color(0xFF1A2045);
-  static const Color _goldLight = Color(0xFFFFD88A);
-  static const Color _goldDark = Color(0xFFFFB74D);
 
   @override
   void initState() {
@@ -81,17 +86,32 @@ class _CadastroPageState extends State<CadastroPage>
   }
 
   bool validarCPF(String cpf) {
-    cpf = cpf.replaceAll(RegExp(r'[^0-9]'), '');
+    final numeros = cpf.replaceAll(RegExp(r'[^0-9]'), '');
 
-    if (cpf.length != 11) return false;
-    if (RegExp(r'^(\d)\1*$').hasMatch(cpf)) return false;
+    if (numeros.length != 11) return false;
+    if (RegExp(r'^(\d)\1*$').hasMatch(numeros)) return false;
 
-    return true;
+    int calcularDigito(String base) {
+      int soma = 0;
+
+      for (int i = 0; i < base.length; i++) {
+        soma += int.parse(base[i]) * (base.length + 1 - i);
+      }
+
+      final resto = soma % 11;
+      return resto < 2 ? 0 : 11 - resto;
+    }
+
+    final primeiroDigito = calcularDigito(numeros.substring(0, 9));
+    final segundoDigito = calcularDigito(numeros.substring(0, 10));
+
+    return primeiroDigito == int.parse(numeros[9]) &&
+        segundoDigito == int.parse(numeros[10]);
   }
 
   bool validarTelefone(String telefone) {
-    telefone = telefone.replaceAll(RegExp(r'[^0-9]'), '');
-    return telefone.length == 11;
+    final numeros = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    return numeros.length == 11;
   }
 
   bool validarSenha(String senha) {
@@ -108,7 +128,7 @@ class _CadastroPageState extends State<CadastroPage>
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -126,13 +146,17 @@ class _CadastroPageState extends State<CadastroPage>
                 key: _formKey,
                 child: Column(
                   children: [
-                    _buildHeader(),
+                    const AuthHeader(
+                      title: 'Criar conta',
+                      subtitle:
+                      'Preencha seus dados para acessar a Mescla Invest',
+                    ),
                     const SizedBox(height: 28),
                     _buildFormCard(),
                     const SizedBox(height: 20),
                     _buildLoginRedirect(),
                     const SizedBox(height: 24),
-                    _buildFooter(),
+                    const AuthFooter(),
                   ],
                 ),
               ),
@@ -143,294 +167,113 @@ class _CadastroPageState extends State<CadastroPage>
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        Image.asset(
-          'assets/logo01.png',
-          width: 160,
-          fit: BoxFit.contain,
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Criar conta',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: AppColors.destaque,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Preencha seus dados para acessar a Mescla Invest',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.white.withOpacity(0.45),
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildFormCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.07),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 40,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+    return AuthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionLabel('Dados pessoais'),
-          const SizedBox(height: 14),
-
-          _fieldLabel('Nome completo', required: true),
-          const SizedBox(height: 7),
-          _campoTexto(
-            controller: nomeController,
-            hint: 'Ex: Roberto Silva',
-            icon: Icons.person_outline_rounded,
-            keyboardType: TextInputType.name,
-            textCapitalization: TextCapitalization.words,
-            validator: (value) {
-              final nome = value?.trim() ?? '';
-
-              if (nome.isEmpty) {
-                return 'Campo obrigatório';
-              }
-
-              if (nome.split(' ').length < 2) {
-                return 'Informe nome e sobrenome';
-              }
-
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 14),
-
-          _fieldLabel('E-mail', required: true),
-          const SizedBox(height: 7),
-          _campoTexto(
-            controller: emailController,
-            hint: 'nome@exemplo.com',
-            icon: Icons.email_outlined,
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              final email = value?.trim() ?? '';
-
-              if (email.isEmpty) {
-                return 'Campo obrigatório';
-              }
-
-              if (!email.contains('@') || !email.contains('.')) {
-                return 'E-mail inválido';
-              }
-
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 22),
-          _divider(),
-          const SizedBox(height: 18),
-
-          _sectionLabel('Documentos'),
-          const SizedBox(height: 14),
-
-          _fieldLabel('CPF', required: true),
-          const SizedBox(height: 7),
-          TextFormField(
-            controller: cpfController,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              CpfInputFormatter(),
-            ],
-            decoration: _inputDecoration(
-              hint: '000.000.000-00',
-              icon: Icons.badge_outlined,
-            ),
-            validator: (value) {
-              final cpf = value?.trim() ?? '';
-
-              if (cpf.isEmpty) {
-                return 'Campo obrigatório';
-              }
-
-              if (!validarCPF(cpf)) {
-                return 'CPF inválido';
-              }
-
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 14),
-
-          _fieldLabel('Telefone celular', required: true),
-          const SizedBox(height: 7),
-          TextFormField(
-            controller: telefoneController,
-            keyboardType: TextInputType.phone,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              TelefoneInputFormatter(),
-            ],
-            decoration: _inputDecoration(
-              hint: '(00) 00000-0000',
-              icon: Icons.phone_outlined,
-            ),
-            validator: (value) {
-              final telefone = value?.trim() ?? '';
-
-              if (telefone.isEmpty) {
-                return 'Campo obrigatório';
-              }
-
-              if (!validarTelefone(telefone)) {
-                return 'Telefone inválido';
-              }
-
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 22),
-          _divider(),
-          const SizedBox(height: 18),
-
-          _sectionLabel('Segurança'),
-          const SizedBox(height: 14),
-
-          _fieldLabel('Senha', required: true),
-          const SizedBox(height: 7),
-          TextFormField(
-            controller: senhaController,
-            obscureText: _obscurePassword,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
-            decoration: _inputDecoration(
-              hint: 'Mínimo 6 caracteres e 1 número',
-              icon: Icons.lock_outline_rounded,
-            ).copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: Colors.white.withOpacity(0.35),
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
+          _section(
+            title: 'Dados pessoais',
+            children: [
+              _authInput(
+                label: 'Nome completo',
+                controller: nomeController,
+                hint: 'Ex: Roberto Silva',
+                icon: Icons.person_outline_rounded,
+                keyboardType: TextInputType.name,
+                textCapitalization: TextCapitalization.words,
+                validator: _validarNome,
               ),
-            ),
-            validator: (value) {
-              final senha = value ?? '';
-
-              if (senha.isEmpty) {
-                return 'Campo obrigatório';
-              }
-
-              if (!validarSenha(senha)) {
-                return 'Senha fraca: mínimo 6 caracteres e 1 número';
-              }
-
-              return null;
-            },
-          ),
-
-          const SizedBox(height: 8),
-          _buildPasswordStrengthBar(),
-          const SizedBox(height: 14),
-
-          _fieldLabel('Confirmar senha', required: true),
-          const SizedBox(height: 7),
-          TextFormField(
-            controller: confirmarSenhaController,
-            obscureText: _obscureConfirmPassword,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
-            decoration: _inputDecoration(
-              hint: 'Digite novamente a senha',
-              icon: Icons.lock_outline_rounded,
-            ).copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: Colors.white.withOpacity(0.35),
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscureConfirmPassword = !_obscureConfirmPassword;
-                  });
-                },
+              _authInput(
+                label: 'E-mail',
+                controller: emailController,
+                hint: 'nome@exemplo.com',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                validator: _validarEmail,
               ),
-            ),
-            validator: (value) {
-              final confirmacao = value ?? '';
-
-              if (confirmacao.isEmpty) {
-                return 'Confirme sua senha';
-              }
-
-              if (confirmacao != senhaController.text) {
-                return 'As senhas não coincidem';
-              }
-
-              return null;
-            },
+            ],
           ),
-
-          const SizedBox(height: 22),
           _divider(),
-          const SizedBox(height: 18),
-
+          _section(
+            title: 'Documentos',
+            children: [
+              _authInput(
+                label: 'CPF',
+                controller: cpfController,
+                hint: '000.000.000-00',
+                icon: Icons.badge_outlined,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  CpfInputFormatter(),
+                ],
+                validator: _validarCampoCpf,
+              ),
+              _authInput(
+                label: 'Telefone celular',
+                controller: telefoneController,
+                hint: '(00) 00000-0000',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  TelefoneInputFormatter(),
+                ],
+                validator: _validarCampoTelefone,
+              ),
+            ],
+          ),
+          _divider(),
+          _section(
+            title: 'Segurança',
+            children: [
+              _authInput(
+                label: 'Senha',
+                controller: senhaController,
+                hint: 'Mínimo 6 caracteres e 1 número',
+                icon: Icons.lock_outline_rounded,
+                obscureText: _obscurePassword,
+                suffixIcon: _visibilityButton(
+                  isObscure: _obscurePassword,
+                  onTap: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
+                ),
+                validator: _validarCampoSenha,
+              ),
+              const SizedBox(height: 8),
+              _buildPasswordStrengthBar(),
+              const SizedBox(height: 14),
+              _authInput(
+                label: 'Confirmar senha',
+                controller: confirmarSenhaController,
+                hint: 'Digite novamente a senha',
+                icon: Icons.lock_outline_rounded,
+                obscureText: _obscureConfirmPassword,
+                suffixIcon: _visibilityButton(
+                  isObscure: _obscureConfirmPassword,
+                  onTap: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
+                ),
+                validator: _validarConfirmacaoSenha,
+              ),
+            ],
+          ),
+          _divider(),
           _buildTermosCheckbox(),
           const SizedBox(height: 22),
-
           _buildCadastrarButton(),
           const SizedBox(height: 14),
-
           Center(
             child: Text(
               '* Campos obrigatórios',
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.white.withOpacity(0.25),
+                color: Colors.white.withValues(alpha: 0.25),
               ),
             ),
           ),
@@ -439,148 +282,146 @@ class _CadastroPageState extends State<CadastroPage>
     );
   }
 
-  Widget _sectionLabel(String label) {
-    return Row(
+  Widget _section({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.destaque,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.destaque,
-            letterSpacing: 0.5,
-          ),
-        ),
+        AuthSectionLabel(label: title),
+        const SizedBox(height: 14),
+        ...children,
       ],
     );
   }
 
-  Widget _fieldLabel(String label, {required bool required}) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withOpacity(0.6),
-            letterSpacing: 0.3,
-          ),
-        ),
-        if (required)
-          const Text(
-            ' *',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.destaque,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _divider() {
-    return Divider(
-      color: Colors.white.withOpacity(0.07),
-      thickness: 0.5,
-    );
-  }
-
-  Widget _campoTexto({
+  Widget _authInput({
+    required String label,
     required TextEditingController controller,
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      textCapitalization: textCapitalization,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 14,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AuthFieldLabel(
+            label: label,
+            required: true,
+          ),
+          const SizedBox(height: 7),
+          AuthTextField(
+            controller: controller,
+            hint: hint,
+            icon: icon,
+            keyboardType: keyboardType,
+            textCapitalization: textCapitalization,
+            obscureText: obscureText,
+            suffixIcon: suffixIcon,
+            inputFormatters: inputFormatters,
+            validator: validator,
+          ),
+        ],
       ),
-      decoration: _inputDecoration(
-        hint: hint,
-        icon: icon,
-      ),
-      validator: validator,
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
+  Widget _visibilityButton({
+    required bool isObscure,
+    required VoidCallback onTap,
   }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(
-        color: Colors.white.withOpacity(0.28),
-        fontSize: 13,
-      ),
-      prefixIcon: Icon(
-        icon,
-        color: Colors.white.withOpacity(0.4),
+    return IconButton(
+      icon: Icon(
+        isObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+        color: Colors.white.withValues(alpha: 0.35),
         size: 20,
       ),
-      filled: true,
-      fillColor: _fieldColor,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: Colors.white.withOpacity(0.07),
-          width: 1,
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: AppColors.destaque.withOpacity(0.5),
-          width: 1.5,
-        ),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: AppColors.erro,
-          width: 1,
-        ),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: AppColors.erro,
-          width: 1.5,
-        ),
-      ),
-      errorStyle: const TextStyle(
-        color: AppColors.erro,
-        fontSize: 11,
+      onPressed: onTap,
+    );
+  }
+
+  Widget _divider() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 18),
+      child: Divider(
+        color: Colors.white.withValues(alpha: 0.07),
+        thickness: 0.5,
       ),
     );
+  }
+
+  String? _validarNome(String? value) {
+    final nome = value?.trim() ?? '';
+
+    if (nome.isEmpty) return 'Campo obrigatório';
+    if (nome.split(' ').length < 2) return 'Informe nome e sobrenome';
+
+    return null;
+  }
+
+  String? _validarEmail(String? value) {
+    final email = value?.trim() ?? '';
+
+    if (email.isEmpty) return 'Campo obrigatório';
+
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+      return 'E-mail inválido';
+    }
+
+    return null;
+  }
+
+  String? _validarCampoCpf(String? value) {
+    final cpf = value?.trim() ?? '';
+
+    if (cpf.isEmpty) return 'Campo obrigatório';
+    if (!validarCPF(cpf)) return 'CPF inválido';
+
+    return null;
+  }
+
+  String? _validarCampoTelefone(String? value) {
+    final telefone = value?.trim() ?? '';
+
+    if (telefone.isEmpty) return 'Campo obrigatório';
+    if (!validarTelefone(telefone)) return 'Telefone inválido';
+
+    return null;
+  }
+
+  String? _validarCampoSenha(String? value) {
+    final senha = value ?? '';
+
+    if (senha.isEmpty) return 'Campo obrigatório';
+
+    if (!validarSenha(senha)) {
+      return 'Senha fraca: mínimo 6 caracteres e 1 número';
+    }
+
+    return null;
+  }
+
+  String? _validarConfirmacaoSenha(String? value) {
+    final confirmacao = value ?? '';
+
+    if (confirmacao.isEmpty) return 'Confirme sua senha';
+    if (confirmacao != senhaController.text) return 'As senhas não coincidem';
+
+    return null;
   }
 
   Widget _buildPasswordStrengthBar() {
     final senha = senhaController.text;
+
+    if (senha.isEmpty) return const SizedBox.shrink();
 
     int forca = 0;
 
@@ -604,27 +445,21 @@ class _CadastroPageState extends State<CadastroPage>
       Colors.red,
       Colors.orange,
       AppColors.destaque,
-      _goldLight,
-      _goldDark,
+      AppColors.destaqueClaro,
+      AppColors.destaqueEscuro,
     ];
-
-    if (senha.isEmpty) {
-      return const SizedBox.shrink();
-    }
 
     return Row(
       children: [
         ...List.generate(5, (index) {
           return Expanded(
             child: Container(
-              margin: EdgeInsets.only(
-                right: index < 4 ? 4 : 0,
-              ),
+              margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
               height: 3,
               decoration: BoxDecoration(
                 color: index < forca
                     ? colors[forca]
-                    : Colors.white.withOpacity(0.1),
+                    : Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -632,10 +467,10 @@ class _CadastroPageState extends State<CadastroPage>
         }),
         const SizedBox(width: 10),
         Text(
-          forca > 0 ? labels[forca] : '',
+          labels[forca],
           style: TextStyle(
             fontSize: 11,
-            color: forca > 0 ? colors[forca] : Colors.transparent,
+            color: colors[forca],
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -646,9 +481,7 @@ class _CadastroPageState extends State<CadastroPage>
   Widget _buildTermosCheckbox() {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _aceitouTermos = !_aceitouTermos;
-        });
+        setState(() => _aceitouTermos = !_aceitouTermos);
       },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,14 +492,13 @@ class _CadastroPageState extends State<CadastroPage>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
-                color: _aceitouTermos
-                    ? AppColors.destaque
-                    : Colors.transparent,
+                color:
+                _aceitouTermos ? AppColors.destaque : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: _aceitouTermos
                       ? AppColors.destaque
-                      : Colors.white.withOpacity(0.25),
+                      : Colors.white.withValues(alpha: 0.25),
                   width: 1.5,
                 ),
               ),
@@ -685,7 +517,7 @@ class _CadastroPageState extends State<CadastroPage>
               text: TextSpan(
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.55),
+                  color: Colors.white.withValues(alpha: 0.55),
                   height: 1.5,
                 ),
                 children: const [
@@ -716,78 +548,11 @@ class _CadastroPageState extends State<CadastroPage>
   }
 
   Widget _buildCadastrarButton() {
-    final podeCadastrar = _aceitouTermos && !_isLoading;
-
-    return AnimatedOpacity(
-      opacity: podeCadastrar ? 1.0 : 0.55,
-      duration: const Duration(milliseconds: 250),
-      child: Container(
-        width: double.infinity,
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: podeCadastrar
-                ? const [
-              _goldLight,
-              _goldDark,
-            ]
-                : [
-              Colors.white.withOpacity(0.18),
-              Colors.white.withOpacity(0.10),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: podeCadastrar
-              ? [
-            BoxShadow(
-              color: AppColors.destaque.withOpacity(0.3),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ]
-              : [],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: _isLoading
-                ? null
-                : () {
-              if (!_aceitouTermos) {
-                _showSnackBar(
-                  'Aceite os Termos de Uso e a Política de Privacidade para continuar.',
-                );
-                return;
-              }
-
-              _submitForm();
-            },
-            child: Center(
-              child: _isLoading
-                  ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: Colors.black,
-                  strokeWidth: 2.5,
-                ),
-              )
-                  : Text(
-                'Cadastrar',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: podeCadastrar
-                      ? Colors.black
-                      : Colors.white.withOpacity(0.55),
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return GradientButton(
+      label: 'Cadastrar',
+      loading: _isLoading,
+      radius: 14,
+      onTap: _isLoading ? null : _validarEEnviarCadastro,
     );
   }
 
@@ -799,12 +564,10 @@ class _CadastroPageState extends State<CadastroPage>
         text: TextSpan(
           style: TextStyle(
             fontSize: 13,
-            color: Colors.white.withOpacity(0.4),
+            color: Colors.white.withValues(alpha: 0.4),
           ),
           children: const [
-            TextSpan(
-              text: 'Já possui uma conta institucional? ',
-            ),
+            TextSpan(text: 'Já possui uma conta institucional? '),
             TextSpan(
               text: 'Fazer login',
               style: TextStyle(
@@ -818,37 +581,32 @@ class _CadastroPageState extends State<CadastroPage>
     );
   }
 
-  Widget _buildFooter() {
-    return Text(
-      '© 2026 MESCLA INVEST  •  ACADEMIC & FINANCIAL EXCELLENCE',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 9,
-        color: Colors.white.withOpacity(0.2),
-        letterSpacing: 1.4,
-        height: 1.8,
-      ),
-    );
+  void _validarEEnviarCadastro() {
+    if (!_aceitouTermos) {
+      _showSnackBar(
+        'Aceite os Termos de Uso e a Política de Privacidade para continuar.',
+        error: true,
+      );
+      return;
+    }
+
+    _submitForm();
   }
 
   Future<void> _submitForm() async {
     FocusScope.of(context).unfocus();
 
-    if (!_aceitouTermos) {
-      _showSnackBar('Aceite os Termos de Uso para continuar.');
-      return;
-    }
-
     final formValido = _formKey.currentState?.validate() ?? false;
 
     if (!formValido) {
-      _showSnackBar('Revise os campos destacados antes de continuar.');
+      _showSnackBar(
+        'Revise os campos destacados antes de continuar.',
+        error: true,
+      );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final errorMessage = await _auth.register(
@@ -861,39 +619,35 @@ class _CadastroPageState extends State<CadastroPage>
 
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
 
       if (errorMessage == null) {
         _showSuccessDialog();
       } else {
-        _showSnackBar(errorMessage);
+        _showSnackBar(errorMessage, error: true);
       }
     } catch (e) {
       if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
 
-      _showSnackBar('Erro ao realizar cadastro: $e');
+      _showSnackBar(
+        'Erro ao realizar cadastro: $e',
+        error: true,
+      );
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: _fieldColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
+  void _showSnackBar(
+      String message, {
+        bool success = false,
+        bool error = false,
+      }) {
+    AppSnackBar.show(
+      context,
+      message: message,
+      success: success,
+      error: error,
     );
   }
 
@@ -905,27 +659,7 @@ class _CadastroPageState extends State<CadastroPage>
         return Dialog(
           backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            decoration: BoxDecoration(
-              color: _cardColor,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppColors.destaque.withOpacity(0.35),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.55),
-                  blurRadius: 40,
-                  offset: const Offset(0, 14),
-                ),
-                BoxShadow(
-                  color: AppColors.destaque.withOpacity(0.12),
-                  blurRadius: 28,
-                ),
-              ],
-            ),
+          child: AuthCard(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -936,13 +670,13 @@ class _CadastroPageState extends State<CadastroPage>
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
                       colors: [
-                        _goldLight,
-                        _goldDark,
+                        AppColors.destaqueClaro,
+                        AppColors.destaqueEscuro,
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.destaque.withOpacity(0.35),
+                        color: AppColors.destaque.withValues(alpha: 0.35),
                         blurRadius: 22,
                         offset: const Offset(0, 8),
                       ),
@@ -971,45 +705,19 @@ class _CadastroPageState extends State<CadastroPage>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.58),
+                    color: Colors.white.withValues(alpha: 0.58),
                     height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 26),
-                SizedBox(
-                  width: double.infinity,
+                GradientButton(
+                  label: 'Ir para login',
+                  radius: 14,
                   height: 50,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          _goldLight,
-                          _goldDark,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () {
-                          Navigator.pop(dialogContext);
-                          Navigator.pushReplacementNamed(context, '/login');
-                        },
-                        child: const Center(
-                          child: Text(
-                            'Ir para login',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  onTap: () {
+                    Navigator.pop(dialogContext);
+                    Navigator.pushReplacementNamed(context, '/login');
+                  },
                 ),
               ],
             ),
@@ -1032,19 +740,16 @@ class CpfInputFormatter extends TextInputFormatter {
       text = text.substring(0, 11);
     }
 
-    String formatted = '';
+    final buffer = StringBuffer();
 
     for (int i = 0; i < text.length; i++) {
-      if (i == 3 || i == 6) {
-        formatted += '.';
-      }
+      if (i == 3 || i == 6) buffer.write('.');
+      if (i == 9) buffer.write('-');
 
-      if (i == 9) {
-        formatted += '-';
-      }
-
-      formatted += text[i];
+      buffer.write(text[i]);
     }
+
+    final formatted = buffer.toString();
 
     return TextEditingValue(
       text: formatted,
@@ -1067,23 +772,17 @@ class TelefoneInputFormatter extends TextInputFormatter {
       text = text.substring(0, 11);
     }
 
-    String formatted = '';
+    final buffer = StringBuffer();
 
     for (int i = 0; i < text.length; i++) {
-      if (i == 0) {
-        formatted += '(';
-      }
+      if (i == 0) buffer.write('(');
+      if (i == 2) buffer.write(') ');
+      if (i == 7) buffer.write('-');
 
-      if (i == 2) {
-        formatted += ') ';
-      }
-
-      if (i == 7) {
-        formatted += '-';
-      }
-
-      formatted += text[i];
+      buffer.write(text[i]);
     }
+
+    final formatted = buffer.toString();
 
     return TextEditingValue(
       text: formatted,

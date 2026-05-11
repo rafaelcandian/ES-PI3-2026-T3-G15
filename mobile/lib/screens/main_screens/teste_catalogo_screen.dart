@@ -54,7 +54,7 @@ class _StartupCatalogPageState extends State<StartupCatalogPage> {
   }
 
   Future<List<StartupCardData>> loadStartupData() async {
-    final jsonString = await rootBundle.loadString('assets/startups.json');
+    final jsonString = await rootBundle.loadString('assets/main_screens.json');
     final jsonList = jsonDecode(jsonString) as List<dynamic>;
     return jsonList
         .map((item) => StartupCardData.fromJson(item as Map<String, dynamic>))
@@ -161,7 +161,7 @@ class _StartupCatalogPageState extends State<StartupCatalogPage> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text('Erro ao carregar startups', style: theme.textTheme.bodyLarge));
+                    return Center(child: Text('Erro ao carregar main_screens', style: theme.textTheme.bodyLarge));
                   }
                   final startups = applyFilter(snapshot.data ?? []);
                   if (startups.isEmpty) {

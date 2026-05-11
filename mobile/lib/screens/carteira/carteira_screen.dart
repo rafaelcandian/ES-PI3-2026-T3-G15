@@ -5,13 +5,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
-import 'package:mescla_invest/widgets/app_bar_padrao.dart';
-import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
+import 'package:mescla_invest/widgets/app_bar_padrao.dart';
+import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
+import 'package:mescla_invest/widgets/premium_ui.dart';
+
+import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
+import 'package:mescla_invest/widgets/shared/empty_state_card.dart';
+import 'package:mescla_invest/widgets/shared/gradient_button.dart';
+import 'package:mescla_invest/widgets/shared/icon_box.dart';
+import 'package:mescla_invest/widgets/shared/info_row.dart';
+import 'package:mescla_invest/widgets/shared/outline_button.dart' as shared;
+import 'package:mescla_invest/widgets/shared/section_card.dart';
+import 'package:mescla_invest/widgets/shared/section_label.dart';
+import 'package:mescla_invest/widgets/shared/ticker_box.dart';
 
 import '../../models/balcao_model.dart';
-import '../../themes/app_theme.dart';
 import '../ordens/ordem_exe_screen.dart';
 import 'adicionar_fundos_screen.dart';
 
@@ -85,7 +95,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
         final quantidade = entry.value;
 
         if ((quantidade as num) > 0) {
-          final doc = await firestore.collection('startups').doc(startupId).get();
+          final doc = await firestore
+              .collection('main_screens')
+              .doc(startupId)
+              .get();
 
           if (doc.exists) {
             final data = doc.data()!;
@@ -176,9 +189,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() {
-          _loading = false;
-        });
+        setState(() => _loading = false);
       }
     }
   }
@@ -327,7 +338,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
         bottomNavigationBar: const BottomNavBar(selectedIndex: 2),
         body: Stack(
           children: [
-            const _AtmosphericBackground(),
+            const AtmosphericBackground(),
             if (_loading)
               const Center(
                 child: CircularProgressIndicator(
@@ -354,6 +365,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           ],
                         ),
                       ),
+
                       SliverToBoxAdapter(
                         child: _PatrimonioCard(
                           patrimonioTotal: patrimonioTotal,
@@ -363,9 +375,11 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           onAdicionarFundos: _abrirAdicionarFundos,
                         ),
                       ),
+
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 18),
                       ),
+
                       SliverToBoxAdapter(
                         child: _GraficoCard(
                           data: data,
@@ -375,27 +389,31 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           },
                         ),
                       ),
+
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 24),
                       ),
+
                       const SliverToBoxAdapter(
-                        child: _SectionLabel(
+                        child: SectionLabel(
                           label: 'SEUS ATIVOS',
                           hint:
                           'Acompanhe seus tokens e a valorização por startup.',
                         ),
                       ),
+
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 12),
                       ),
+
                       if (_ativos.isEmpty)
                         const SliverPadding(
                           padding: EdgeInsets.symmetric(horizontal: 22),
                           sliver: SliverToBoxAdapter(
-                            child: _EmptyStateCard(
+                            child: EmptyStateCard(
                               icon: Icons.account_balance_wallet_outlined,
                               title: 'Nenhum ativo em carteira',
-                              subtitle:
+                              message:
                               'Quando você comprar tokens, eles aparecerão aqui.',
                             ),
                           ),
@@ -429,27 +447,31 @@ class _CarteiraPageState extends State<CarteiraPage> {
                             },
                           ),
                         ),
+
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 24),
                       ),
+
                       const SliverToBoxAdapter(
-                        child: _SectionLabel(
+                        child: SectionLabel(
                           label: 'ÚLTIMAS MOVIMENTAÇÕES',
                           hint:
                           'Histórico recente das operações e aportes simulados.',
                         ),
                       ),
+
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 12),
                       ),
+
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 22),
                         sliver: _movimentacoes.isEmpty
                             ? const SliverToBoxAdapter(
-                          child: _EmptyStateCard(
+                          child: EmptyStateCard(
                             icon: Icons.receipt_long_outlined,
                             title: 'Nenhuma movimentação recente',
-                            subtitle:
+                            message:
                             'Seus aportes, compras e vendas aparecerão aqui.',
                           ),
                         )
@@ -469,6 +491,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           },
                         ),
                       ),
+
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 120),
                       ),
@@ -575,7 +598,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       backgroundColor: AppColors.fundo,
       body: Stack(
         children: [
-          const _AtmosphericBackground(),
+          const AtmosphericBackground(),
           SafeArea(
             child: CustomScrollView(
               physics: const BouncingScrollPhysics(),
@@ -606,13 +629,16 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                     ),
                   ),
                 ),
+
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate(
                       [
                         _AtivoHeroCard(ativo: widget.ativo),
+
                         const SizedBox(height: 18),
+
                         _GraficoCard(
                           data: widget.historico,
                           selectedTimePeriod: selectedTimePeriod,
@@ -620,43 +646,57 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                             setState(() => selectedTimePeriod = period);
                           },
                         ),
+
                         const SizedBox(height: 18),
+
                         _DetalheMetricasCard(
                           ativo: widget.ativo,
                         ),
+
                         const SizedBox(height: 18),
-                        _InfoCard(
+
+                        SectionCard(
                           title: 'Acompanhamento do ativo',
-                          children: [
-                            _InfoRow(
-                              label: 'Preço médio de compra',
-                              value:
-                              'R\$ ${widget.ativo.precoMedio.toStringAsFixed(2)}',
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: premiumFieldDecoration(
+                              radius: 18,
                             ),
-                            _InfoRow(
-                              label: 'Preço atual',
-                              value:
-                              'R\$ ${widget.ativo.valorToken.toStringAsFixed(2)}',
-                              destaque: true,
+                            child: Column(
+                              children: [
+                                InfoRow(
+                                  label: 'Preço médio de compra',
+                                  value:
+                                  'R\$ ${widget.ativo.precoMedio.toStringAsFixed(2)}',
+                                ),
+                                InfoRow(
+                                  label: 'Preço atual',
+                                  value:
+                                  'R\$ ${widget.ativo.valorToken.toStringAsFixed(2)}',
+                                  destaque: true,
+                                ),
+                                InfoRow(
+                                  label: 'Resultado acumulado',
+                                  value:
+                                  '${widget.ativo.lucroPrejuizo >= 0 ? '+' : '-'} R\$ ${widget.ativo.lucroPrejuizo.abs().toStringAsFixed(2)}',
+                                ),
+                                InfoRow(
+                                  label: 'Variação',
+                                  value:
+                                  '${_positivo ? '+' : ''}${widget.ativo.variacao.toStringAsFixed(1)}%',
+                                  destaque: true,
+                                ),
+                              ],
                             ),
-                            _InfoRow(
-                              label: 'Resultado acumulado',
-                              value:
-                              '${widget.ativo.lucroPrejuizo >= 0 ? '+' : '-'} R\$ ${widget.ativo.lucroPrejuizo.abs().toStringAsFixed(2)}',
-                            ),
-                            _InfoRow(
-                              label: 'Variação',
-                              value:
-                              '${_positivo ? '+' : ''}${widget.ativo.variacao.toStringAsFixed(1)}%',
-                              destaque: true,
-                            ),
-                          ],
+                          ),
                         ),
+
                         const SizedBox(height: 26),
+
                         Row(
                           children: [
                             Expanded(
-                              child: _OutlineActionButton(
+                              child: shared.OutlineButton(
                                 label: 'Vender',
                                 onTap: () => _abrirOrdem(
                                   context,
@@ -667,7 +707,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               flex: 2,
-                              child: _PrimaryActionButton(
+                              child: GradientButton(
                                 label: 'Comprar mais',
                                 onTap: () => _abrirOrdem(
                                   context,
@@ -716,72 +756,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 }
 
-// ─── Componentes gerais ─────────────────────────────────────────────────────
-
-class _AtmosphericBackground extends StatelessWidget {
-  const _AtmosphericBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          Positioned(
-            top: -150,
-            right: -120,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.azul.withOpacity(0.22),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 220,
-            left: -130,
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.destaque.withOpacity(0.07),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 80,
-            right: -120,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.roxo.withOpacity(0.18),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ─── Componentes específicos da carteira ────────────────────────────────────
 
 class _Header extends StatelessWidget {
   const _Header();
@@ -873,10 +848,12 @@ class _PatrimonioCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            _PrimaryWalletButton(
+            GradientButton(
               label: 'Adicionar fundos',
               icon: Icons.add_card_rounded,
               onTap: onAdicionarFundos,
+              height: 54,
+              radius: 18,
             ),
           ],
         ),
@@ -986,7 +963,8 @@ class _GraficoCard extends StatelessWidget {
                             vertical: 9,
                           ),
                           decoration: BoxDecoration(
-                            color: active ? AppColors.destaque : AppColors.campo,
+                            color:
+                            active ? AppColors.destaque : AppColors.campo,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: active
@@ -1018,46 +996,6 @@ class _GraficoCard extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final String hint;
-
-  const _SectionLabel({
-    required this.label,
-    required this.hint,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textoMuitoFraco,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            hint,
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 11,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AtivoCard extends StatelessWidget {
   final AtivoCarteira ativo;
   final VoidCallback onTap;
@@ -1084,7 +1022,7 @@ class _AtivoCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _TickerBox(
+              TickerBox(
                 simbolo: ativo.simbolo,
                 color: AppColors.destaque,
               ),
@@ -1130,7 +1068,8 @@ class _AtivoCard extends StatelessWidget {
                   Text(
                     '${negative ? '' : '+'}${ativo.variacao.toStringAsFixed(1)}%',
                     style: TextStyle(
-                      color: negative ? AppColors.textoFraco : AppColors.destaque,
+                      color:
+                      negative ? AppColors.textoFraco : AppColors.destaque,
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1161,7 +1100,7 @@ class _AtivoHeroCard extends StatelessWidget {
       decoration: premiumCardDecoration(),
       child: Row(
         children: [
-          _TickerBox(
+          TickerBox(
             simbolo: ativo.simbolo,
             color: negative ? AppColors.azul : AppColors.destaque,
             size: 62,
@@ -1246,276 +1185,6 @@ class _DetalheMetricasCard extends StatelessWidget {
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  const _InfoCard({
-    required this.title,
-    required this.children,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PremiumHeaderEyebrow(text: title.toUpperCase()),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: premiumFieldDecoration(
-              radius: 18,
-            ),
-            child: Column(
-              children: children,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool destaque;
-
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.destaque = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 11),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: destaque ? AppColors.textoPrincipal : AppColors.textoFraco,
-                fontSize: destaque ? 14 : 13,
-                fontWeight: destaque ? FontWeight.w800 : FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
-                fontSize: destaque ? 16 : 13,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrimaryWalletButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _PrimaryWalletButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      width: double.infinity,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.destaque.withOpacity(0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onTap,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  color: AppColors.fundo,
-                  size: 20,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.fundo,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _PrimaryActionButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.destaque.withOpacity(0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onTap,
-            child: Center(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.fundo,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OutlineActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _OutlineActionButton({
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.destaque,
-          side: const BorderSide(
-            color: AppColors.bordaDestaque,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TickerBox extends StatelessWidget {
-  final String simbolo;
-  final Color color;
-  final double size;
-
-  const _TickerBox({
-    required this.simbolo,
-    required this.color,
-    this.size = 46,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(size * 0.30),
-        border: Border.all(
-          color: color.withOpacity(0.32),
-        ),
-      ),
-      child: Center(
-        child: Text(
-          simbolo,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w900,
-            fontSize: size > 50 ? 14 : 12,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MovimentacaoTile extends StatelessWidget {
   final String titulo;
   final String descricao;
@@ -1540,21 +1209,12 @@ class _MovimentacaoTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.destaque.withOpacity(0.24),
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: entrada ? AppColors.destaque : AppColors.textoFraco,
-              size: 18,
-            ),
+          IconBox(
+            icon: icon,
+            size: 34,
+            iconSize: 18,
+            radius: 12,
+            color: entrada ? AppColors.destaque : AppColors.textoFraco,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1589,60 +1249,6 @@ class _MovimentacaoTile extends StatelessWidget {
               color: entrada ? AppColors.destaque : AppColors.textoPrincipal,
               fontWeight: FontWeight.w900,
               fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyStateCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _EmptyStateCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: premiumCardDecoration(
-        radius: 22,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 26,
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            color: AppColors.destaque,
-            size: 38,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textoPrincipal,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 12,
-              height: 1.4,
             ),
           ),
         ],

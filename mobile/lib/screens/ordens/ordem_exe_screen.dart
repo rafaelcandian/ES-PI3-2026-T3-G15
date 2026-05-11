@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:mescla_invest/models/balcao_model.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
+import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
+import 'package:mescla_invest/widgets/shared/gradient_button.dart';
+import 'package:mescla_invest/widgets/shared/icon_box.dart';
+import 'package:mescla_invest/widgets/shared/info_row.dart';
+import 'package:mescla_invest/widgets/shared/section_card.dart';
+import 'package:mescla_invest/widgets/shared/ticker_box.dart';
 
-import '../../models/balcao_model.dart';
-import '../../themes/app_theme.dart';
 import 'ordem_confirm_screen.dart';
 
+/// Tela responsável por configurar uma ordem de compra ou venda.
+///
+/// Aqui o usuário ajusta quantidade, preço por token, vê comparação de mercado
+/// e revisa o resumo financeiro antes de seguir para a confirmação.
 class OrdemExeScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -80,380 +91,70 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     final maximo = widget.oferta.quantidade;
 
     if (value.isEmpty) {
-      setState(() {
-        _quantidade = 0;
-      });
+      setState(() => _quantidade = 0);
       return;
     }
 
     final quantidadeDigitada = int.tryParse(value) ?? 0;
-
     final quantidadeAjustada = quantidadeDigitada.clamp(1, maximo).toInt();
 
     if (quantidadeDigitada != quantidadeAjustada) {
-      _quantidadeController.text = quantidadeAjustada.toString();
-      _quantidadeController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _quantidadeController.text.length),
-      );
+      _atualizarControllerQuantidade(quantidadeAjustada);
     }
 
-    setState(() {
-      _quantidade = quantidadeAjustada;
-    });
+    setState(() => _quantidade = quantidadeAjustada);
   }
 
-  void _alterarQuantidadePeloBotao(int novaQuantidade) {
+  void _alterarQuantidade(int novaQuantidade) {
     final maximo = widget.oferta.quantidade;
     final quantidadeAjustada = novaQuantidade.clamp(1, maximo).toInt();
 
+    HapticFeedback.selectionClick();
+
     setState(() {
       _quantidade = quantidadeAjustada;
-      _quantidadeController.text = quantidadeAjustada.toString();
-      _quantidadeController.selection = TextSelection.fromPosition(
-        TextPosition(offset: _quantidadeController.text.length),
-      );
+      _atualizarControllerQuantidade(quantidadeAjustada);
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final accent = _isCompra ? AppColors.destaque : AppColors.azul;
+  void _selecionarPercentual(double percentual) {
+    final maximo = widget.oferta.quantidade;
+    final novaQuantidade = (maximo * percentual).round().clamp(1, maximo);
 
-    return Scaffold(
-      backgroundColor: AppColors.fundo,
-      body: Stack(
-        children: [
-          const _AtmosphericBackground(),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildTopBar(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(),
-                        const SizedBox(height: 22),
-                        _buildResumoStartup(accent),
-                        const SizedBox(height: 18),
-                        _buildComparacaoMercado(),
-                        const SizedBox(height: 18),
-                        _buildConfigOrdem(),
-                        const SizedBox(height: 18),
-                        _buildResumoFinanceiro(),
-                        const SizedBox(height: 28),
-                        _buildConfirmButton(accent),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    _alterarQuantidade(novaQuantidade.toInt());
+  }
+
+  void _atualizarControllerQuantidade(int value) {
+    _quantidadeController.text = value.toString();
+    _quantidadeController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _quantidadeController.text.length),
     );
   }
 
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.destaque,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            _isCompra ? 'Executar compra' : 'Executar venda',
-            style: const TextStyle(
-              color: AppColors.destaque,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  void _alterarPreco(double delta) {
+    HapticFeedback.selectionClick();
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        PremiumHeaderEyebrow(
-          text: _isCompra ? 'ORDEM DE COMPRA' : 'ORDEM DE VENDA',
-        ),
-        const SizedBox(height: 14),
-        Text(
-          _isCompra ? 'Comprar tokens' : 'Vender tokens',
-          style: const TextStyle(
-            color: AppColors.textoPrincipal,
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            height: 1.15,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          _isCompra
-              ? 'Revise os dados antes de confirmar sua compra simulada.'
-              : 'Revise os dados antes de confirmar sua venda simulada.',
-          style: const TextStyle(
-            color: AppColors.textoFraco,
-            fontSize: 13,
-            height: 1.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildResumoStartup(Color accent) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: accent.withOpacity(0.13),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: accent.withOpacity(0.35),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                widget.oferta.simbolo,
-                style: TextStyle(
-                  color: accent,
-                  fontSize: widget.oferta.simbolo.length > 3 ? 10 : 13,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.oferta.empresa,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textoPrincipal,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${widget.oferta.quantidade} tokens disponíveis • Spread ${widget.oferta.spread.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComparacaoMercado() {
-    return _InfoCard(
-      title: 'Comparação de mercado',
-      children: [
-        _InfoRow(
-          label: 'Preço da ordem',
-          value: 'R\$ ${_preco.toStringAsFixed(2)}',
-          destaque: true,
-        ),
-        const SizedBox(height: 10),
-        _InfoRow(
-          label: 'Preço médio',
-          value: 'R\$ ${_precoMedio.toStringAsFixed(2)}',
-        ),
-        const SizedBox(height: 10),
-        _InfoRow(
-          label: 'Diferença',
-          value: '${_diferenca >= 0 ? '+' : ''}${_diferenca.toStringAsFixed(1)}%',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConfigOrdem() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const PremiumHeaderEyebrow(text: 'CONFIGURAÇÃO DA ORDEM'),
-          const SizedBox(height: 18),
-          _QuantityControlBox(
-            label: 'Quantidade de tokens',
-            controller: _quantidadeController,
-            quantidade: _quantidade,
-            maximo: widget.oferta.quantidade,
-            onChanged: _atualizarQuantidade,
-            onMinus: () {
-              if (_quantidade <= 1) return;
-
-              HapticFeedback.selectionClick();
-              _alterarQuantidadePeloBotao(_quantidade - 1);
-            },
-            onPlus: () {
-              if (_quantidade >= widget.oferta.quantidade) return;
-
-              HapticFeedback.selectionClick();
-              _alterarQuantidadePeloBotao(_quantidade + 1);
-            },
-          ),
-          const SizedBox(height: 14),
-          _ControlBox(
-            label: 'Preço por token',
-            value: 'R\$ ${_preco.toStringAsFixed(2)}',
-            onMinus: () {
-              if (_preco <= 0.10) return;
-
-              HapticFeedback.selectionClick();
-
-              setState(() {
-                _preco = (_preco - 0.10).clamp(0.10, 999999);
-              });
-            },
-            onPlus: () {
-              HapticFeedback.selectionClick();
-
-              setState(() {
-                _preco += 0.10;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResumoFinanceiro() {
-    return _InfoCard(
-      title: 'Resumo financeiro',
-      children: [
-        _InfoRow(
-          label: 'Subtotal',
-          value: 'R\$ ${_subtotal.toStringAsFixed(2)}',
-        ),
-        const SizedBox(height: 10),
-        _InfoRow(
-          label: 'Taxa simulada',
-          value: 'R\$ ${_taxa.toStringAsFixed(2)}',
-        ),
-        const SizedBox(height: 14),
-        const Divider(
-          color: AppColors.bordaClara,
-          height: 1,
-        ),
-        const SizedBox(height: 14),
-        _InfoRow(
-          label: _isCompra ? 'Total estimado' : 'Valor líquido',
-          value: 'R\$ ${_totalFinal.toStringAsFixed(2)}',
-          destaque: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildConfirmButton(Color accent) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: _isCompra
-              ? const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
-          )
-              : const LinearGradient(
-            colors: [
-              AppColors.azul,
-              AppColors.roxo,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: accent.withOpacity(0.24),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: _confirmarOrdem,
-            child: Center(
-              child: Text(
-                _isCompra ? 'CONFIRMAR COMPRA' : 'CONFIRMAR VENDA',
-                style: TextStyle(
-                  color: _isCompra ? AppColors.fundo : AppColors.textoPrincipal,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    setState(() {
+      _preco = (_preco + delta).clamp(0.10, 999999);
+    });
   }
 
   void _confirmarOrdem() {
     if (_quantidade <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Informe uma quantidade válida de tokens.'),
-        ),
+      AppSnackBar.show(
+        context,
+        message: 'Informe uma quantidade válida de tokens.',
+        error: true,
       );
       return;
     }
 
     if (_quantidade > widget.oferta.quantidade) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'A quantidade máxima disponível é ${widget.oferta.quantidade} tokens.',
-          ),
-        ),
+      AppSnackBar.show(
+        context,
+        message:
+        'A quantidade máxima disponível é ${widget.oferta.quantidade} tokens.',
+        error: true,
       );
       return;
     }
@@ -481,67 +182,208 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       ),
     );
   }
-}
-
-// ===================== BACKGROUND =====================
-
-class _AtmosphericBackground extends StatelessWidget {
-  const _AtmosphericBackground();
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Stack(
+    final actionLabel = _isCompra ? 'compra' : 'venda';
+
+    return Scaffold(
+      backgroundColor: AppColors.fundo,
+      body: Stack(
         children: [
-          Positioned(
-            top: -150,
-            right: -120,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.azul.withOpacity(0.22),
-                    Colors.transparent,
-                  ],
+          const AtmosphericBackground(),
+          SafeArea(
+            child: Column(
+              children: [
+                _OrderTopBar(
+                  title: _isCompra ? 'Executar compra' : 'Executar venda',
                 ),
-              ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _OrderHeader(isCompra: _isCompra),
+                        const SizedBox(height: 22),
+                        _StartupOrderHero(
+                          oferta: widget.oferta,
+                          isCompra: _isCompra,
+                          preco: _preco,
+                        ),
+                        const SizedBox(height: 18),
+                        _buildMarketComparison(),
+                        const SizedBox(height: 18),
+                        _buildOrderConfiguration(),
+                        const SizedBox(height: 18),
+                        _buildFinancialSummary(),
+                        const SizedBox(height: 28),
+                        GradientButton(
+                          label: 'Confirmar $actionLabel',
+                          icon: _isCompra
+                              ? Icons.shopping_bag_rounded
+                              : Icons.sell_rounded,
+                          height: 56,
+                          radius: 18,
+                          onTap: _confirmarOrdem,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            top: 240,
-            left: -130,
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.destaque.withOpacity(0.07),
-                    Colors.transparent,
-                  ],
+        ],
+      ),
+    );
+  }
+
+  /// Cards de comparação de preço da ordem versus preço médio do mercado.
+  Widget _buildMarketComparison() {
+    return SectionCard(
+      title: 'Comparação de mercado',
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _MarketMetricTile(
+                  label: 'Preço da ordem',
+                  value: 'R\$ ${_preco.toStringAsFixed(2)}',
+                  destaque: true,
                 ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MarketMetricTile(
+                  label: 'Preço médio',
+                  value: 'R\$ ${_precoMedio.toStringAsFixed(2)}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _MarketMetricTile(
+            label: 'Diferença',
+            value:
+            '${_diferenca >= 0 ? '+' : ''}${_diferenca.toStringAsFixed(1)}%',
+            fullWidth: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Área de ajuste de quantidade e preço por token.
+  ///
+  /// Inclui botões rápidos de percentual para dar cara de app financeiro.
+  Widget _buildOrderConfiguration() {
+    return SectionCard(
+      title: 'Configuração da ordem',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _QuantityControlBox(
+            controller: _quantidadeController,
+            quantidade: _quantidade,
+            maximo: widget.oferta.quantidade,
+            onChanged: _atualizarQuantidade,
+            onMinus: () {
+              if (_quantidade > 1) _alterarQuantidade(_quantidade - 1);
+            },
+            onPlus: () {
+              if (_quantidade < widget.oferta.quantidade) {
+                _alterarQuantidade(_quantidade + 1);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          _QuickAmountButtons(
+            onSelected: _selecionarPercentual,
+          ),
+          const SizedBox(height: 14),
+          _PriceControlBox(
+            value: 'R\$ ${_preco.toStringAsFixed(2)}',
+            onMinus: () => _alterarPreco(-0.10),
+            onPlus: () => _alterarPreco(0.10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Resumo final antes da confirmação.
+  Widget _buildFinancialSummary() {
+    return SectionCard(
+      title: 'Resumo financeiro',
+      child: Column(
+        children: [
+          InfoRow(
+            label: 'Quantidade',
+            value: '$_quantidade tokens',
+            boxed: true,
+          ),
+          const SizedBox(height: 10),
+          InfoRow(
+            label: 'Subtotal',
+            value: 'R\$ ${_subtotal.toStringAsFixed(2)}',
+            boxed: true,
+          ),
+          const SizedBox(height: 10),
+          InfoRow(
+            label: 'Taxa simulada',
+            value: 'R\$ ${_taxa.toStringAsFixed(2)}',
+            boxed: true,
+          ),
+          const SizedBox(height: 14),
+          const Divider(
+            color: AppColors.bordaClara,
+            height: 1,
+          ),
+          const SizedBox(height: 14),
+          InfoRow(
+            label: _isCompra ? 'Total estimado' : 'Valor líquido',
+            value: 'R\$ ${_totalFinal.toStringAsFixed(2)}',
+            destaque: true,
+            boxed: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Barra superior comum da execução da ordem.
+class _OrderTopBar extends StatelessWidget {
+  final String title;
+
+  const _OrderTopBar({
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppColors.destaque,
+              size: 20,
             ),
           ),
-          Positioned(
-            bottom: 60,
-            right: -120,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.roxo.withOpacity(0.18),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
+          const SizedBox(width: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.destaque,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -550,85 +392,154 @@ class _AtmosphericBackground extends StatelessWidget {
   }
 }
 
-// ===================== CARDS =====================
+/// Cabeçalho textual da ordem.
+class _OrderHeader extends StatelessWidget {
+  final bool isCompra;
 
-class _InfoCard extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
+  const _OrderHeader({
+    required this.isCompra,
+  });
 
-  const _InfoCard({
-    required this.title,
-    required this.children,
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PremiumHeaderEyebrow(
+          text: isCompra ? 'ORDEM DE COMPRA' : 'ORDEM DE VENDA',
+        ),
+        const SizedBox(height: 14),
+        Text(
+          isCompra ? 'Comprar tokens' : 'Vender tokens',
+          style: const TextStyle(
+            color: AppColors.textoPrincipal,
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            height: 1.12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Revise os detalhes da operação antes de confirmar.',
+          style: const TextStyle(
+            color: AppColors.textoFraco,
+            fontSize: 13,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hero da startup negociada.
+class _StartupOrderHero extends StatelessWidget {
+  final Oferta oferta;
+  final bool isCompra;
+  final double preco;
+
+  const _StartupOrderHero({
+    required this.oferta,
+    required this.isCompra,
+    required this.preco,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: premiumCardDecoration(radius: 26),
+      child: Row(
         children: [
-          PremiumHeaderEyebrow(text: title.toUpperCase()),
-          const SizedBox(height: 16),
-          ...children,
+          TickerBox(
+            simbolo: oferta.simbolo,
+            size: 58,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  oferta.empresa,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textoPrincipal,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${oferta.quantidade} tokens disponíveis • Spread ${oferta.spread.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    color: AppColors.textoMuitoFraco,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Preço unitário: R\$ ${preco.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: AppColors.destaque,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          _OrderPill(
+            label: isCompra ? 'Compra' : 'Venda',
+            icon: isCompra ? Icons.shopping_bag_rounded : Icons.sell_rounded,
+          ),
         ],
       ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
+class _OrderPill extends StatelessWidget {
   final String label;
-  final String value;
-  final bool destaque;
+  final IconData icon;
 
-  const _InfoRow({
+  const _OrderPill({
     required this.label,
-    required this.value,
-    this.destaque = false,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: destaque
-          ? BoxDecoration(
-        color: AppColors.destaque.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.destaque.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: AppColors.bordaDestaque,
         ),
-      )
-          : premiumFieldDecoration(
-        radius: 16,
       ),
-      padding: const EdgeInsets.all(13),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: destaque ? AppColors.textoPrincipal : AppColors.textoFraco,
-                fontSize: destaque ? 14 : 13,
-                fontWeight: destaque ? FontWeight.w900 : FontWeight.w600,
-              ),
-            ),
+          Icon(
+            icon,
+            color: AppColors.destaque,
+            size: 15,
           ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
-                fontSize: destaque ? 16 : 13,
-                fontWeight: FontWeight.w900,
-              ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.destaque,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -637,10 +548,61 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// ===================== CONTROLES =====================
+class _MarketMetricTile extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool destaque;
+  final bool fullWidth;
+
+  const _MarketMetricTile({
+    required this.label,
+    required this.value,
+    this.destaque = false,
+    this.fullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(14),
+      decoration: destaque
+          ? BoxDecoration(
+        color: AppColors.destaque.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.bordaDestaque,
+        ),
+      )
+          : premiumFieldDecoration(radius: 18),
+      child: Column(
+        crossAxisAlignment:
+        fullWidth ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textoFraco,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
+              fontSize: destaque ? 18 : 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _QuantityControlBox extends StatelessWidget {
-  final String label;
   final TextEditingController controller;
   final int quantidade;
   final int maximo;
@@ -649,7 +611,6 @@ class _QuantityControlBox extends StatelessWidget {
   final VoidCallback onPlus;
 
   const _QuantityControlBox({
-    required this.label,
     required this.controller,
     required this.quantidade,
     required this.maximo,
@@ -660,20 +621,18 @@ class _QuantityControlBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final limiteAtingido = maximo > 0 && quantidade >= maximo;
     final semTokens = maximo <= 0;
+    final limiteAtingido = maximo > 0 && quantidade >= maximo;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
+      decoration: premiumFieldDecoration(radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
+          const Text(
+            'QUANTIDADE',
+            style: TextStyle(
               color: AppColors.textoMuitoFraco,
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -682,7 +641,7 @@ class _QuantityControlBox extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Máximo disponível: $maximo tokens',
+            'Você possui até $maximo tokens disponíveis para esta ordem.',
             style: const TextStyle(
               color: AppColors.textoMuitoFraco,
               fontSize: 11,
@@ -692,7 +651,7 @@ class _QuantityControlBox extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _RoundButton(
+              _RoundActionButton(
                 icon: Icons.remove_rounded,
                 onTap: semTokens ? null : onMinus,
               ),
@@ -711,16 +670,16 @@ class _QuantityControlBox extends StatelessWidget {
                     cursorColor: AppColors.destaque,
                     style: const TextStyle(
                       color: AppColors.textoPrincipal,
-                      fontSize: 21,
+                      fontSize: 24,
                       fontWeight: FontWeight.w900,
                     ),
                     decoration: InputDecoration(
                       isDense: true,
                       filled: true,
-                      fillColor: AppColors.card.withOpacity(0.7),
+                      fillColor: AppColors.card.withValues(alpha: 0.70),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 12,
+                        vertical: 13,
                       ),
                       hintText: '0',
                       hintStyle: const TextStyle(
@@ -728,19 +687,19 @@ class _QuantityControlBox extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: const BorderSide(
                           color: AppColors.bordaClara,
                         ),
                       ),
                       disabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: const BorderSide(
                           color: AppColors.bordaClara,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: const BorderSide(
                           color: AppColors.destaque,
                           width: 1.4,
@@ -750,30 +709,22 @@ class _QuantityControlBox extends StatelessWidget {
                   ),
                 ),
               ),
-              _RoundButton(
+              _RoundActionButton(
                 icon: Icons.add_rounded,
                 onTap: semTokens ? null : onPlus,
               ),
             ],
           ),
-          if (semTokens) ...[
+          if (semTokens || limiteAtingido) ...[
             const SizedBox(height: 10),
-            const Text(
-              'Esta startup não possui tokens disponíveis para esta ordem.',
-              style: TextStyle(
+            Text(
+              semTokens
+                  ? 'Esta oferta não possui tokens disponíveis.'
+                  : 'Você selecionou todos os tokens disponíveis.',
+              style: const TextStyle(
                 color: AppColors.destaque,
                 fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ] else if (limiteAtingido) ...[
-            const SizedBox(height: 10),
-            const Text(
-              'Você selecionou todos os tokens disponíveis desta oferta.',
-              style: TextStyle(
-                color: AppColors.destaque,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ],
@@ -783,14 +734,63 @@ class _QuantityControlBox extends StatelessWidget {
   }
 }
 
-class _ControlBox extends StatelessWidget {
-  final String label;
+class _QuickAmountButtons extends StatelessWidget {
+  final ValueChanged<double> onSelected;
+
+  const _QuickAmountButtons({
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      ('25%', 0.25),
+      ('50%', 0.50),
+      ('75%', 0.75),
+      ('Máx.', 1.0),
+    ];
+
+    return Row(
+      children: options.map((item) {
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: item == options.last ? 0 : 8,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => onSelected(item.$2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  decoration: premiumFieldDecoration(radius: 14),
+                  child: Text(
+                    item.$1,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.destaque,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _PriceControlBox extends StatelessWidget {
   final String value;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
-  const _ControlBox({
-    required this.label,
+  const _PriceControlBox({
     required this.value,
     required this.onMinus,
     required this.onPlus,
@@ -800,15 +800,13 @@ class _ControlBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
+      decoration: premiumFieldDecoration(radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
+          const Text(
+            'PREÇO POR TOKEN',
+            style: TextStyle(
               color: AppColors.textoMuitoFraco,
               fontSize: 10,
               fontWeight: FontWeight.w900,
@@ -818,7 +816,7 @@ class _ControlBox extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _RoundButton(
+              _RoundActionButton(
                 icon: Icons.remove_rounded,
                 onTap: onMinus,
               ),
@@ -828,13 +826,13 @@ class _ControlBox extends StatelessWidget {
                     value,
                     style: const TextStyle(
                       color: AppColors.textoPrincipal,
-                      fontSize: 21,
+                      fontSize: 23,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
               ),
-              _RoundButton(
+              _RoundActionButton(
                 icon: Icons.add_rounded,
                 onTap: onPlus,
               ),
@@ -846,11 +844,11 @@ class _ControlBox extends StatelessWidget {
   }
 }
 
-class _RoundButton extends StatelessWidget {
+class _RoundActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _RoundButton({
+  const _RoundActionButton({
     required this.icon,
     required this.onTap,
   });
@@ -860,20 +858,22 @@ class _RoundButton extends StatelessWidget {
     final enabled = onTap != null;
 
     return Material(
-      color: enabled ? AppColors.card : AppColors.card.withOpacity(0.45),
+      color: enabled
+          ? AppColors.card.withValues(alpha: 0.90)
+          : AppColors.card.withValues(alpha: 0.45),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 38,
-          height: 38,
+          width: 40,
+          height: 40,
           child: Icon(
             icon,
             color: enabled
                 ? AppColors.destaque
-                : AppColors.textoMuitoFraco.withOpacity(0.55),
-            size: 20,
+                : AppColors.textoMuitoFraco.withValues(alpha: 0.55),
+            size: 21,
           ),
         ),
       ),

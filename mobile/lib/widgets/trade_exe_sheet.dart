@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/balcao_model.dart';
 import '../themes/app_theme.dart';
-import 'ordem_process.dart';
+import '../screens/ordens/ordem_process.dart';
 
 class TradeExecutionSheet extends StatelessWidget {
   final Oferta oferta;

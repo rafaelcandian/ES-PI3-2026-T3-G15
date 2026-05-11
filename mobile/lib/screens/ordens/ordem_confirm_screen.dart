@@ -2,11 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:mescla_invest/models/balcao_model.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
+import 'package:mescla_invest/widgets/shared/gradient_button.dart';
+import 'package:mescla_invest/widgets/shared/info_row.dart';
+import 'package:mescla_invest/widgets/shared/outline_button.dart' as shared;
+import 'package:mescla_invest/widgets/shared/section_card.dart';
 
-import '../../models/balcao_model.dart';
-import '../../themes/app_theme.dart';
-
+/// Tela de processamento e conclusão da ordem.
+///
+/// Simula a validação da operação e, após alguns segundos,
+/// exibe as ações finais para voltar ao Balcão ou abrir a Carteira.
 class OrdemConfirmScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -37,10 +45,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
 
     _timer = Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
-
-      setState(() {
-        _concluida = true;
-      });
+      setState(() => _concluida = true);
     });
   }
 
@@ -62,11 +67,11 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       backgroundColor: AppColors.fundo,
       body: Stack(
         children: [
-          const _AtmosphericBackground(),
+          const AtmosphericBackground(),
           SafeArea(
             child: Column(
               children: [
-                _buildTopBar(),
+                _ConfirmTopBar(concluida: _concluida),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -74,21 +79,14 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 12),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 350),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          child: _concluida
-                              ? _buildCheckIcon()
-                              : _buildLoadingIcon(),
-                        ),
+                        _StatusIcon(concluida: _concluida),
                         const SizedBox(height: 24),
                         Text(
                           titulo,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppColors.destaque,
-                            fontSize: 25,
+                            fontSize: 26,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -109,9 +107,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                         const SizedBox(height: 28),
                         _buildResumoCard(),
                         const SizedBox(height: 18),
-                        _StepsCard(
-                          concluida: _concluida,
-                        ),
+                        _StepsCard(concluida: _concluida),
                         const SizedBox(height: 28),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),
@@ -131,34 +127,154 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     );
   }
 
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-      child: Row(
+  /// Card com os principais dados da ordem executada.
+  Widget _buildResumoCard() {
+    return SectionCard(
+      title: 'Resumo da ordem',
+      child: Column(
         children: [
-          IconButton(
-            onPressed: _concluida ? null : () => Navigator.pop(context),
-            icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: _concluida
-                  ? AppColors.textoMuitoFraco.withOpacity(0.55)
-                  : AppColors.destaque,
-              size: 20,
-            ),
+          InfoRow(
+            label: 'Startup',
+            value: widget.oferta.empresa,
+            boxed: true,
           ),
-          const Expanded(
-            child: SizedBox(),
+          const SizedBox(height: 10),
+          InfoRow(
+            label: 'Ticker',
+            value: widget.oferta.simbolo,
+            boxed: true,
+          ),
+          const SizedBox(height: 10),
+          InfoRow(
+            label: 'Operação',
+            value: _isCompra ? 'Compra' : 'Venda',
+            boxed: true,
+          ),
+          const SizedBox(height: 10),
+          InfoRow(
+            label: 'Quantidade',
+            value: '${widget.oferta.quantidade} tokens',
+            boxed: true,
+          ),
+          const SizedBox(height: 10),
+          InfoRow(
+            label: 'Taxa simulada',
+            value: 'R\$ ${widget.taxa.toStringAsFixed(2)}',
+            boxed: true,
+          ),
+          const SizedBox(height: 14),
+          const Divider(
+            color: AppColors.bordaClara,
+            height: 1,
+          ),
+          const SizedBox(height: 14),
+          InfoRow(
+            label: _isCompra ? 'Total estimado' : 'Valor líquido',
+            value: 'R\$ ${widget.totalFinal.toStringAsFixed(2)}',
+            destaque: true,
+            boxed: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLoadingIcon() {
+  Widget _buildActions() {
+    return Column(
+      key: const ValueKey('actions'),
+      children: [
+        GradientButton(
+          label: 'Voltar ao balcão',
+          icon: Icons.storefront_rounded,
+          height: 54,
+          radius: 18,
+          onTap: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/balcao',
+                  (route) => false,
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        shared.OutlineButton(
+          label: 'Ver carteira',
+          icon: Icons.account_balance_wallet_rounded,
+          height: 52,
+          radius: 18,
+          onTap: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/carteira',
+                  (route) => false,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ConfirmTopBar extends StatelessWidget {
+  final bool concluida;
+
+  const _ConfirmTopBar({
+    required this.concluida,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: concluida ? null : () => Navigator.pop(context),
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: concluida
+                  ? AppColors.textoMuitoFraco.withValues(alpha: 0.55)
+                  : AppColors.destaque,
+              size: 20,
+            ),
+          ),
+          const Expanded(child: SizedBox()),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusIcon extends StatelessWidget {
+  final bool concluida;
+
+  const _StatusIcon({
+    required this.concluida,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: concluida ? const _CheckIcon() : const _LoadingIcon(),
+    );
+  }
+}
+
+class _LoadingIcon extends StatelessWidget {
+  const _LoadingIcon({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       key: const ValueKey('loading'),
       width: 88,
       height: 88,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.card,
@@ -167,21 +283,27 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.32),
+            color: Colors.black.withValues(alpha: 0.32),
             blurRadius: 28,
             offset: const Offset(0, 12),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(22),
       child: const CircularProgressIndicator(
         color: AppColors.destaque,
         strokeWidth: 3,
       ),
     );
   }
+}
 
-  Widget _buildCheckIcon() {
+class _CheckIcon extends StatelessWidget {
+  const _CheckIcon({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       key: const ValueKey('check'),
       width: 88,
@@ -196,7 +318,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.destaque.withOpacity(0.28),
+            color: AppColors.destaque.withValues(alpha: 0.28),
             blurRadius: 26,
             offset: const Offset(0, 10),
           ),
@@ -209,236 +331,13 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       ),
     );
   }
-
-  Widget _buildResumoCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const PremiumHeaderEyebrow(
-            text: 'RESUMO DA ORDEM',
-          ),
-          const SizedBox(height: 16),
-          _ResumoRow(
-            label: 'Startup',
-            value: widget.oferta.empresa,
-          ),
-          const SizedBox(height: 10),
-          _ResumoRow(
-            label: 'Ticker',
-            value: widget.oferta.simbolo,
-          ),
-          const SizedBox(height: 10),
-          _ResumoRow(
-            label: 'Operação',
-            value: _isCompra ? 'Compra' : 'Venda',
-          ),
-          const SizedBox(height: 10),
-          _ResumoRow(
-            label: 'Quantidade',
-            value: '${widget.oferta.quantidade} tokens',
-          ),
-          const SizedBox(height: 10),
-          _ResumoRow(
-            label: 'Taxa simulada',
-            value: 'R\$ ${widget.taxa.toStringAsFixed(2)}',
-          ),
-          const SizedBox(height: 14),
-          Container(
-            height: 1,
-            width: double.infinity,
-            color: AppColors.bordaClara,
-          ),
-          const SizedBox(height: 14),
-          _TotalBox(
-            label: _isCompra ? 'Total estimado' : 'Valor líquido',
-            value: 'R\$ ${widget.totalFinal.toStringAsFixed(2)}',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActions() {
-    return Column(
-      key: const ValueKey('actions'),
-      children: [
-        _buildPrimaryButton(
-          label: 'Voltar ao balcão',
-          onTap: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/balcao',
-                  (route) => false,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        _buildSecondaryButton(
-          label: 'Ver carteira',
-          onTap: () {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/carteira',
-                  (route) => false,
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPrimaryButton({
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.destaque.withOpacity(0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: onTap,
-            child: Center(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.fundo,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSecondaryButton({
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.textoPrincipal,
-          side: const BorderSide(
-            color: AppColors.bordaClara,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          backgroundColor: AppColors.card.withOpacity(0.35),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-// ===================== BACKGROUND =====================
-
-class _AtmosphericBackground extends StatelessWidget {
-  const _AtmosphericBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          Positioned(
-            top: -150,
-            right: -120,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.azul.withOpacity(0.22),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 240,
-            left: -130,
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.destaque.withOpacity(0.07),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 60,
-            right: -120,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.roxo.withOpacity(0.18),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===================== WAITING =====================
-
+/// Mensagem exibida durante a simulação de processamento.
 class _WaitingMessage extends StatelessWidget {
-  const _WaitingMessage();
+  const _WaitingMessage({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -449,9 +348,7 @@ class _WaitingMessage extends StatelessWidget {
         horizontal: 16,
         vertical: 14,
       ),
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
+      decoration: premiumFieldDecoration(radius: 18),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -478,8 +375,7 @@ class _WaitingMessage extends StatelessWidget {
   }
 }
 
-// ===================== STEPS =====================
-
+/// Etapas visuais do processamento da ordem.
 class _StepsCard extends StatelessWidget {
   final bool concluida;
 
@@ -489,12 +385,8 @@ class _StepsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: premiumCardDecoration(
-        radius: 22,
-      ),
+    return SectionCard(
+      title: 'Processamento',
       child: Column(
         children: [
           _StepRow(
@@ -529,9 +421,7 @@ class _StepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
@@ -562,119 +452,6 @@ class _StepRow extends StatelessWidget {
                 color: AppColors.textoFraco,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===================== RESUMO =====================
-
-class _ResumoRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ResumoRow({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 13,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textoFraco,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textoPrincipal,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TotalBox extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _TotalBox({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.destaque.withOpacity(0.09),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordaDestaque,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.destaque.withOpacity(0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(15, 14, 15, 14),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textoPrincipal,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.destaque,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
               ),
             ),
           ),

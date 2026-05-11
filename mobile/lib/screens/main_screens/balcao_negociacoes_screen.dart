@@ -365,7 +365,7 @@ class _PageHeader extends StatelessWidget {
           PremiumHeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
           SizedBox(height: 14),
           Text(
-            'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
+            'Compre e venda tokens simulados de main_screens conectadas ao ecossistema MESCLA.',
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textoFraco,

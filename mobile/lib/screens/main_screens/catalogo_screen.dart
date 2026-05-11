@@ -66,15 +66,15 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
 
   String _mensagemFiltroVazio() {
     if (_selectedAreaFilter != 'Todas' && _selectedStageFilter != 'Todos') {
-      return 'Não encontramos startups da área "$_selectedAreaFilter" no estágio "$_selectedStageFilter".';
+      return 'Não encontramos main_screens da área "$_selectedAreaFilter" no estágio "$_selectedStageFilter".';
     }
 
     if (_selectedAreaFilter != 'Todas') {
-      return 'Não encontramos startups na categoria "$_selectedAreaFilter".';
+      return 'Não encontramos main_screens na categoria "$_selectedAreaFilter".';
     }
 
     if (_selectedStageFilter != 'Todos') {
-      return 'Não encontramos startups no estágio "$_selectedStageFilter".';
+      return 'Não encontramos main_screens no estágio "$_selectedStageFilter".';
     }
 
     return 'Nenhuma startup encontrada com os filtros selecionados.';
@@ -209,7 +209,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                         padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
                         child: _EmptyStateCard(
                           icon: Icons.error_outline_rounded,
-                          title: 'Erro ao carregar startups',
+                          title: 'Erro ao carregar main_screens',
                           message: snapshot.error.toString(),
                         ),
                       );
@@ -225,7 +225,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                           icon: Icons.apartment_rounded,
                           title: 'Nenhuma startup encontrada',
                           message:
-                          'Ainda não existem startups cadastradas no Firebase.',
+                          'Ainda não existem main_screens cadastradas no Firebase.',
                         ),
                       );
                     }
