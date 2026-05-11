@@ -35,18 +35,7 @@ class CarteiraPage extends StatefulWidget {
 class _CarteiraPageState extends State<CarteiraPage> {
   String selectedTimePeriod = '1 mês';
 
-  final List<double> data = [
-    0.28,
-    0.34,
-    0.31,
-    0.48,
-    0.44,
-    0.62,
-    0.58,
-    0.76,
-    0.71,
-    0.88,
-  ];
+  List<double> _chartData = [];
 
   double _saldo = 0.0;
   List<AtivoCarteira> _ativos = [];
@@ -70,6 +59,17 @@ class _CarteiraPageState extends State<CarteiraPage> {
     if (resultado == true) {
       await _loadData();
     }
+  }
+
+  Future<void> _trocarPeriodoGrafico(String period) async {
+    if (period == selectedTimePeriod) return;
+
+    setState(() {
+      selectedTimePeriod = period;
+      _loading = true;
+    });
+
+    await _loadData();
   }
 
   Future<void> _loadData() async {
@@ -179,11 +179,36 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       final movsTemp = todasMovs.take(5).toList();
 
+      List<double> chartData = [];
+
+      try {
+        chartData = await carteiraService.getWalletChartValues(
+          periodo: selectedTimePeriod,
+        );
+      } catch (_) {
+        chartData = [];
+      }
+
+      final valorAtivos = ativosTemp.fold<double>(
+        0,
+            (total, ativo) => total + ativo.valorTotal,
+      );
+
+      final patrimonioAtual = saldo + valorAtivos;
+
+      final fallbackChartData = chartData.length >= 2
+          ? chartData
+          : [
+        saldo,
+        patrimonioAtual,
+      ];
+
       if (mounted) {
         setState(() {
           _saldo = saldo;
           _ativos = ativosTemp;
           _movimentacoes = movsTemp;
+          _chartData = fallbackChartData;
           _loading = false;
         });
       }
@@ -382,11 +407,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
                       SliverToBoxAdapter(
                         child: _GraficoCard(
-                          data: data,
+                          data: _chartData,
                           selectedTimePeriod: selectedTimePeriod,
-                          onPeriodChanged: (period) {
-                            setState(() => selectedTimePeriod = period);
-                          },
+                          onPeriodChanged: _trocarPeriodoGrafico,
                         ),
                       ),
 
@@ -436,7 +459,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                                     MaterialPageRoute(
                                       builder: (_) => AtivoDetalheScreen(
                                         ativo: ativo,
-                                        historico: data,
+                                        historico: _chartData,
                                         ofertasDisponiveis:
                                         _ofertasDoAtivo(ativo),
                                       ),
@@ -923,6 +946,7 @@ class _GraficoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final periods = ['1h', '24h', '1 sem', '1 mês', '6 meses', '1 ano'];
+    final chartData = data.length >= 2 ? data : [0.0, 0.0];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -938,7 +962,7 @@ class _GraficoCard extends StatelessWidget {
               height: 180,
               width: double.infinity,
               child: CustomPaint(
-                painter: LineChartPainter(data: data),
+                painter: LineChartPainter(data: chartData),
               ),
             ),
             const SizedBox(height: 16),
