@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:mescla_invest/screens/auth/app_theme.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 
 class StartupCard extends StatelessWidget {

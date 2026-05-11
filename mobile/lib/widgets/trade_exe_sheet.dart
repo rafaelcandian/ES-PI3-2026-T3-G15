@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/balcao_model.dart';
-import '../screens/auth/app_theme.dart';
+import '../themes/app_theme.dart';
 import 'ordem_process.dart';
 
 class TradeExecutionSheet extends StatelessWidget {

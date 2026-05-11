@@ -1,16 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
-import '../auth/app_theme.dart';
+import 'package:mescla_invest/widgets/premium_ui.dart';
 
-enum AppearanceMode {
-  light,
-  dark,
-  auto,
-}
+import '../../themes/app_theme.dart';
+import '../../themes/theme_controller.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -20,28 +18,148 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-  AppearanceMode _appearanceMode = AppearanceMode.dark;
+  AppAppearanceMode _appearanceMode = ThemeController.appearanceMode.value;
 
   bool _ocultarSaldo = true;
-  bool _notificarValorizacao = true;
-  bool _notificarCompraVenda = true;
-  bool _notificarNoticias = false;
-  bool _notificarPerguntas = true;
+  bool _loading = true;
 
-  final String _nome = 'Guilherme Moraes';
-  final String _email = 'guilherme@example.com';
-  final String _telefone = '+55 19 99999-9999';
-  final String _cpf = '123.456.789-00';
+  String _nome = 'Usuário';
+  String _email = '';
+  String _telefone = '';
+  String _cpf = '';
 
   String get _appearanceLabel {
     switch (_appearanceMode) {
-      case AppearanceMode.light:
+      case AppAppearanceMode.light:
         return 'Light';
-      case AppearanceMode.dark:
+      case AppAppearanceMode.dark:
         return 'Dark';
-      case AppearanceMode.auto:
+      case AppAppearanceMode.auto:
         return 'Auto';
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarDadosUsuario();
+  }
+
+  Future<void> _carregarDadosUsuario() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+        });
+        return;
+      }
+
+      String nome = user.displayName ?? 'Usuário';
+      String email = user.email ?? '';
+      String telefone = user.phoneNumber ?? '';
+      String cpf = '';
+
+      final doc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
+
+      final data = doc.data();
+
+      if (data != null) {
+        nome = data['nome'] ??
+            data['name'] ??
+            data['displayName'] ??
+            nome;
+
+        email = data['email'] ?? email;
+
+        telefone = data['telefone'] ??
+            data['phone'] ??
+            data['celular'] ??
+            telefone;
+
+        cpf = data['cpf'] ?? '';
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _nome = nome.toString().trim().isEmpty ? 'Usuário' : nome.toString();
+        _email = email.toString();
+        _telefone = telefone.toString();
+        _cpf = cpf.toString();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      final user = FirebaseAuth.instance.currentUser;
+
+      setState(() {
+        _nome = user?.displayName ?? 'Usuário';
+        _email = user?.email ?? '';
+        _telefone = user?.phoneNumber ?? '';
+        _cpf = '';
+        _loading = false;
+      });
+    }
+  }
+
+  String _mascararCpf(String cpf) {
+    final digits = cpf.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length != 11) {
+      return cpf.isEmpty ? 'Não informado' : cpf;
+    }
+
+    return '${digits.substring(0, 3)}.***.***-${digits.substring(9, 11)}';
+  }
+
+  String _mascararTelefone(String telefone) {
+    final digits = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length < 10) {
+      return telefone.isEmpty ? 'Não informado' : telefone;
+    }
+
+    final ddd = digits.substring(0, 2);
+    final fim = digits.substring(digits.length - 4);
+
+    return '($ddd) *****-$fim';
+  }
+
+  void _alterarAparencia(AppAppearanceMode mode) {
+    ThemeController.setAppearanceMode(mode);
+
+    setState(() {
+      _appearanceMode = mode;
+    });
+
+    _showSnackBar(
+      'Modo de aparência alterado para $_appearanceLabel.',
+    );
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: AppColors.textoPrincipal,
+          ),
+        ),
+        backgroundColor: AppColors.card,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
   }
 
   @override
@@ -49,158 +167,88 @@ class _PerfilPageState extends State<PerfilPage> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.fundoEscuro,
+        backgroundColor: AppColors.fundo,
         extendBody: true,
         appBar: const AppBarPadrao(titulo: 'Perfil'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 3),
         body: Stack(
           children: [
             const _AtmosphericBackground(),
-            SafeArea(
-              bottom: false,
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      children: [
-                        const _Header(),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate(
-                        [
-                          _ProfileCard(
-                            nome: _nome,
-                            email: _email,
-                            telefone: _telefone,
-                            onEditTap: _showEditProfileModal,
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          _AppearanceSection(
-                            selectedMode: _appearanceMode,
-                            onChanged: (mode) {
-                              setState(() {
-                                _appearanceMode = mode;
-                              });
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Modo de aparência alterado para $_appearanceLabel.',
-                                    style: const TextStyle(
-                                      color: AppColors.textoPrincipal,
-                                    ),
-                                  ),
-                                  backgroundColor: AppColors.card,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          _SecuritySection(
-                            onChangePassword: _showChangePasswordModal,
-                            onResetPassword: _sendPasswordReset,
-                            onLogoutAllDevices: _showLogoutAllDevicesModal,
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          _NotificationsSection(
-                            valorizacao: _notificarValorizacao,
-                            compraVenda: _notificarCompraVenda,
-                            noticias: _notificarNoticias,
-                            perguntas: _notificarPerguntas,
-                            onValorizacaoChanged: (value) {
-                              setState(() => _notificarValorizacao = value);
-                            },
-                            onCompraVendaChanged: (value) {
-                              setState(() => _notificarCompraVenda = value);
-                            },
-                            onNoticiasChanged: (value) {
-                              setState(() => _notificarNoticias = value);
-                            },
-                            onPerguntasChanged: (value) {
-                              setState(() => _notificarPerguntas = value);
-                            },
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          _PrivacySection(
-                            ocultarSaldo: _ocultarSaldo,
-                            onOcultarSaldoChanged: (value) {
-                              setState(() => _ocultarSaldo = value);
-                            },
-                            onGerenciarDados: _showDataManagementModal,
-                            onVisualizarDados: _showCpfTelefoneModal,
-                            onDispositivos: _showConnectedDevicesModal,
-                          ),
-
-                          const SizedBox(height: 22),
-
-                          _AccountActions(
-                            onLogout: _logout,
-                            onDeleteAccount: _showDeleteAccountModal,
-                          ),
-
-                          const SizedBox(height: 120),
+            if (_loading)
+              const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.destaque,
+                ),
+              )
+            else
+              SafeArea(
+                bottom: false,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    const SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          _Header(),
+                          SizedBox(height: 20),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate(
+                          [
+                            _ProfileCard(
+                              nome: _nome,
+                              email: _email.isEmpty
+                                  ? 'E-mail não informado'
+                                  : _email,
+                              telefone: _mascararTelefone(_telefone),
+                              cpf: _mascararCpf(_cpf),
+                              onEditTap: _showEditProfileModal,
+                            ),
+                            const SizedBox(height: 18),
+                            _AppearanceSection(
+                              selectedMode: _appearanceMode,
+                              onChanged: _alterarAparencia,
+                            ),
+                            const SizedBox(height: 18),
+                            _SecuritySection(
+                              onChangePassword: _showChangePasswordModal,
+                              onResetPassword: _sendPasswordReset,
+                            ),
+                            const SizedBox(height: 18),
+                            _PrivacySection(
+                              ocultarSaldo: _ocultarSaldo,
+                              onOcultarSaldoChanged: (value) {
+                                setState(() {
+                                  _ocultarSaldo = value;
+                                });
+
+                                _showSnackBar(
+                                  value
+                                      ? 'Valores sensíveis serão ocultados.'
+                                      : 'Valores sensíveis serão exibidos.',
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 22),
+                            _AccountActions(
+                              onLogout: _logout,
+                              onDeleteAccount: _showDeleteAccountModal,
+                            ),
+                            const SizedBox(height: 120),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
-    );
-  }
-
-  void _showSettingsModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return _PremiumBottomSheet(
-          title: 'Configurações',
-          icon: Icons.settings_outlined,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ModalActionTile(
-                icon: Icons.palette_outlined,
-                title: 'Aparência atual',
-                subtitle: _appearanceLabel,
-              ),
-              _ModalActionTile(
-                icon: Icons.visibility_off_outlined,
-                title: 'Ocultar saldo',
-                subtitle: _ocultarSaldo ? 'Ativado' : 'Desativado',
-              ),
-              _ModalActionTile(
-                icon: Icons.lock_outline_rounded,
-                title: 'Privacidade',
-                subtitle: 'Gerencie dados pessoais e segurança',
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -209,7 +257,7 @@ class _PerfilPageState extends State<PerfilPage> {
       title: 'Editar perfil',
       icon: Icons.edit_rounded,
       message:
-      'Nesta versão simulada, os dados do perfil são exibidos localmente. Depois podemos conectar essa edição ao Firebase.',
+      'A edição direta do perfil ainda não está ativa nesta versão. Os dados exibidos vêm do usuário autenticado e do Firestore.',
     );
   }
 
@@ -225,138 +273,22 @@ class _PerfilPageState extends State<PerfilPage> {
   Future<void> _sendPasswordReset() async {
     final email = FirebaseAuth.instance.currentUser?.email ?? _email;
 
+    if (email.isEmpty) {
+      _showSnackBar('Não encontramos um e-mail para redefinição de senha.');
+      return;
+    }
+
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'E-mail de redefinição enviado para $email.',
-            style: const TextStyle(
-              color: AppColors.textoPrincipal,
-            ),
-          ),
-          backgroundColor: AppColors.card,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
+      _showSnackBar('E-mail de redefinição enviado para $email.');
     } catch (_) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Não foi possível enviar o e-mail de redefinição.',
-            style: TextStyle(
-              color: AppColors.textoPrincipal,
-            ),
-          ),
-          backgroundColor: AppColors.card,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      );
+      _showSnackBar('Não foi possível enviar o e-mail de redefinição.');
     }
-  }
-
-  void _showLogoutAllDevicesModal() {
-    _showInfoModal(
-      title: 'Logout de dispositivos',
-      icon: Icons.devices_other_rounded,
-      message:
-      'Essa ação exige integração específica com sessões/dispositivos no backend. Por enquanto, o app permite sair da sessão atual.',
-    );
-  }
-
-  void _showDataManagementModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) {
-        return _PremiumBottomSheet(
-          title: 'Gerenciamento de dados',
-          icon: Icons.storage_outlined,
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ModalActionTile(
-                icon: Icons.person_outline_rounded,
-                title: 'Dados pessoais',
-                subtitle: 'Nome, e-mail, CPF e telefone cadastrados',
-              ),
-              _ModalActionTile(
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Dados financeiros simulados',
-                subtitle: 'Carteira, ativos e ordens de negociação',
-              ),
-              _ModalActionTile(
-                icon: Icons.chat_bubble_outline_rounded,
-                title: 'Interações',
-                subtitle: 'Perguntas públicas e conversas privadas',
-              ),
-              _ModalActionTile(
-                icon: Icons.download_rounded,
-                title: 'Exportar dados',
-                subtitle: 'Recurso previsto para integração futura',
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showCpfTelefoneModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return _PremiumBottomSheet(
-          title: 'CPF e telefone',
-          icon: Icons.badge_outlined,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _DataRow(
-                label: 'CPF',
-                value: _cpf,
-              ),
-              const SizedBox(height: 12),
-              _DataRow(
-                label: 'Telefone',
-                value: _telefone,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Esses dados são sensíveis e devem ser exibidos apenas para o próprio usuário autenticado.',
-                style: TextStyle(
-                  color: AppColors.textoMuitoFraco,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showConnectedDevicesModal() {
-    _showInfoModal(
-      title: 'Dispositivos conectados',
-      icon: Icons.devices_rounded,
-      message:
-      'Aqui futuramente será exibida a lista de dispositivos com sessões ativas.',
-    );
   }
 
   void _showDeleteAccountModal() {
@@ -372,11 +304,11 @@ class _PerfilPageState extends State<PerfilPage> {
             'Excluir conta',
             style: TextStyle(
               color: AppColors.destaque,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
           content: const Text(
-            'Essa ação é sensível. Para excluir a conta de verdade, o ideal é criar um fluxo com confirmação de senha e remoção segura no Firebase.',
+            'Essa ação exige uma confirmação segura antes de remover a conta. Para a entrega atual, o fluxo está sinalizado, mas não executa exclusão automática.',
             style: TextStyle(
               color: AppColors.textoFraco,
               height: 1.5,
@@ -389,6 +321,7 @@ class _PerfilPageState extends State<PerfilPage> {
                 'Entendi',
                 style: TextStyle(
                   color: AppColors.destaque,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -448,15 +381,15 @@ class _AtmosphericBackground extends StatelessWidget {
         children: [
           Positioned(
             top: -150,
-            right: -110,
+            right: -120,
             child: Container(
-              width: 360,
-              height: 360,
+              width: 340,
+              height: 340,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.20),
+                    AppColors.azul.withOpacity(0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -464,16 +397,16 @@ class _AtmosphericBackground extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 170,
-            left: -100,
+            top: 220,
+            left: -130,
             child: Container(
-              width: 260,
-              height: 260,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.06),
+                    AppColors.destaque.withOpacity(0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -482,15 +415,15 @@ class _AtmosphericBackground extends StatelessWidget {
           ),
           Positioned(
             bottom: 80,
-            right: -100,
+            right: -120,
             child: Container(
-              width: 290,
-              height: 290,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.15),
+                    AppColors.roxo.withOpacity(0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -505,76 +438,6 @@ class _AtmosphericBackground extends StatelessWidget {
 
 // ─── Header ─────────────────────────────────────────────────────────────────
 
-class _TopBar extends StatelessWidget {
-  final VoidCallback onSettingsTap;
-
-  const _TopBar({
-    required this.onSettingsTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
-      child: Row(
-        children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'MESCLAINVEST',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.destaque,
-                  letterSpacing: 2.4,
-                ),
-              ),
-              SizedBox(height: 3),
-              Text(
-                'Área do usuário',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textoMuitoFraco,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: onSettingsTap,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.destaque.withOpacity(0.35),
-                  width: 1.4,
-                ),
-                gradient: const LinearGradient(
-                  colors: [
-                    AppColors.campo,
-                    AppColors.card,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: const Icon(
-                Icons.settings_outlined,
-                color: AppColors.destaque,
-                size: 22,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Header extends StatelessWidget {
   const _Header();
 
@@ -586,53 +449,19 @@ class _Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 14),
-          _HeaderEyebrow(text: 'CONFIGURAÇÕES DA CONTA'),
+          PremiumHeaderEyebrow(text: 'CONFIGURAÇÕES DA CONTA'),
           SizedBox(height: 14),
-          
           Text(
-            'Gerencie sua conta, preferências, privacidade e segurança.',
+            'Gerencie sua conta, aparência, privacidade e segurança.',
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textoFraco,
               height: 1.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _HeaderEyebrow extends StatelessWidget {
-  final String text;
-
-  const _HeaderEyebrow({
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.destaque,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.destaque,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -643,12 +472,14 @@ class _ProfileCard extends StatelessWidget {
   final String nome;
   final String email;
   final String telefone;
+  final String cpf;
   final VoidCallback onEditTap;
 
   const _ProfileCard({
     required this.nome,
     required this.email,
     required this.telefone,
+    required this.cpf,
     required this.onEditTap,
   });
 
@@ -660,8 +491,8 @@ class _ProfileCard extends StatelessWidget {
           Stack(
             children: [
               Container(
-                width: 94,
-                height: 94,
+                width: 96,
+                height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -676,7 +507,7 @@ class _ProfileCard extends StatelessWidget {
                   ],
                 ),
                 child: const CircleAvatar(
-                  radius: 45,
+                  radius: 46,
                   backgroundColor: AppColors.card,
                   child: Icon(
                     Icons.person_rounded,
@@ -691,15 +522,15 @@ class _ProfileCard extends StatelessWidget {
                 child: GestureDetector(
                   onTap: onEditTap,
                   child: Container(
-                    width: 26,
-                    height: 26,
+                    width: 28,
+                    height: 28,
                     decoration: const BoxDecoration(
                       color: AppColors.destaque,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.edit_rounded,
-                      color: AppColors.card,
+                      color: AppColors.fundo,
                       size: 14,
                     ),
                   ),
@@ -717,32 +548,34 @@ class _ProfileCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
-          Text(
-            email,
-            style: const TextStyle(
-              color: AppColors.textoFraco,
-              fontSize: 13,
-            ),
+          const SizedBox(height: 14),
+          _ProfileInfoRow(
+            icon: Icons.email_outlined,
+            label: 'E-mail',
+            value: email,
           ),
-          const SizedBox(height: 4),
-          Text(
-            telefone,
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 12,
-            ),
+          const SizedBox(height: 10),
+          _ProfileInfoRow(
+            icon: Icons.phone_outlined,
+            label: 'Telefone',
+            value: telefone,
+          ),
+          const SizedBox(height: 10),
+          _ProfileInfoRow(
+            icon: Icons.badge_outlined,
+            label: 'CPF',
+            value: cpf,
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 40,
+            width: double.infinity,
+            height: 44,
             child: ElevatedButton(
               onPressed: onEditTap,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.destaque,
-                foregroundColor: AppColors.card,
+                foregroundColor: AppColors.fundo,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 28),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -762,11 +595,64 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
+class _ProfileInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ProfileInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: premiumFieldDecoration(
+        radius: 16,
+      ),
+      padding: const EdgeInsets.all(13),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: AppColors.destaque,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textoMuitoFraco,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textoPrincipal,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── Sections ───────────────────────────────────────────────────────────────
 
 class _AppearanceSection extends StatelessWidget {
-  final AppearanceMode selectedMode;
-  final ValueChanged<AppearanceMode> onChanged;
+  final AppAppearanceMode selectedMode;
+  final ValueChanged<AppAppearanceMode> onChanged;
 
   const _AppearanceSection({
     required this.selectedMode,
@@ -784,20 +670,20 @@ class _AppearanceSection extends StatelessWidget {
             children: [
               _ThemePill(
                 label: 'Light',
-                active: selectedMode == AppearanceMode.light,
-                onTap: () => onChanged(AppearanceMode.light),
+                active: selectedMode == AppAppearanceMode.light,
+                onTap: () => onChanged(AppAppearanceMode.light),
               ),
               const SizedBox(width: 8),
               _ThemePill(
                 label: 'Dark',
-                active: selectedMode == AppearanceMode.dark,
-                onTap: () => onChanged(AppearanceMode.dark),
+                active: selectedMode == AppAppearanceMode.dark,
+                onTap: () => onChanged(AppAppearanceMode.dark),
               ),
               const SizedBox(width: 8),
               _ThemePill(
                 label: 'Auto',
-                active: selectedMode == AppearanceMode.auto,
-                onTap: () => onChanged(AppearanceMode.auto),
+                active: selectedMode == AppAppearanceMode.auto,
+                onTap: () => onChanged(AppAppearanceMode.auto),
               ),
             ],
           ),
@@ -807,21 +693,21 @@ class _AppearanceSection extends StatelessWidget {
               Expanded(
                 child: _AppearancePreview(
                   icon: Icons.light_mode_outlined,
-                  active: selectedMode == AppearanceMode.light,
+                  active: selectedMode == AppAppearanceMode.light,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _AppearancePreview(
                   icon: Icons.dark_mode_outlined,
-                  active: selectedMode == AppearanceMode.dark,
+                  active: selectedMode == AppAppearanceMode.dark,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _AppearancePreview(
                   icon: Icons.brightness_auto_outlined,
-                  active: selectedMode == AppearanceMode.auto,
+                  active: selectedMode == AppAppearanceMode.auto,
                 ),
               ),
             ],
@@ -835,12 +721,10 @@ class _AppearanceSection extends StatelessWidget {
 class _SecuritySection extends StatelessWidget {
   final VoidCallback onChangePassword;
   final VoidCallback onResetPassword;
-  final VoidCallback onLogoutAllDevices;
 
   const _SecuritySection({
     required this.onChangePassword,
     required this.onResetPassword,
-    required this.onLogoutAllDevices,
   });
 
   @override
@@ -851,8 +735,8 @@ class _SecuritySection extends StatelessWidget {
       child: Column(
         children: [
           const _StatusRow(
-            title: '2FA ativo',
-            subtitle: 'Autenticação em 2 fatores',
+            title: 'Conta autenticada',
+            subtitle: 'Usuário conectado pelo Firebase Authentication',
             active: true,
           ),
           const SizedBox(height: 10),
@@ -861,68 +745,8 @@ class _SecuritySection extends StatelessWidget {
             onTap: onChangePassword,
           ),
           _ActionRow(
-            title: 'Redefinir senha',
+            title: 'Redefinir senha por e-mail',
             onTap: onResetPassword,
-          ),
-          _ActionRow(
-            title: 'Logout de todos os dispositivos',
-            danger: true,
-            onTap: onLogoutAllDevices,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NotificationsSection extends StatelessWidget {
-  final bool valorizacao;
-  final bool compraVenda;
-  final bool noticias;
-  final bool perguntas;
-
-  final ValueChanged<bool> onValorizacaoChanged;
-  final ValueChanged<bool> onCompraVendaChanged;
-  final ValueChanged<bool> onNoticiasChanged;
-  final ValueChanged<bool> onPerguntasChanged;
-
-  const _NotificationsSection({
-    required this.valorizacao,
-    required this.compraVenda,
-    required this.noticias,
-    required this.perguntas,
-    required this.onValorizacaoChanged,
-    required this.onCompraVendaChanged,
-    required this.onNoticiasChanged,
-    required this.onPerguntasChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'Notificações',
-      icon: Icons.notifications_outlined,
-      child: Column(
-        children: [
-          _CheckRow(
-            title: 'Valorização de tokens',
-            checked: valorizacao,
-            onTap: () => onValorizacaoChanged(!valorizacao),
-          ),
-          _CheckRow(
-            title: 'Alertas de compra e venda',
-            checked: compraVenda,
-            onTap: () => onCompraVendaChanged(!compraVenda),
-          ),
-          _CheckRow(
-            title: 'Notícias das startups',
-            checked: noticias,
-            onTap: () => onNoticiasChanged(!noticias),
-          ),
-          _CheckRow(
-            title: 'Avisos de perguntas respondidas',
-            checked: perguntas,
-            onTap: () => onPerguntasChanged(!perguntas),
           ),
         ],
       ),
@@ -933,16 +757,10 @@ class _NotificationsSection extends StatelessWidget {
 class _PrivacySection extends StatelessWidget {
   final bool ocultarSaldo;
   final ValueChanged<bool> onOcultarSaldoChanged;
-  final VoidCallback onGerenciarDados;
-  final VoidCallback onVisualizarDados;
-  final VoidCallback onDispositivos;
 
   const _PrivacySection({
     required this.ocultarSaldo,
     required this.onOcultarSaldoChanged,
-    required this.onGerenciarDados,
-    required this.onVisualizarDados,
-    required this.onDispositivos,
   });
 
   @override
@@ -952,24 +770,39 @@ class _PrivacySection extends StatelessWidget {
       icon: Icons.lock_outline_rounded,
       child: Column(
         children: [
-          _ActionRow(
-            title: 'Gerenciamento de dados',
-            onTap: onGerenciarDados,
-          ),
-          _ActionRow(
-            title: 'Visualizar CPF e telefone',
-            onTap: onVisualizarDados,
-          ),
           _ToggleRow(
             title: 'Ocultar saldo',
-            subtitle: 'Esconde valores sensíveis na tela',
+            subtitle: 'Esconde valores sensíveis nas telas financeiras',
             active: ocultarSaldo,
             onTap: () => onOcultarSaldoChanged(!ocultarSaldo),
           ),
-          const SizedBox(height: 10),
-          _ActionRow(
-            title: 'Dispositivos conectados',
-            onTap: onDispositivos,
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: premiumFieldDecoration(
+              radius: 16,
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.verified_user_outlined,
+                  color: AppColors.destaque,
+                  size: 20,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Seus dados pessoais são exibidos de forma resumida nesta tela e devem ser acessados apenas pelo usuário autenticado.',
+                    style: TextStyle(
+                      color: AppColors.textoFraco,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1062,20 +895,8 @@ class _SectionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.bordaClara,
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.28),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
+      decoration: premiumCardDecoration(
+        radius: 24,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1086,13 +907,13 @@ class _SectionCard extends StatelessWidget {
                 Icon(
                   icon,
                   color: AppColors.destaque,
-                  size: 17,
+                  size: 18,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   title!,
                   style: const TextStyle(
-                    color: AppColors.textoPrincipal,
+                    color: AppColors.destaque,
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1122,25 +943,30 @@ class _ThemePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          height: 34,
-          decoration: BoxDecoration(
-            color: active ? AppColors.destaque : AppColors.campo,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: active ? AppColors.destaque : AppColors.bordaClara,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 36,
+            decoration: BoxDecoration(
+              color: active ? AppColors.destaque : AppColors.campo,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active ? AppColors.destaque : AppColors.bordaClara,
+              ),
             ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: active ? AppColors.card : AppColors.textoFraco,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: active ? AppColors.fundo : AppColors.textoFraco,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
@@ -1163,11 +989,14 @@ class _AppearancePreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 74,
-      decoration: BoxDecoration(
-        color: active ? AppColors.campo : AppColors.fundoEscuro,
-        borderRadius: BorderRadius.circular(16),
+      decoration: premiumFieldDecoration(
+        radius: 16,
+      ).copyWith(
+        color: active ? AppColors.cardElevado : AppColors.campo,
         border: Border.all(
-          color: active ? AppColors.destaque.withOpacity(0.35) : AppColors.bordaClara,
+          color: active
+              ? AppColors.destaque.withOpacity(0.35)
+              : AppColors.bordaClara,
         ),
       ),
       child: Icon(
@@ -1214,7 +1043,9 @@ class _ActionRow extends StatelessWidget {
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: danger ? AppColors.destaque : AppColors.textoSecundario,
+                      color: danger
+                          ? AppColors.destaque
+                          : AppColors.textoSecundario,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1249,55 +1080,62 @@ class _ToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textoPrincipal,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+    return Container(
+      decoration: premiumFieldDecoration(
+        radius: 16,
+      ),
+      padding: const EdgeInsets.all(14),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.textoPrincipal,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 10,
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 10,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 42,
-            height: 24,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: active ? AppColors.destaque : AppColors.bordaMedia,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Align(
-              alignment: active ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: active ? AppColors.card : AppColors.textoFraco,
-                  shape: BoxShape.circle,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 42,
+              height: 24,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: active ? AppColors.destaque : AppColors.bordaMedia,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Align(
+                alignment: active ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: active ? AppColors.fundo : AppColors.textoFraco,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1316,21 +1154,27 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          active ? Icons.verified_rounded : Icons.info_outline_rounded,
-          color: active ? AppColors.destaque : AppColors.textoMuitoFraco,
-          size: 22,
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatusText(
-            title: title,
-            subtitle: subtitle,
+    return Container(
+      decoration: premiumFieldDecoration(
+        radius: 16,
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Icon(
+            active ? Icons.verified_rounded : Icons.info_outline_rounded,
+            color: active ? AppColors.destaque : AppColors.textoMuitoFraco,
+            size: 22,
           ),
-        ),
-      ],
+          const SizedBox(width: 10),
+          Expanded(
+            child: _StatusText(
+              title: title,
+              subtitle: subtitle,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1354,7 +1198,7 @@ class _StatusText extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textoPrincipal,
             fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
           ),
         ),
         const SizedBox(height: 3),
@@ -1363,55 +1207,10 @@ class _StatusText extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textoMuitoFraco,
             fontSize: 10,
+            height: 1.4,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CheckRow extends StatelessWidget {
-  final String title;
-  final bool checked;
-  final VoidCallback onTap;
-
-  const _CheckRow({
-    required this.title,
-    required this.checked,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 40,
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textoSecundario,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Icon(
-              checked
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
-              color: checked ? AppColors.destaque : AppColors.textoMuitoFraco,
-              size: 19,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1487,94 +1286,6 @@ class _PremiumBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           child,
-        ],
-      ),
-    );
-  }
-}
-
-class _ModalActionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _ModalActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.campo,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: AppColors.destaque,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _StatusText(
-              title: title,
-              subtitle: subtitle,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DataRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _DataRow({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.campo,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
-      ),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textoFraco,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.destaque,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
         ],
       ),
     );

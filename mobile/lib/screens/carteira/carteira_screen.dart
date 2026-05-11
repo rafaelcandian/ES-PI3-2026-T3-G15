@@ -7,12 +7,13 @@ import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
+import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
-import 'package:mescla_invest/services/startup_service.dart';
 
 import '../../models/balcao_model.dart';
-import '../auth/app_theme.dart';
+import '../../themes/app_theme.dart';
 import '../ordens/ordem_exe_screen.dart';
+import 'adicionar_fundos_screen.dart';
 
 class CarteiraPage extends StatefulWidget {
   const CarteiraPage({super.key});
@@ -48,43 +49,63 @@ class _CarteiraPageState extends State<CarteiraPage> {
     _loadData();
   }
 
+  Future<void> _abrirAdicionarFundos() async {
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AdicionarFundosScreen(),
+      ),
+    );
+
+    if (resultado == true) {
+      await _loadData();
+    }
+  }
+
   Future<void> _loadData() async {
     try {
       final carteiraService = CarteiraService();
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      
+
       if (uid == null) {
-        if (mounted) setState(() => _loading = false);
+        if (mounted) {
+          setState(() => _loading = false);
+        }
         return;
       }
 
       final saldo = await carteiraService.getBalance();
       final tokensMap = await carteiraService.getTokens();
 
-      List<AtivoCarteira> ativosTemp = [];
+      final List<AtivoCarteira> ativosTemp = [];
       final firestore = FirebaseFirestore.instance;
 
-      for (var entry in tokensMap.entries) {
+      for (final entry in tokensMap.entries) {
         final startupId = entry.key;
         final quantidade = entry.value;
 
-        if (quantidade > 0) {
+        if ((quantidade as num) > 0) {
           final doc = await firestore.collection('startups').doc(startupId).get();
+
           if (doc.exists) {
             final data = doc.data()!;
-            final title = data['title'] ?? 'Startup';
-            final tokenValue = (data['tokenValue'] ?? 0.0).toDouble();
+            final title = data['title'] ?? data['nome'] ?? 'Startup';
+            final tokenValue =
+            ((data['tokenValue'] ?? data['valorToken'] ?? 0.0) as num)
+                .toDouble();
 
-            ativosTemp.add(AtivoCarteira(
-              nome: title,
-              simbolo: title.length >= 3 ? title.substring(0, 3).toUpperCase() : title.toUpperCase(),
-              tokens: (quantidade as num).toInt(),
-              valorToken: tokenValue,
-              precoMedio: tokenValue,
-              variacao: 0.0,
-              volume: '0',
-              spread: 0.0,
-            ));
+            ativosTemp.add(
+              AtivoCarteira(
+                nome: title,
+                simbolo: _gerarSimbolo(title),
+                tokens: quantidade.toInt(),
+                valorToken: tokenValue,
+                precoMedio: tokenValue,
+                variacao: 0.0,
+                volume: '0',
+                spread: 0.0,
+              ),
+            );
           }
         }
       }
@@ -103,15 +124,47 @@ class _CarteiraPageState extends State<CarteiraPage> {
           .limit(5)
           .get();
 
-      final todasMovs = [...compras.docs, ...vendas.docs];
-      todasMovs.sort((a, b) => 
-        (b.data()['createdAt'] as Timestamp)
-        .compareTo(a.data()['createdAt'] as Timestamp));
+      final transacoesCarteira = await firestore
+          .collection('usuarios')
+          .doc(uid)
+          .collection('transacoesCarteira')
+          .orderBy('createdAt', descending: true)
+          .limit(5)
+          .get();
 
-      List<Map<String, dynamic>> movsTemp = todasMovs
-          .take(5)
-          .map((doc) => doc.data())
-          .toList();
+      final todasMovs = <Map<String, dynamic>>[
+        ...compras.docs.map(
+              (doc) => {
+            ...doc.data(),
+            '_origem': 'balcao',
+          },
+        ),
+        ...vendas.docs.map(
+              (doc) => {
+            ...doc.data(),
+            '_origem': 'balcao',
+          },
+        ),
+        ...transacoesCarteira.docs.map(
+              (doc) => {
+            ...doc.data(),
+            '_origem': 'carteira',
+          },
+        ),
+      ];
+
+      todasMovs.sort((a, b) {
+        final aDate = a['createdAt'];
+        final bDate = b['createdAt'];
+
+        if (aDate is Timestamp && bDate is Timestamp) {
+          return bDate.compareTo(aDate);
+        }
+
+        return 0;
+      });
+
+      final movsTemp = todasMovs.take(5).toList();
 
       if (mounted) {
         setState(() {
@@ -121,7 +174,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
           _loading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
@@ -130,11 +183,31 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
   }
 
+  static String _gerarSimbolo(String nome) {
+    final palavras = nome
+        .replaceAll(RegExp(r'[^a-zA-ZÀ-ÿ0-9 ]'), '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
+
+    if (palavras.isEmpty) return 'STP';
+
+    if (palavras.length == 1) {
+      final palavra = palavras.first;
+      return palavra.substring(0, math.min(3, palavra.length)).toUpperCase();
+    }
+
+    return palavras.take(3).map((p) => p[0]).join().toUpperCase();
+  }
+
   double get patrimonioTotal {
-    return _ativos.fold<double>(
+    final totalAtivos = _ativos.fold<double>(
       0,
           (total, ativo) => total + ativo.valorTotal,
     );
+
+    return _saldo + totalAtivos;
   }
 
   int get tokensTotais {
@@ -157,12 +230,98 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
   double get saldoDisponivel => _saldo;
 
+  String _tituloMovimentacao(Map<String, dynamic> mov) {
+    final origem = mov['_origem'];
+
+    if (origem == 'carteira') {
+      final type = mov['type'] ?? 'deposit';
+
+      switch (type) {
+        case 'deposit':
+          return 'Depósito via Pix simulado';
+        case 'purchase':
+          return 'Compra de tokens';
+        case 'sale':
+          return 'Venda de tokens';
+        case 'withdraw':
+          return 'Saque simulado';
+        default:
+          return 'Movimentação da carteira';
+      }
+    }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isBuy = mov['buyerId'] == uid;
+
+    return isBuy ? 'Compra executada' : 'Venda executada';
+  }
+
+  String _descricaoMovimentacao(Map<String, dynamic> mov) {
+    final origem = mov['_origem'];
+
+    if (origem == 'carteira') {
+      final description = mov['description'];
+
+      if (description is String && description.trim().isNotEmpty) {
+        return description;
+      }
+
+      return 'Movimentação financeira simulada';
+    }
+
+    final quantity = mov['quantity'] ?? 0;
+    return '$quantity tokens';
+  }
+
+  String _valorMovimentacao(Map<String, dynamic> mov) {
+    final origem = mov['_origem'];
+
+    if (origem == 'carteira') {
+      final amount = (mov['amount'] as num?)?.toDouble() ?? 0.0;
+      final sinal = amount >= 0 ? '+' : '-';
+
+      return '$sinal R\$ ${amount.abs().toStringAsFixed(2)}';
+    }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isBuy = mov['buyerId'] == uid;
+    final totalPrice = (mov['totalPrice'] as num?)?.toDouble() ?? 0.0;
+
+    return '${isBuy ? '-' : '+'} R\$ ${totalPrice.toStringAsFixed(2)}';
+  }
+
+  IconData _iconeMovimentacao(Map<String, dynamic> mov) {
+    final origem = mov['_origem'];
+
+    if (origem == 'carteira') {
+      final type = mov['type'] ?? 'deposit';
+
+      switch (type) {
+        case 'deposit':
+          return Icons.pix_rounded;
+        case 'purchase':
+          return Icons.shopping_bag_rounded;
+        case 'sale':
+          return Icons.sell_rounded;
+        case 'withdraw':
+          return Icons.account_balance_rounded;
+        default:
+          return Icons.receipt_long_rounded;
+      }
+    }
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isBuy = mov['buyerId'] == uid;
+
+    return isBuy ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: AppColors.fundoEscuro,
+        backgroundColor: AppColors.fundo,
         extendBody: true,
         appBar: const AppBarPadrao(titulo: 'Minha Carteira'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 2),
@@ -171,142 +330,152 @@ class _CarteiraPageState extends State<CarteiraPage> {
             const _AtmosphericBackground(),
             if (_loading)
               const Center(
-                child: CircularProgressIndicator(color: AppColors.destaque),
+                child: CircularProgressIndicator(
+                  color: AppColors.destaque,
+                ),
               )
             else
               SafeArea(
-              bottom: false,
-              child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  const SliverToBoxAdapter(
-                    child: Column(
-                      children: [
-                        _Header(),
-                        SizedBox(height: 20),
-                      ],
+                bottom: false,
+                child: RefreshIndicator(
+                  color: AppColors.destaque,
+                  backgroundColor: AppColors.card,
+                  onRefresh: _loadData,
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                  ),
-
-                  SliverToBoxAdapter(
-                    child: _PatrimonioCard(
-                      patrimonioTotal: patrimonioTotal,
-                      saldoDisponivel: saldoDisponivel,
-                      tokensTotais: tokensTotais,
-                      variacaoMedia: variacaoMedia,
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 18),
-                  ),
-
-                  SliverToBoxAdapter(
-                    child: _GraficoCard(
-                      data: data,
-                      selectedTimePeriod: selectedTimePeriod,
-                      onPeriodChanged: (period) {
-                        setState(() => selectedTimePeriod = period);
-                      },
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 22),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: _SectionLabel(
-                      label: 'SEUS ATIVOS',
-                      hint: 'Acompanhe seus tokens e a valorização por startup.',
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 12),
-                  ),
-
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    sliver: SliverList.separated(
-                      itemCount: _ativos.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final ativo = _ativos[index];
-
-                        return _AtivoCard(
-                          ativo: ativo,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AtivoDetalheScreen(
-                                  ativo: ativo,
-                                  historico: data,
-                                  ofertasDisponiveis: _ofertasDoAtivo(ativo),
-                                ),
-                              ),
-                            );
+                    slivers: [
+                      const SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            _Header(),
+                            SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _PatrimonioCard(
+                          patrimonioTotal: patrimonioTotal,
+                          saldoDisponivel: saldoDisponivel,
+                          tokensTotais: tokensTotais,
+                          variacaoMedia: variacaoMedia,
+                          onAdicionarFundos: _abrirAdicionarFundos,
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 18),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _GraficoCard(
+                          data: data,
+                          selectedTimePeriod: selectedTimePeriod,
+                          onPeriodChanged: (period) {
+                            setState(() => selectedTimePeriod = period);
                           },
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 24),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: _SectionLabel(
-                      label: 'ÚLTIMAS MOVIMENTAÇÕES',
-                      hint: 'Histórico recente das operações simuladas.',
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 12),
-                  ),
-
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    sliver: _movimentacoes.isEmpty 
-                      ? const SliverToBoxAdapter(
-                          child: Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Text(
-                                'Nenhuma movimentação recente.',
-                                style: TextStyle(color: AppColors.textoFraco),
-                              ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 24),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: _SectionLabel(
+                          label: 'SEUS ATIVOS',
+                          hint:
+                          'Acompanhe seus tokens e a valorização por startup.',
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 12),
+                      ),
+                      if (_ativos.isEmpty)
+                        const SliverPadding(
+                          padding: EdgeInsets.symmetric(horizontal: 22),
+                          sliver: SliverToBoxAdapter(
+                            child: _EmptyStateCard(
+                              icon: Icons.account_balance_wallet_outlined,
+                              title: 'Nenhum ativo em carteira',
+                              subtitle:
+                              'Quando você comprar tokens, eles aparecerão aqui.',
                             ),
                           ),
                         )
-                      : SliverList.separated(
+                      else
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 22),
+                          sliver: SliverList.separated(
+                            itemCount: _ativos.length,
+                            separatorBuilder: (_, __) =>
+                            const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final ativo = _ativos[index];
+
+                              return _AtivoCard(
+                                ativo: ativo,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => AtivoDetalheScreen(
+                                        ativo: ativo,
+                                        historico: data,
+                                        ofertasDisponiveis:
+                                        _ofertasDoAtivo(ativo),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 24),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: _SectionLabel(
+                          label: 'ÚLTIMAS MOVIMENTAÇÕES',
+                          hint:
+                          'Histórico recente das operações e aportes simulados.',
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 12),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        sliver: _movimentacoes.isEmpty
+                            ? const SliverToBoxAdapter(
+                          child: _EmptyStateCard(
+                            icon: Icons.receipt_long_outlined,
+                            title: 'Nenhuma movimentação recente',
+                            subtitle:
+                            'Seus aportes, compras e vendas aparecerão aqui.',
+                          ),
+                        )
+                            : SliverList.separated(
                           itemCount: _movimentacoes.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                          const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final mov = _movimentacoes[index];
-                            final uid = FirebaseAuth.instance.currentUser?.uid;
-                            final isBuy = mov['buyerId'] == uid;
-                            final quantity = mov['quantity'] ?? 0;
-                            final totalPrice = mov['totalPrice']?.toDouble() ?? 0.0;
-                            
+
                             return _MovimentacaoTile(
-                              titulo: isBuy ? 'Compra executada' : 'Venda executada',
-                              descricao: '$quantity tokens',
-                              valor: '${isBuy ? '-' : '+'} R\$ ${totalPrice.toStringAsFixed(2)}',
+                              titulo: _tituloMovimentacao(mov),
+                              descricao: _descricaoMovimentacao(mov),
+                              valor: _valorMovimentacao(mov),
+                              icon: _iconeMovimentacao(mov),
                             );
                           },
                         ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 120),
+                      ),
+                    ],
                   ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 120),
-                  ),
-                ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -403,7 +572,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.fundoEscuro,
+      backgroundColor: AppColors.fundo,
       body: Stack(
         children: [
           const _AtmosphericBackground(),
@@ -430,22 +599,20 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                           style: TextStyle(
                             color: AppColors.destaque,
                             fontSize: 18,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
+                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate(
                       [
                         _AtivoHeroCard(ativo: widget.ativo),
                         const SizedBox(height: 18),
-
                         _GraficoCard(
                           data: widget.historico,
                           selectedTimePeriod: selectedTimePeriod,
@@ -453,15 +620,11 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                             setState(() => selectedTimePeriod = period);
                           },
                         ),
-
                         const SizedBox(height: 18),
-
                         _DetalheMetricasCard(
                           ativo: widget.ativo,
                         ),
-
                         const SizedBox(height: 18),
-
                         _InfoCard(
                           title: 'Acompanhamento do ativo',
                           children: [
@@ -489,9 +652,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 26),
-
                         Row(
                           children: [
                             Expanded(
@@ -567,15 +728,15 @@ class _AtmosphericBackground extends StatelessWidget {
         children: [
           Positioned(
             top: -150,
-            right: -110,
+            right: -120,
             child: Container(
-              width: 360,
-              height: 360,
+              width: 340,
+              height: 340,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.20),
+                    AppColors.azul.withOpacity(0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -583,16 +744,16 @@ class _AtmosphericBackground extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 180,
-            left: -100,
+            top: 220,
+            left: -130,
             child: Container(
-              width: 260,
-              height: 260,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.06),
+                    AppColors.destaque.withOpacity(0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -601,103 +762,18 @@ class _AtmosphericBackground extends StatelessWidget {
           ),
           Positioned(
             bottom: 80,
-            right: -100,
+            right: -120,
             child: Container(
-              width: 290,
-              height: 290,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.15),
+                    AppColors.roxo.withOpacity(0.18),
                     Colors.transparent,
                   ],
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.destaque.withOpacity(0.35),
-                width: 1.4,
-              ),
-              gradient: const LinearGradient(
-                colors: [
-                  AppColors.campo,
-                  AppColors.card,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: const Icon(
-              Icons.account_balance_wallet_rounded,
-              color: AppColors.destaque,
-              size: 21,
-            ),
-          ),
-          const Spacer(),
-          const Column(
-            children: [
-              Text(
-                'MESCLAINVEST',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.destaque,
-                  letterSpacing: 2.4,
-                ),
-              ),
-              SizedBox(height: 3),
-              Text(
-                'Carteira digital',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textoMuitoFraco,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(context, '/perfil');
-            },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.bordaClara,
-                  width: 1,
-                ),
-                color: AppColors.card,
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: AppColors.destaque,
-                size: 22,
               ),
             ),
           ),
@@ -718,54 +794,19 @@ class _Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 14),
-          _HeaderEyebrow(text: 'VISÃO GERAL DA CARTEIRA'),
+          PremiumHeaderEyebrow(text: 'VISÃO GERAL DA CARTEIRA'),
           SizedBox(height: 14),
-          
-
           Text(
             'Acompanhe seus ativos, saldo disponível e movimentações simuladas.',
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textoFraco,
               height: 1.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _HeaderEyebrow extends StatelessWidget {
-  final String text;
-
-  const _HeaderEyebrow({
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.destaque,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.destaque,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -775,12 +816,14 @@ class _PatrimonioCard extends StatelessWidget {
   final double saldoDisponivel;
   final int tokensTotais;
   final double variacaoMedia;
+  final VoidCallback onAdicionarFundos;
 
   const _PatrimonioCard({
     required this.patrimonioTotal,
     required this.saldoDisponivel,
     required this.tokensTotais,
     required this.variacaoMedia,
+    required this.onAdicionarFundos,
   });
 
   @override
@@ -791,20 +834,12 @@ class _PatrimonioCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: _cardDecoration(),
+        decoration: premiumCardDecoration(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'PATRIMÔNIO TOTAL',
-              style: TextStyle(
-                color: AppColors.textoMuitoFraco,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8,
-              ),
-            ),
-            const SizedBox(height: 10),
+            const PremiumSectionLabel(text: 'Patrimônio total'),
+            const SizedBox(height: 14),
             Text(
               'R\$ ${patrimonioTotal.toStringAsFixed(2)}',
               style: const TextStyle(
@@ -837,6 +872,12 @@ class _PatrimonioCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 18),
+            _PrimaryWalletButton(
+              label: 'Adicionar fundos',
+              icon: Icons.add_card_rounded,
+              onTap: onAdicionarFundos,
+            ),
           ],
         ),
       ),
@@ -855,26 +896,38 @@ class _ResumoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textoMuitoFraco,
-            fontSize: 10,
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: premiumFieldDecoration(
+        radius: 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textoMuitoFraco,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.textoPrincipal,
-            fontWeight: FontWeight.w800,
-            fontSize: 13,
+          const SizedBox(height: 5),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textoPrincipal,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -898,11 +951,11 @@ class _GraficoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
         padding: const EdgeInsets.all(18),
-        decoration: _cardDecoration(),
+        decoration: premiumCardDecoration(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _HeaderEyebrow(text: 'VALORIZAÇÃO DA CARTEIRA'),
+            const PremiumHeaderEyebrow(text: 'VALORIZAÇÃO DA CARTEIRA'),
             const SizedBox(height: 16),
             SizedBox(
               height: 180,
@@ -920,31 +973,36 @@ class _GraficoCard extends StatelessWidget {
 
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => onPeriodChanged(period),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: active ? AppColors.destaque : AppColors.campo,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: active
-                                ? AppColors.destaque
-                                : AppColors.bordaClara,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(18),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => onPeriodChanged(period),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 9,
                           ),
-                        ),
-                        child: Text(
-                          period,
-                          style: TextStyle(
-                            color: active
-                                ? AppColors.card
-                                : AppColors.textoFraco,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
+                          decoration: BoxDecoration(
+                            color: active ? AppColors.destaque : AppColors.campo,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: active
+                                  ? AppColors.destaque
+                                  : AppColors.bordaClara,
+                            ),
+                          ),
+                          child: Text(
+                            period,
+                            style: TextStyle(
+                              color: active
+                                  ? AppColors.fundo
+                                  : AppColors.textoFraco,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ),
@@ -982,7 +1040,7 @@ class _SectionLabel extends StatelessWidget {
               fontSize: 10,
               color: AppColors.textoMuitoFraco,
               letterSpacing: 2,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
@@ -991,6 +1049,7 @@ class _SectionLabel extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textoMuitoFraco,
               fontSize: 11,
+              height: 1.4,
             ),
           ),
         ],
@@ -1012,81 +1071,74 @@ class _AtivoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final negative = ativo.variacao < 0;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: AppColors.bordaClara,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: premiumCardDecoration(
+            radius: 22,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.24),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            _TickerBox(
-              simbolo: ativo.simbolo,
-              color: AppColors.destaque,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            children: [
+              _TickerBox(
+                simbolo: ativo.simbolo,
+                color: AppColors.destaque,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ativo.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textoPrincipal,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${ativo.tokens} tokens • R\$ ${ativo.valorToken.toStringAsFixed(2)}/token',
+                      style: const TextStyle(
+                        color: AppColors.textoMuitoFraco,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    ativo.nome,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: AppColors.textoPrincipal,
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    '${ativo.tokens} tokens • R\$ ${ativo.valorToken.toStringAsFixed(2)}/token',
-                    style: const TextStyle(
-                      color: AppColors.textoMuitoFraco,
+                    '${negative ? '' : '+'}${ativo.variacao.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      color: negative ? AppColors.textoFraco : AppColors.destaque,
                       fontSize: 12,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: AppColors.textoPrincipal,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${negative ? '' : '+'}${ativo.variacao.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                    color: negative
-                        ? AppColors.textoFraco
-                        : AppColors.destaque,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1106,7 +1158,7 @@ class _AtivoHeroCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
+      decoration: premiumCardDecoration(),
       child: Row(
         children: [
           _TickerBox(
@@ -1165,7 +1217,7 @@ class _DetalheMetricasCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: _cardDecoration(),
+      decoration: premiumCardDecoration(),
       padding: const EdgeInsets.all(18),
       child: Row(
         children: [
@@ -1207,19 +1259,21 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.campo,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
-      ),
+      decoration: premiumCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _HeaderEyebrow(text: title.toUpperCase()),
+          PremiumHeaderEyebrow(text: title.toUpperCase()),
           const SizedBox(height: 16),
-          ...children,
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: premiumFieldDecoration(
+              radius: 18,
+            ),
+            child: Column(
+              children: children,
+            ),
+          ),
         ],
       ),
     );
@@ -1243,32 +1297,94 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 11),
       child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: destaque
-                  ? AppColors.textoPrincipal
-                  : AppColors.textoFraco,
-              fontSize: destaque ? 14 : 13,
-              fontWeight: destaque ? FontWeight.w800 : FontWeight.w500,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: destaque ? AppColors.textoPrincipal : AppColors.textoFraco,
+                fontSize: destaque ? 14 : 13,
+                fontWeight: destaque ? FontWeight.w800 : FontWeight.w500,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: destaque
-                    ? AppColors.destaque
-                    : AppColors.textoPrincipal,
+                color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
                 fontSize: destaque ? 16 : 13,
                 fontWeight: FontWeight.w900,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PrimaryWalletButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _PrimaryWalletButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      width: double.infinity,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              AppColors.destaqueClaro,
+              AppColors.destaqueEscuro,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.destaque.withOpacity(0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: onTap,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: AppColors.fundo,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.fundo,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1313,7 +1429,7 @@ class _PrimaryActionButton extends StatelessWidget {
               child: Text(
                 label,
                 style: const TextStyle(
-                  color: AppColors.card,
+                  color: AppColors.fundo,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -1404,11 +1520,13 @@ class _MovimentacaoTile extends StatelessWidget {
   final String titulo;
   final String descricao;
   final String valor;
+  final IconData icon;
 
   const _MovimentacaoTile({
     required this.titulo,
     required this.descricao,
     required this.valor,
+    required this.icon,
   });
 
   @override
@@ -1417,19 +1535,26 @@ class _MovimentacaoTile extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+      decoration: premiumCardDecoration(
+        radius: 18,
       ),
       child: Row(
         children: [
-          Icon(
-            entrada ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-            color: AppColors.destaque,
-            size: 18,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.destaque.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.destaque.withOpacity(0.24),
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: entrada ? AppColors.destaque : AppColors.textoFraco,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1441,12 +1566,14 @@ class _MovimentacaoTile extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.textoPrincipal,
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   descricao,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textoMuitoFraco,
                     fontSize: 11,
@@ -1455,11 +1582,12 @@ class _MovimentacaoTile extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Text(
             valor,
-            style: const TextStyle(
-              color: AppColors.textoPrincipal,
-              fontWeight: FontWeight.w800,
+            style: TextStyle(
+              color: entrada ? AppColors.destaque : AppColors.textoPrincipal,
+              fontWeight: FontWeight.w900,
               fontSize: 12,
             ),
           ),
@@ -1469,21 +1597,58 @@ class _MovimentacaoTile extends StatelessWidget {
   }
 }
 
-BoxDecoration _cardDecoration() {
-  return BoxDecoration(
-    color: AppColors.card,
-    borderRadius: BorderRadius.circular(24),
-    border: Border.all(
-      color: AppColors.bordaClara,
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.32),
-        blurRadius: 28,
-        offset: const Offset(0, 12),
+class _EmptyStateCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _EmptyStateCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: premiumCardDecoration(
+        radius: 22,
       ),
-    ],
-  );
+      padding: const EdgeInsets.symmetric(
+        horizontal: 18,
+        vertical: 26,
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: AppColors.destaque,
+            size: 38,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textoPrincipal,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textoMuitoFraco,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── Gráfico ────────────────────────────────────────────────────────────────
@@ -1514,7 +1679,8 @@ class LineChartPainter extends CustomPainter {
 
     final minValue = data.reduce(math.min);
     final maxValue = data.reduce(math.max);
-    final range = (maxValue - minValue).abs() < 0.01 ? 1.0 : maxValue - minValue;
+    final range =
+    (maxValue - minValue).abs() < 0.01 ? 1.0 : maxValue - minValue;
 
     final points = <Offset>[];
     final space = size.width / (data.length - 1);

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mescla_invest/services/autenticacao.dart';
-import 'package:mescla_invest/screens/auth/app_theme.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
 
 class RecuperacaoSenhaTela extends StatefulWidget {
   const RecuperacaoSenhaTela({super.key});

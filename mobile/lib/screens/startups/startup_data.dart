@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StartupData {
+  final String stage;
   final String id;
   final String title;
   final String subtitle;
@@ -13,6 +14,7 @@ class StartupData {
   final String image;
 
   const StartupData({
+    required this.stage,
     required this.id,
     required this.title,
     required this.subtitle,
@@ -27,6 +29,7 @@ class StartupData {
 
   factory StartupData.fromMap(Map<String, dynamic> data, {String id = ''}) {
     return StartupData(
+      stage: data['stage'] ?? data['estagio'] ?? 'Nova',
       id: id,
       title: data['title'] ?? '',
       subtitle: data['subtitle'] ?? '',
@@ -44,6 +47,7 @@ class StartupData {
     final data = doc.data() as Map<String, dynamic>;
 
     return StartupData(
+      stage: data['stage'] ?? data['estagio'] ?? 'Nova',
       id: doc.id,
       title: data['title'] ?? '',
       subtitle: data['subtitle'] ?? '',

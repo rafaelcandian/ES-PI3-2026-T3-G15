@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mescla_invest/services/autenticacao.dart';
-import 'app_theme.dart';
+import '../../themes/app_theme.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -716,23 +716,28 @@ class _CadastroPageState extends State<CadastroPage>
   }
 
   Widget _buildCadastrarButton() {
-    final habilitado = _aceitouTermos && !_isLoading;
+    final podeCadastrar = _aceitouTermos && !_isLoading;
 
     return AnimatedOpacity(
-      opacity: _aceitouTermos ? 1.0 : 0.45,
+      opacity: podeCadastrar ? 1.0 : 0.55,
       duration: const Duration(milliseconds: 250),
       child: Container(
         width: double.infinity,
         height: 52,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
+          gradient: LinearGradient(
+            colors: podeCadastrar
+                ? const [
               _goldLight,
               _goldDark,
+            ]
+                : [
+              Colors.white.withOpacity(0.18),
+              Colors.white.withOpacity(0.10),
             ],
           ),
           borderRadius: BorderRadius.circular(14),
-          boxShadow: _aceitouTermos
+          boxShadow: podeCadastrar
               ? [
             BoxShadow(
               color: AppColors.destaque.withOpacity(0.3),
@@ -745,8 +750,19 @@ class _CadastroPageState extends State<CadastroPage>
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: habilitado ? _submitForm : null,
             borderRadius: BorderRadius.circular(14),
+            onTap: _isLoading
+                ? null
+                : () {
+              if (!_aceitouTermos) {
+                _showSnackBar(
+                  'Aceite os Termos de Uso e a Política de Privacidade para continuar.',
+                );
+                return;
+              }
+
+              _submitForm();
+            },
             child: Center(
               child: _isLoading
                   ? const SizedBox(
@@ -757,12 +773,14 @@ class _CadastroPageState extends State<CadastroPage>
                   strokeWidth: 2.5,
                 ),
               )
-                  : const Text(
+                  : Text(
                 'Cadastrar',
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  color: podeCadastrar
+                      ? Colors.black
+                      : Colors.white.withOpacity(0.55),
                   letterSpacing: 0.2,
                 ),
               ),
@@ -814,10 +832,17 @@ class _CadastroPageState extends State<CadastroPage>
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
 
     if (!_aceitouTermos) {
       _showSnackBar('Aceite os Termos de Uso para continuar.');
+      return;
+    }
+
+    final formValido = _formKey.currentState?.validate() ?? false;
+
+    if (!formValido) {
+      _showSnackBar('Revise os campos destacados antes de continuar.');
       return;
     }
 

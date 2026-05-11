@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
-import '../../models/balcao_model.dart';
-import '../auth/app_theme.dart';
+import 'package:mescla_invest/widgets/premium_ui.dart';
 
+import '../../models/balcao_model.dart';
+import '../../themes/app_theme.dart';
 import '../ordens/ordem_exe_screen.dart';
 
 class BalcaoDeNegociacoesScreen extends StatefulWidget {
@@ -241,14 +242,14 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
 
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.only(top: 22),
+                      padding: const EdgeInsets.only(top: 24),
                       child: _SectionLabel(
                         label: isCompra
                             ? 'MELHORES OFERTAS PARA COMPRA'
                             : 'MELHORES OFERTAS PARA VENDA',
                         hint: isCompra
-                            ? 'Ordens disponíveis para você comprar tokens'
-                            : 'Ordens disponíveis para você vender seus tokens',
+                            ? 'Ordens disponíveis para você comprar tokens.'
+                            : 'Ordens disponíveis para você vender seus tokens.',
                       ),
                     ),
                   ),
@@ -281,6 +282,8 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
   }
 }
 
+// ===================== BACKGROUND =====================
+
 class _AtmosphericBackground extends StatelessWidget {
   const _AtmosphericBackground();
 
@@ -290,16 +293,16 @@ class _AtmosphericBackground extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            top: -130,
-            right: -100,
+            top: -150,
+            right: -120,
             child: Container(
-              width: 330,
-              height: 330,
+              width: 340,
+              height: 340,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.20),
+                    AppColors.azul.withOpacity(0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -307,16 +310,16 @@ class _AtmosphericBackground extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 160,
-            left: -100,
+            top: 210,
+            left: -130,
             child: Container(
-              width: 260,
-              height: 260,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.08),
+                    AppColors.destaque.withOpacity(0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -325,15 +328,15 @@ class _AtmosphericBackground extends StatelessWidget {
           ),
           Positioned(
             bottom: 80,
-            right: -100,
+            right: -120,
             child: Container(
-              width: 290,
-              height: 290,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.16),
+                    AppColors.roxo.withOpacity(0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -346,80 +349,7 @@ class _AtmosphericBackground extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
-      child: Row(
-        children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'MESCLAINVEST',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.destaque,
-                  letterSpacing: 2.4,
-                ),
-              ),
-              SizedBox(height: 3),
-              Text(
-                'Balcão de negociação',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.white54,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () {
-              Navigator.pushNamed(context, '/perfil');
-            },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.destaque.withOpacity(0.35),
-                  width: 1.4,
-                ),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.08),
-                    Colors.white.withOpacity(0.03),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.35),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: AppColors.destaque,
-                size: 23,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ===================== HEADER =====================
 
 class _PageHeader extends StatelessWidget {
   const _PageHeader();
@@ -432,15 +362,15 @@ class _PageHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 14),
-          _HeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
+          PremiumHeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
           SizedBox(height: 14),
-
           Text(
             'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white70,
+              color: AppColors.textoFraco,
               height: 1.5,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -449,39 +379,7 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
-class _HeaderEyebrow extends StatelessWidget {
-  final String text;
-
-  const _HeaderEyebrow({
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.destaque,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.destaque,
-            letterSpacing: 1.4,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
+// ===================== SALDO =====================
 
 class _SaldoOperacionalCard extends StatelessWidget {
   const _SaldoOperacionalCard();
@@ -493,27 +391,14 @@ class _SaldoOperacionalCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: 18,
-          vertical: 16,
+          vertical: 18,
         ),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.08),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.45),
-              blurRadius: 32,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
+        decoration: premiumCardDecoration(),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.destaque.withOpacity(0.12),
@@ -525,7 +410,7 @@ class _SaldoOperacionalCard extends StatelessWidget {
               child: const Icon(
                 Icons.account_balance_wallet_outlined,
                 color: AppColors.destaque,
-                size: 20,
+                size: 21,
               ),
             ),
             const SizedBox(width: 14),
@@ -534,12 +419,12 @@ class _SaldoOperacionalCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SmallLabel(text: 'SALDO DISPONÍVEL'),
-                  SizedBox(height: 5),
+                  SizedBox(height: 6),
                   Text(
                     'R\$ 12.750,00',
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w900,
                       color: AppColors.destaque,
                     ),
                   ),
@@ -547,8 +432,9 @@ class _SaldoOperacionalCard extends StatelessWidget {
                   Text(
                     'Saldo fictício para ordens simuladas',
                     style: TextStyle(
-                      color: Colors.white54,
+                      color: AppColors.textoMuitoFraco,
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -560,6 +446,8 @@ class _SaldoOperacionalCard extends StatelessWidget {
     );
   }
 }
+
+// ===================== PAINEL DE CONTROLE =====================
 
 class _TradeControlPanel extends StatelessWidget {
   final TextEditingController controller;
@@ -583,28 +471,19 @@ class _TradeControlPanel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.08),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.28),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.all(16),
+        decoration: premiumCardDecoration(),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const PremiumSectionLabel(text: 'Operação'),
+            const SizedBox(height: 14),
+
             TextField(
               controller: controller,
               onChanged: onSearchChanged,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textoPrincipal,
                 fontSize: 14,
               ),
               cursorColor: AppColors.destaque,
@@ -612,7 +491,7 @@ class _TradeControlPanel extends StatelessWidget {
                 hintText: hint,
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: Colors.white38,
+                  color: AppColors.textoMuitoFraco,
                   size: 20,
                 ),
                 suffixIcon: controller.text.isEmpty
@@ -624,37 +503,15 @@ class _TradeControlPanel extends StatelessWidget {
                   },
                   icon: const Icon(
                     Icons.close_rounded,
-                    color: Colors.white38,
+                    color: AppColors.textoMuitoFraco,
                     size: 18,
-                  ),
-                ),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.06),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 14,
-                ),
-                hintStyle: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 13,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Colors.white.withOpacity(0.08),
-                    width: 1,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: AppColors.destaque.withOpacity(0.55),
-                    width: 1.2,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 14),
+
             Row(
               children: [
                 _ModeButton(
@@ -664,7 +521,7 @@ class _TradeControlPanel extends StatelessWidget {
                   isPrimary: true,
                   onTap: () => onModoChanged(ModoNegociacao.compra),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 _ModeButton(
                   label: 'Vender',
                   icon: Icons.swap_horiz_rounded,
@@ -701,8 +558,8 @@ class _ModeButton extends StatelessWidget {
     final activeGradient = isPrimary
         ? const LinearGradient(
       colors: [
-        Color(0xFFFFD88A),
-        AppColors.destaque,
+        AppColors.destaqueClaro,
+        AppColors.destaqueEscuro,
       ],
     )
         : const LinearGradient(
@@ -715,61 +572,66 @@ class _ModeButton extends StatelessWidget {
     final textColor = active
         ? isPrimary
         ? AppColors.fundo
-        : Colors.white
-        : Colors.white70;
+        : AppColors.textoPrincipal
+        : AppColors.textoSecundario;
 
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          height: 44,
-          decoration: BoxDecoration(
-            gradient: active ? activeGradient : null,
-            color: active ? null : Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: active
-                  ? AppColors.destaque.withOpacity(0.25)
-                  : Colors.white.withOpacity(0.08),
-              width: 0.8,
-            ),
-            boxShadow: active
-                ? [
-              BoxShadow(
-                color: isPrimary
-                    ? AppColors.destaque.withOpacity(0.22)
-                    : AppColors.azul.withOpacity(0.24),
-                blurRadius: 16,
-                offset: const Offset(0, 5),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: active ? activeGradient : null,
+              color: active ? null : AppColors.campo,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active ? AppColors.bordaDestaque : AppColors.bordaClara,
+                width: 0.8,
               ),
-            ]
-                : [],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: textColor,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+              boxShadow: active
+                  ? [
+                BoxShadow(
+                  color: isPrimary
+                      ? AppColors.destaque.withOpacity(0.22)
+                      : AppColors.azul.withOpacity(0.24),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
-              ),
-            ],
+              ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: textColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
+// ===================== ATIVOS DO USUÁRIO =====================
 
 class _AtivosUsuarioCard extends StatelessWidget {
   final List<AtivoUsuario> ativos;
@@ -795,24 +657,11 @@ class _AtivosUsuarioCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.08),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.28),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        decoration: premiumCardDecoration(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _HeaderEyebrow(text: 'ATIVOS DISPONÍVEIS PARA VENDA'),
+            const PremiumHeaderEyebrow(text: 'ATIVOS DISPONÍVEIS PARA VENDA'),
             const SizedBox(height: 14),
             ...ativos.map(
                   (ativo) => Padding(
@@ -840,36 +689,14 @@ class _AtivoVendaTile extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ),
+      decoration: premiumFieldDecoration(
+        radius: 18,
       ),
       child: Row(
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.11),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.destaque.withOpacity(0.24),
-              ),
-            ),
-            child: Center(
-              child: Text(
-                ativo.simbolo,
-                style: const TextStyle(
-                  color: AppColors.destaque,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
+          _TickerBox(
+            simbolo: ativo.simbolo,
+            color: AppColors.destaque,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -881,16 +708,16 @@ class _AtivoVendaTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textoPrincipal,
                     fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   '${ativo.quantidade} tokens disponíveis',
                   style: const TextStyle(
-                    color: Colors.white70,
+                    color: AppColors.textoFraco,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -905,8 +732,9 @@ class _AtivoVendaTile extends StatelessWidget {
               const Text(
                 'Valor estimado',
                 style: TextStyle(
-                  color: Colors.white38,
+                  color: AppColors.textoMuitoFraco,
                   fontSize: 10,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
@@ -915,7 +743,7 @@ class _AtivoVendaTile extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.destaque,
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ],
@@ -925,6 +753,8 @@ class _AtivoVendaTile extends StatelessWidget {
     );
   }
 }
+
+// ===================== LABEL DE SEÇÃO =====================
 
 class _SectionLabel extends StatelessWidget {
   final String label;
@@ -946,17 +776,18 @@ class _SectionLabel extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 10,
-              color: Colors.white38,
+              color: AppColors.textoMuitoFraco,
               letterSpacing: 2,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             hint,
             style: const TextStyle(
-              color: Colors.white38,
+              color: AppColors.textoMuitoFraco,
               fontSize: 11,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -964,6 +795,8 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
+
+// ===================== LISTA DE OFERTAS =====================
 
 class _OfertasList extends StatelessWidget {
   final List<Oferta> ofertas;
@@ -1038,8 +871,9 @@ class _OfertaCardState extends State<_OfertaCard> {
     final isCompra = widget.modo == ModoNegociacao.compra;
     final accent = isCompra ? AppColors.destaque : AppColors.azul;
 
-    final variationColor =
-    widget.oferta.variacao >= 0 ? AppColors.destaque : Colors.white70;
+    final variationColor = widget.oferta.variacao >= 0
+        ? AppColors.destaque
+        : AppColors.textoFraco;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -1069,46 +903,17 @@ class _OfertaCardState extends State<_OfertaCard> {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.08),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.32),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+              decoration: premiumCardDecoration(
+                radius: 22,
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: accent.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: accent.withOpacity(0.32),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        widget.oferta.simbolo,
-                        style: TextStyle(
-                          fontSize:
-                          widget.oferta.simbolo.length > 3 ? 9 : 12,
-                          fontWeight: FontWeight.w900,
-                          color: accent,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
+                  _TickerBox(
+                    simbolo: widget.oferta.simbolo,
+                    color: accent,
                   ),
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1123,9 +928,9 @@ class _OfertaCardState extends State<_OfertaCard> {
                             Text(
                               '#${widget.position}',
                               style: const TextStyle(
-                                color: Colors.white38,
+                                color: AppColors.textoMuitoFraco,
                                 fontSize: 10,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
@@ -1138,7 +943,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                            color: AppColors.textoPrincipal,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -1164,7 +969,9 @@ class _OfertaCardState extends State<_OfertaCard> {
                       ],
                     ),
                   ),
+
                   const SizedBox(width: 10),
+
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -1192,7 +999,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                             style: TextStyle(
                               fontSize: 11,
                               color: variationColor,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -1205,8 +1012,8 @@ class _OfertaCardState extends State<_OfertaCard> {
                           gradient: isCompra
                               ? const LinearGradient(
                             colors: [
-                              Color(0xFFFFD88A),
-                              AppColors.destaque,
+                              AppColors.destaqueClaro,
+                              AppColors.destaqueEscuro,
                             ],
                           )
                               : const LinearGradient(
@@ -1216,12 +1023,21 @@ class _OfertaCardState extends State<_OfertaCard> {
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withOpacity(0.18),
+                              blurRadius: 12,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
                             isCompra ? 'COMPRAR' : 'VENDER',
                             style: TextStyle(
-                              color: isCompra ? AppColors.fundo : Colors.white,
+                              color: isCompra
+                                  ? AppColors.fundo
+                                  : AppColors.textoPrincipal,
                               fontWeight: FontWeight.w900,
                               fontSize: 10,
                               letterSpacing: 0.7,
@@ -1253,6 +1069,44 @@ class _OfertaCardState extends State<_OfertaCard> {
   }
 }
 
+// ===================== COMPONENTES PEQUENOS =====================
+
+class _TickerBox extends StatelessWidget {
+  final String simbolo;
+  final Color color;
+
+  const _TickerBox({
+    required this.simbolo,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withOpacity(0.30),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          simbolo,
+          style: TextStyle(
+            fontSize: simbolo.length > 3 ? 9 : 12,
+            fontWeight: FontWeight.w900,
+            color: color,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SmallLabel extends StatelessWidget {
   final String text;
 
@@ -1266,9 +1120,9 @@ class _SmallLabel extends StatelessWidget {
       text,
       style: const TextStyle(
         fontSize: 10,
-        color: Colors.white38,
+        color: AppColors.textoMuitoFraco,
         letterSpacing: 1.5,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w900,
       ),
     );
   }
@@ -1328,16 +1182,16 @@ class _MiniInfo extends StatelessWidget {
           TextSpan(
             text: '$label: ',
             style: const TextStyle(
-              color: Colors.white38,
+              color: AppColors.textoMuitoFraco,
               fontSize: 10,
             ),
           ),
           TextSpan(
             text: value,
             style: const TextStyle(
-              color: Colors.white70,
+              color: AppColors.textoFraco,
               fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -1365,18 +1219,14 @@ class _EmptyState extends StatelessWidget {
         horizontal: 18,
         vertical: 26,
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.08),
-        ),
+      decoration: premiumCardDecoration(
+        radius: 22,
       ),
       child: Column(
         children: [
           Icon(
             icon,
-            color: Colors.white38,
+            color: AppColors.textoMuitoFraco,
             size: 42,
           ),
           const SizedBox(height: 12),
@@ -1384,9 +1234,9 @@ class _EmptyState extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white70,
+              color: AppColors.textoFraco,
               fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 6),
@@ -1394,7 +1244,7 @@ class _EmptyState extends StatelessWidget {
             subtitle,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white38,
+              color: AppColors.textoMuitoFraco,
               fontSize: 12,
               height: 1.4,
             ),

@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mescla_invest/models/order_model.dart';
 import 'package:mescla_invest/services/balcao_service.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
-import 'package:mescla_invest/screens/auth/app_theme.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
 
 /*
   Tela feita com IA sem nenhuma revisão apenas para teste dos metodos criados em relação

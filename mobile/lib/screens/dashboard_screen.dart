@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mescla_invest/screens/auth/app_theme.dart';
+import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 

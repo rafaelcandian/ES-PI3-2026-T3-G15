@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:mescla_invest/widgets/premium_ui.dart';
+
 import '../../models/balcao_model.dart';
-import '../auth/app_theme.dart';
+import '../../themes/app_theme.dart';
 import 'ordem_confirm_screen.dart';
 
 class OrdemExeScreen extends StatefulWidget {
@@ -23,6 +26,7 @@ class OrdemExeScreen extends StatefulWidget {
 class _OrdemExeScreenState extends State<OrdemExeScreen> {
   late int _quantidade;
   late double _preco;
+  late final TextEditingController _quantidadeController;
 
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
 
@@ -49,7 +53,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   double get _diferenca {
     if (_precoMedio == 0) return 0;
-
     return ((_preco - _precoMedio) / _precoMedio) * 100;
   }
 
@@ -57,8 +60,59 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   void initState() {
     super.initState();
 
-    _quantidade = widget.oferta.quantidade;
+    final quantidadeDisponivel = widget.oferta.quantidade;
+
+    _quantidade = quantidadeDisponivel <= 0 ? 0 : quantidadeDisponivel;
     _preco = widget.oferta.preco;
+
+    _quantidadeController = TextEditingController(
+      text: _quantidade.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _quantidadeController.dispose();
+    super.dispose();
+  }
+
+  void _atualizarQuantidade(String value) {
+    final maximo = widget.oferta.quantidade;
+
+    if (value.isEmpty) {
+      setState(() {
+        _quantidade = 0;
+      });
+      return;
+    }
+
+    final quantidadeDigitada = int.tryParse(value) ?? 0;
+
+    final quantidadeAjustada = quantidadeDigitada.clamp(1, maximo).toInt();
+
+    if (quantidadeDigitada != quantidadeAjustada) {
+      _quantidadeController.text = quantidadeAjustada.toString();
+      _quantidadeController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _quantidadeController.text.length),
+      );
+    }
+
+    setState(() {
+      _quantidade = quantidadeAjustada;
+    });
+  }
+
+  void _alterarQuantidadePeloBotao(int novaQuantidade) {
+    final maximo = widget.oferta.quantidade;
+    final quantidadeAjustada = novaQuantidade.clamp(1, maximo).toInt();
+
+    setState(() {
+      _quantidade = quantidadeAjustada;
+      _quantidadeController.text = quantidadeAjustada.toString();
+      _quantidadeController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _quantidadeController.text.length),
+      );
+    });
   }
 
   @override
@@ -66,46 +120,40 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     final accent = _isCompra ? AppColors.destaque : AppColors.azul;
 
     return Scaffold(
-      backgroundColor: AppColors.fundoEscuro,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(accent),
-
-                    const SizedBox(height: 22),
-
-                    _buildResumoStartup(accent),
-
-                    const SizedBox(height: 18),
-
-                    _buildComparacaoMercado(),
-
-                    const SizedBox(height: 18),
-
-                    _buildConfigOrdem(),
-
-                    const SizedBox(height: 18),
-
-                    _buildResumoFinanceiro(),
-
-                    const SizedBox(height: 28),
-
-                    _buildConfirmButton(accent),
-                  ],
+      backgroundColor: AppColors.fundo,
+      body: Stack(
+        children: [
+          const _AtmosphericBackground(),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 22),
+                        _buildResumoStartup(accent),
+                        const SizedBox(height: 18),
+                        _buildComparacaoMercado(),
+                        const SizedBox(height: 18),
+                        _buildConfigOrdem(),
+                        const SizedBox(height: 18),
+                        _buildResumoFinanceiro(),
+                        const SizedBox(height: 28),
+                        _buildConfirmButton(accent),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -119,7 +167,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textoPrincipal,
+              color: AppColors.destaque,
               size: 20,
             ),
           ),
@@ -129,7 +177,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
             style: const TextStyle(
               color: AppColors.destaque,
               fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -137,12 +185,12 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     );
   }
 
-  Widget _buildHeader(Color accent) {
+  Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(
-          title: _isCompra ? 'ORDEM DE COMPRA' : 'ORDEM DE VENDA',
+        PremiumHeaderEyebrow(
+          text: _isCompra ? 'ORDEM DE COMPRA' : 'ORDEM DE VENDA',
         ),
         const SizedBox(height: 14),
         Text(
@@ -150,7 +198,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           style: const TextStyle(
             color: AppColors.textoPrincipal,
             fontSize: 28,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
             height: 1.15,
           ),
         ),
@@ -163,6 +211,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
             color: AppColors.textoFraco,
             fontSize: 13,
             height: 1.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -172,7 +221,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   Widget _buildResumoStartup(Color accent) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: _cardDecoration(),
+      decoration: premiumCardDecoration(
+        radius: 24,
+      ),
       child: Row(
         children: [
           Container(
@@ -218,6 +269,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
                   style: const TextStyle(
                     color: AppColors.textoMuitoFraco,
                     fontSize: 12,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -237,10 +289,12 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           value: 'R\$ ${_preco.toStringAsFixed(2)}',
           destaque: true,
         ),
+        const SizedBox(height: 10),
         _InfoRow(
           label: 'Preço médio',
           value: 'R\$ ${_precoMedio.toStringAsFixed(2)}',
         ),
+        const SizedBox(height: 10),
         _InfoRow(
           label: 'Diferença',
           value: '${_diferenca >= 0 ? '+' : ''}${_diferenca.toStringAsFixed(1)}%',
@@ -252,38 +306,34 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   Widget _buildConfigOrdem() {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: _cardDecoration(),
+      decoration: premiumCardDecoration(
+        radius: 24,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(title: 'CONFIGURAÇÃO DA ORDEM'),
+          const PremiumHeaderEyebrow(text: 'CONFIGURAÇÃO DA ORDEM'),
           const SizedBox(height: 18),
-
-          _ControlBox(
+          _QuantityControlBox(
             label: 'Quantidade de tokens',
-            value: _quantidade.toString(),
+            controller: _quantidadeController,
+            quantidade: _quantidade,
+            maximo: widget.oferta.quantidade,
+            onChanged: _atualizarQuantidade,
             onMinus: () {
               if (_quantidade <= 1) return;
 
               HapticFeedback.selectionClick();
-
-              setState(() {
-                _quantidade--;
-              });
+              _alterarQuantidadePeloBotao(_quantidade - 1);
             },
             onPlus: () {
               if (_quantidade >= widget.oferta.quantidade) return;
 
               HapticFeedback.selectionClick();
-
-              setState(() {
-                _quantidade++;
-              });
+              _alterarQuantidadePeloBotao(_quantidade + 1);
             },
           ),
-
           const SizedBox(height: 14),
-
           _ControlBox(
             label: 'Preço por token',
             value: 'R\$ ${_preco.toStringAsFixed(2)}',
@@ -317,14 +367,17 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           label: 'Subtotal',
           value: 'R\$ ${_subtotal.toStringAsFixed(2)}',
         ),
+        const SizedBox(height: 10),
         _InfoRow(
           label: 'Taxa simulada',
           value: 'R\$ ${_taxa.toStringAsFixed(2)}',
         ),
+        const SizedBox(height: 14),
         const Divider(
           color: AppColors.bordaClara,
-          height: 22,
+          height: 1,
         ),
+        const SizedBox(height: 14),
         _InfoRow(
           label: _isCompra ? 'Total estimado' : 'Valor líquido',
           value: 'R\$ ${_totalFinal.toStringAsFixed(2)}',
@@ -371,9 +424,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
               child: Text(
                 _isCompra ? 'CONFIRMAR COMPRA' : 'CONFIRMAR VENDA',
                 style: TextStyle(
-                  color: _isCompra
-                      ? AppColors.card
-                      : AppColors.textoPrincipal,
+                  color: _isCompra ? AppColors.fundo : AppColors.textoPrincipal,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.8,
@@ -387,6 +438,26 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   }
 
   void _confirmarOrdem() {
+    if (_quantidade <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe uma quantidade válida de tokens.'),
+        ),
+      );
+      return;
+    }
+
+    if (_quantidade > widget.oferta.quantidade) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'A quantidade máxima disponível é ${widget.oferta.quantidade} tokens.',
+          ),
+        ),
+      );
+      return;
+    }
+
     final ofertaFinal = Oferta(
       tipo: widget.oferta.tipo,
       quantidade: _quantidade,
@@ -410,24 +481,76 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       ),
     );
   }
+}
 
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: AppColors.bordaClara,
+// ===================== BACKGROUND =====================
+
+class _AtmosphericBackground extends StatelessWidget {
+  const _AtmosphericBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -150,
+            right: -120,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.azul.withOpacity(0.22),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 240,
+            left: -130,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.destaque.withOpacity(0.07),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 60,
+            right: -120,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.roxo.withOpacity(0.18),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.30),
-          blurRadius: 26,
-          offset: const Offset(0, 12),
-        ),
-      ],
     );
   }
 }
+
+// ===================== CARDS =====================
 
 class _InfoCard extends StatelessWidget {
   final String title;
@@ -442,17 +565,13 @@ class _InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.campo,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+      decoration: premiumCardDecoration(
+        radius: 24,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(title: title.toUpperCase()),
+          PremiumHeaderEyebrow(text: title.toUpperCase()),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -474,27 +593,190 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 11),
+    return Container(
+      decoration: destaque
+          ? BoxDecoration(
+        color: AppColors.destaque.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.bordaDestaque,
+        ),
+      )
+          : premiumFieldDecoration(
+        radius: 16,
+      ),
+      padding: const EdgeInsets.all(13),
       child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: destaque ? AppColors.textoPrincipal : AppColors.textoFraco,
-              fontSize: destaque ? 14 : 13,
-              fontWeight: destaque ? FontWeight.w800 : FontWeight.w500,
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: destaque ? AppColors.textoPrincipal : AppColors.textoFraco,
+                fontSize: destaque ? 14 : 13,
+                fontWeight: destaque ? FontWeight.w900 : FontWeight.w600,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
+                fontSize: destaque ? 16 : 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===================== CONTROLES =====================
+
+class _QuantityControlBox extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final int quantidade;
+  final int maximo;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+
+  const _QuantityControlBox({
+    required this.label,
+    required this.controller,
+    required this.quantidade,
+    required this.maximo,
+    required this.onChanged,
+    required this.onMinus,
+    required this.onPlus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final limiteAtingido = maximo > 0 && quantidade >= maximo;
+    final semTokens = maximo <= 0;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: premiumFieldDecoration(
+        radius: 18,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            value,
-            style: TextStyle(
-              color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
-              fontSize: destaque ? 16 : 13,
+            label.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.textoMuitoFraco,
+              fontSize: 10,
               fontWeight: FontWeight.w900,
+              letterSpacing: 1.1,
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Máximo disponível: $maximo tokens',
+            style: const TextStyle(
+              color: AppColors.textoMuitoFraco,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _RoundButton(
+                icon: Icons.remove_rounded,
+                onTap: semTokens ? null : onMinus,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: TextField(
+                    controller: controller,
+                    enabled: !semTokens,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    onChanged: onChanged,
+                    cursorColor: AppColors.destaque,
+                    style: const TextStyle(
+                      color: AppColors.textoPrincipal,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      filled: true,
+                      fillColor: AppColors.card.withOpacity(0.7),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      hintText: '0',
+                      hintStyle: const TextStyle(
+                        color: AppColors.textoMuitoFraco,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.bordaClara,
+                        ),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.bordaClara,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: AppColors.destaque,
+                          width: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _RoundButton(
+                icon: Icons.add_rounded,
+                onTap: semTokens ? null : onPlus,
+              ),
+            ],
+          ),
+          if (semTokens) ...[
+            const SizedBox(height: 10),
+            const Text(
+              'Esta startup não possui tokens disponíveis para esta ordem.',
+              style: TextStyle(
+                color: AppColors.destaque,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ] else if (limiteAtingido) ...[
+            const SizedBox(height: 10),
+            const Text(
+              'Você selecionou todos os tokens disponíveis desta oferta.',
+              style: TextStyle(
+                color: AppColors.destaque,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -518,12 +800,8 @@ class _ControlBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        color: AppColors.campo,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+      decoration: premiumFieldDecoration(
+        radius: 18,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -533,7 +811,7 @@ class _ControlBox extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textoMuitoFraco,
               fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               letterSpacing: 1.1,
             ),
           ),
@@ -570,7 +848,7 @@ class _ControlBox extends StatelessWidget {
 
 class _RoundButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _RoundButton({
     required this.icon,
@@ -579,8 +857,10 @@ class _RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
     return Material(
-      color: AppColors.card,
+      color: enabled ? AppColors.card : AppColors.card.withOpacity(0.45),
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -590,45 +870,13 @@ class _RoundButton extends StatelessWidget {
           height: 38,
           child: Icon(
             icon,
-            color: AppColors.destaque,
+            color: enabled
+                ? AppColors.destaque
+                : AppColors.textoMuitoFraco.withOpacity(0.55),
             size: 20,
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-
-  const _SectionTitle({
-    required this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: AppColors.destaque,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.destaque,
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
     );
   }
 }

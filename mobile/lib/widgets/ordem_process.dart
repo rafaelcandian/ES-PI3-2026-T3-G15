@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../models/balcao_model.dart';
-import '../screens/auth/app_theme.dart';
+import '../themes/app_theme.dart';
 
 class OrderProcessingSheet extends StatefulWidget {
   final Oferta oferta;
