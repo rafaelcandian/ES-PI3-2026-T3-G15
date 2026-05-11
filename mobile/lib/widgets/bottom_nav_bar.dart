@@ -270,3 +270,4 @@ class _NavItem {
     required this.route,
   });
 }
+
