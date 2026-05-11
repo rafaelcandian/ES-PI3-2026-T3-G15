@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../themes/app_theme.dart';
+
+import 'package:mescla_invest/themes/app_theme.dart';
 
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;
@@ -147,12 +148,12 @@ class _BottomNavBarState extends State<BottomNavBar>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.55),
+                color: Colors.black.withValues(alpha: 0.55),
                 blurRadius: 30,
                 offset: const Offset(0, 12),
               ),
               BoxShadow(
-                color: AppColors.destaque.withOpacity(0.06),
+                color: AppColors.destaque.withValues(alpha: 0.06),
                 blurRadius: 20,
                 spreadRadius: -4,
                 offset: const Offset(0, 4),
@@ -200,7 +201,9 @@ class _BottomNavBarState extends State<BottomNavBar>
                                 borderRadius: BorderRadius.circular(18),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.destaque.withOpacity(0.8),
+                                    color: AppColors.destaque.withValues(
+                                      alpha: 0.8,
+                                    ),
                                     blurRadius: 18,
                                     spreadRadius: 1,
                                   ),
@@ -208,7 +211,6 @@ class _BottomNavBarState extends State<BottomNavBar>
                               ),
                             ),
                           ),
-
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeOutCubic,
@@ -221,7 +223,6 @@ class _BottomNavBarState extends State<BottomNavBar>
                             borderRadius: BorderRadius.circular(17),
                           ),
                         ),
-
                         Icon(
                           isSelected ? item.activeIcon : item.icon,
                           color: isSelected
@@ -232,9 +233,7 @@ class _BottomNavBarState extends State<BottomNavBar>
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 5),
-
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 250),
                     style: TextStyle(
