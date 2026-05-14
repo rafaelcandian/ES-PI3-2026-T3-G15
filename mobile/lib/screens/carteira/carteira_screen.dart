@@ -95,28 +95,49 @@ class _CarteiraPageState extends State<CarteiraPage> {
         final quantidade = entry.value;
 
         if ((quantidade as num) > 0) {
-          final doc = await firestore
-              .collection('startups')
-              .doc(startupId)
-              .get();
+          final doc = await firestore.collection('startups').doc(startupId).get();
 
           if (doc.exists) {
             final data = doc.data()!;
+
             final title = data['title'] ?? data['nome'] ?? 'Startup';
+
             final tokenValue =
             ((data['tokenValue'] ?? data['valorToken'] ?? 0.0) as num)
                 .toDouble();
 
+            final precoMedio = await _calcularPrecoMedio(
+              firestore: firestore,
+              uid: uid,
+              startupId: startupId,
+              fallback: tokenValue,
+            );
+
+            final variacao = ((data['variacao'] ??
+                data['variation'] ??
+                data['variacaoPercentual'] ??
+                0.0) as num)
+                .toDouble();
+
+            final volume = (data['volume'] ??
+                data['volumeNegociado'] ??
+                data['volumeTotal'] ??
+                'Não informado')
+                .toString();
+
+            final spread = ((data['spread'] ?? 0.0) as num).toDouble();
+
             ativosTemp.add(
               AtivoCarteira(
+                startupId: startupId,
                 nome: title,
                 simbolo: _gerarSimbolo(title),
                 tokens: quantidade.toInt(),
                 valorToken: tokenValue,
-                precoMedio: tokenValue,
-                variacao: 0.0,
-                volume: '0',
-                spread: 0.0,
+                precoMedio: precoMedio,
+                variacao: variacao,
+                volume: volume,
+                spread: spread,
               ),
             );
           }
@@ -189,26 +210,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
         chartData = [];
       }
 
-      final valorAtivos = ativosTemp.fold<double>(
-        0,
-            (total, ativo) => total + ativo.valorTotal,
-      );
-
-      final patrimonioAtual = saldo + valorAtivos;
-
-      final fallbackChartData = chartData.length >= 2
-          ? chartData
-          : [
-        saldo,
-        patrimonioAtual,
-      ];
-
       if (mounted) {
         setState(() {
           _saldo = saldo;
           _ativos = ativosTemp;
           _movimentacoes = movsTemp;
-          _chartData = fallbackChartData;
+          _chartData = chartData;
           _loading = false;
         });
       }
@@ -216,6 +223,112 @@ class _CarteiraPageState extends State<CarteiraPage> {
       if (mounted) {
         setState(() => _loading = false);
       }
+    }
+  }
+
+  Future<double> _calcularPrecoMedio({
+    required FirebaseFirestore firestore,
+    required String uid,
+    required String startupId,
+    required double fallback,
+  }) async {
+    final compras = await firestore
+        .collection('transactions')
+        .where('buyerId', isEqualTo: uid)
+        .where('startupId', isEqualTo: startupId)
+        .get();
+
+    double totalInvestido = 0;
+    int totalTokens = 0;
+
+    for (final doc in compras.docs) {
+      final data = doc.data();
+
+      final quantidade = (data['quantity'] as num?)?.toInt() ?? 0;
+      final totalPrice = (data['totalPrice'] as num?)?.toDouble() ?? 0.0;
+
+      if (quantidade > 0 && totalPrice > 0) {
+        totalTokens += quantidade;
+        totalInvestido += totalPrice;
+      }
+    }
+
+    if (totalTokens == 0) return fallback;
+
+    return totalInvestido / totalTokens;
+  }
+
+  Future<List<Oferta>> _buscarOfertasDoAtivo(AtivoCarteira ativo) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('ofertas')
+        .where('startupId', isEqualTo: ativo.startupId)
+        .where('status', isEqualTo: 'aberta')
+        .get();
+
+    final ofertas = snapshot.docs.map((doc) {
+      final data = doc.data();
+
+      final tipoTexto = (data['tipo'] ?? data['type'] ?? '')
+          .toString()
+          .toLowerCase()
+          .trim();
+
+      final tipo = tipoTexto.contains('compra') || tipoTexto == 'buy'
+          ? TipoOferta.compra
+          : TipoOferta.venda;
+
+      return Oferta(
+        tipo: tipo,
+        quantidade: (data['quantidade'] as num?)?.toInt() ??
+            (data['quantity'] as num?)?.toInt() ??
+            0,
+        preco: (data['preco'] as num?)?.toDouble() ??
+            (data['price'] as num?)?.toDouble() ??
+            ativo.valorToken,
+        empresa: data['empresa'] ?? data['startupNome'] ?? ativo.nome,
+        simbolo: data['simbolo'] ?? data['symbol'] ?? ativo.simbolo,
+        variacao:
+        (data['variacao'] as num?)?.toDouble() ?? ativo.variacao,
+        volume: data['volume']?.toString() ?? ativo.volume,
+        spread: (data['spread'] as num?)?.toDouble() ?? ativo.spread,
+      );
+    }).toList();
+
+    ofertas.sort((a, b) {
+      if (a.tipo == b.tipo) {
+        return a.preco.compareTo(b.preco);
+      }
+
+      return a.tipo.index.compareTo(b.tipo.index);
+    });
+
+    return ofertas;
+  }
+
+  Future<void> _abrirDetalheAtivo(AtivoCarteira ativo) async {
+    try {
+      final ofertas = await _buscarOfertasDoAtivo(ativo);
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AtivoDetalheScreen(
+            ativo: ativo,
+            historico: _chartData,
+            ofertasDisponiveis: ofertas,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível carregar as ofertas deste ativo.'),
+        ),
+      );
     }
   }
 
@@ -274,13 +387,13 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       switch (type) {
         case 'deposit':
-          return 'Depósito via Pix simulado';
+          return 'Depósito via Pix';
         case 'purchase':
           return 'Compra de tokens';
         case 'sale':
           return 'Venda de tokens';
         case 'withdraw':
-          return 'Saque simulado';
+          return 'Saque';
         default:
           return 'Movimentação da carteira';
       }
@@ -302,10 +415,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
         return description;
       }
 
-      return 'Movimentação financeira simulada';
+      return 'Movimentação financeira';
     }
 
-    final quantity = mov['quantity'] ?? 0;
+    final quantity = mov['quantity'] ?? mov['quantidade'] ?? 0;
     return '$quantity tokens';
   }
 
@@ -390,7 +503,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           ],
                         ),
                       ),
-
                       SliverToBoxAdapter(
                         child: _PatrimonioCard(
                           patrimonioTotal: patrimonioTotal,
@@ -400,11 +512,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           onAdicionarFundos: _abrirAdicionarFundos,
                         ),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 18),
                       ),
-
                       SliverToBoxAdapter(
                         child: _GraficoCard(
                           data: _chartData,
@@ -412,11 +522,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           onPeriodChanged: _trocarPeriodoGrafico,
                         ),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 24),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SectionLabel(
                           label: 'SEUS ATIVOS',
@@ -424,11 +532,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           'Acompanhe seus tokens e a valorização por startup.',
                         ),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 12),
                       ),
-
                       if (_ativos.isEmpty)
                         const SliverPadding(
                           padding: EdgeInsets.symmetric(horizontal: 22),
@@ -453,40 +559,23 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
                               return _AtivoCard(
                                 ativo: ativo,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => AtivoDetalheScreen(
-                                        ativo: ativo,
-                                        historico: _chartData,
-                                        ofertasDisponiveis:
-                                        _ofertasDoAtivo(ativo),
-                                      ),
-                                    ),
-                                  );
-                                },
+                                onTap: () => _abrirDetalheAtivo(ativo),
                               );
                             },
                           ),
                         ),
-
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 24),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SectionLabel(
                           label: 'ÚLTIMAS MOVIMENTAÇÕES',
-                          hint:
-                          'Histórico recente das operações e aportes simulados.',
+                          hint: 'Histórico recente das operações e aportes.',
                         ),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 12),
                       ),
-
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 22),
                         sliver: _movimentacoes.isEmpty
@@ -514,7 +603,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           },
                         ),
                       ),
-
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 120),
                       ),
@@ -527,46 +615,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
       ),
     );
   }
-
-  List<Oferta> _ofertasDoAtivo(AtivoCarteira ativo) {
-    return [
-      Oferta(
-        tipo: TipoOferta.venda,
-        quantidade: ativo.tokens,
-        preco: ativo.valorToken,
-        empresa: ativo.nome,
-        simbolo: ativo.simbolo,
-        variacao: ativo.variacao,
-        volume: ativo.volume,
-        spread: ativo.spread,
-      ),
-      Oferta(
-        tipo: TipoOferta.venda,
-        quantidade: math.max(1, (ativo.tokens * 0.65).round()),
-        preco: ativo.valorToken + 0.80,
-        empresa: ativo.nome,
-        simbolo: ativo.simbolo,
-        variacao: ativo.variacao,
-        volume: ativo.volume,
-        spread: ativo.spread + 0.3,
-      ),
-      Oferta(
-        tipo: TipoOferta.compra,
-        quantidade: math.max(1, (ativo.tokens * 0.45).round()),
-        preco: ativo.valorToken - 0.60,
-        empresa: ativo.nome,
-        simbolo: ativo.simbolo,
-        variacao: ativo.variacao,
-        volume: ativo.volume,
-        spread: ativo.spread + 0.2,
-      ),
-    ];
-  }
 }
 
 // ─── Modelo interno da carteira ─────────────────────────────────────────────
 
 class AtivoCarteira {
+  final String startupId;
   final String nome;
   final String simbolo;
   final int tokens;
@@ -577,6 +631,7 @@ class AtivoCarteira {
   final double spread;
 
   const AtivoCarteira({
+    required this.startupId,
     required this.nome,
     required this.simbolo,
     required this.tokens,
@@ -615,6 +670,58 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
 
   bool get _positivo => widget.ativo.variacao >= 0;
 
+  Oferta? _selecionarOfertaParaModo(ModoNegociacao modo) {
+    final tipoNecessario =
+    modo == ModoNegociacao.compra ? TipoOferta.venda : TipoOferta.compra;
+
+    final ofertasValidas = widget.ofertasDisponiveis
+        .where(
+          (oferta) => oferta.tipo == tipoNecessario && oferta.quantidade > 0,
+    )
+        .toList();
+
+    if (ofertasValidas.isEmpty) return null;
+
+    ofertasValidas.sort((a, b) {
+      if (modo == ModoNegociacao.compra) {
+        return a.preco.compareTo(b.preco);
+      }
+
+      return b.preco.compareTo(a.preco);
+    });
+
+    return ofertasValidas.first;
+  }
+
+  void _abrirOrdem(BuildContext context, ModoNegociacao modo) {
+    final oferta = _selecionarOfertaParaModo(modo);
+
+    if (oferta == null) {
+      final mensagem = modo == ModoNegociacao.compra
+          ? 'Nenhuma oferta de venda disponível para compra.'
+          : 'Nenhuma oferta de compra disponível para venda.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensagem),
+        ),
+      );
+
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrdemExeScreen(
+          oferta: oferta,
+          modo: modo,
+          ofertasDisponiveis: widget.ofertasDisponiveis,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -652,16 +759,13 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                     ),
                   ),
                 ),
-
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate(
                       [
                         _AtivoHeroCard(ativo: widget.ativo),
-
                         const SizedBox(height: 18),
-
                         _GraficoCard(
                           data: widget.historico,
                           selectedTimePeriod: selectedTimePeriod,
@@ -669,15 +773,11 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                             setState(() => selectedTimePeriod = period);
                           },
                         ),
-
                         const SizedBox(height: 18),
-
                         _DetalheMetricasCard(
                           ativo: widget.ativo,
                         ),
-
                         const SizedBox(height: 18),
-
                         SectionCard(
                           title: 'Acompanhamento do ativo',
                           child: Container(
@@ -713,9 +813,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 26),
-
                         Row(
                           children: [
                             Expanded(
@@ -751,32 +849,6 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       ),
     );
   }
-
-  void _abrirOrdem(BuildContext context, ModoNegociacao modo) {
-    final oferta = Oferta(
-      tipo: modo == ModoNegociacao.compra
-          ? TipoOferta.venda
-          : TipoOferta.compra,
-      quantidade: widget.ativo.tokens,
-      preco: widget.ativo.valorToken,
-      empresa: widget.ativo.nome,
-      simbolo: widget.ativo.simbolo,
-      variacao: widget.ativo.variacao,
-      volume: widget.ativo.volume,
-      spread: widget.ativo.spread,
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OrdemExeScreen(
-          oferta: oferta,
-          modo: modo,
-          ofertasDisponiveis: widget.ofertasDisponiveis,
-        ),
-      ),
-    );
-  }
 }
 
 // ─── Componentes específicos da carteira ────────────────────────────────────
@@ -795,7 +867,7 @@ class _Header extends StatelessWidget {
           PremiumHeaderEyebrow(text: 'VISÃO GERAL DA CARTEIRA'),
           SizedBox(height: 14),
           Text(
-            'Acompanhe seus ativos, saldo disponível e movimentações simuladas.',
+            'Acompanhe seus ativos, saldo disponível e movimentações.',
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textoFraco,
@@ -946,7 +1018,7 @@ class _GraficoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final periods = ['1h', '24h', '1 sem', '1 mês', '6 meses', '1 ano'];
-    final chartData = data.length >= 2 ? data : [0.0, 0.0];
+    final temHistorico = data.length >= 2;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -961,8 +1033,20 @@ class _GraficoCard extends StatelessWidget {
             SizedBox(
               height: 180,
               width: double.infinity,
-              child: CustomPaint(
-                painter: LineChartPainter(data: chartData),
+              child: temHistorico
+                  ? CustomPaint(
+                painter: LineChartPainter(data: data),
+              )
+                  : Center(
+                child: Text(
+                  'Histórico indisponível para este período.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textoMuitoFraco.withOpacity(0.95),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -1092,8 +1176,9 @@ class _AtivoCard extends StatelessWidget {
                   Text(
                     '${negative ? '' : '+'}${ativo.variacao.toStringAsFixed(1)}%',
                     style: TextStyle(
-                      color:
-                      negative ? AppColors.textoFraco : AppColors.destaque,
+                      color: negative
+                          ? AppColors.textoFraco
+                          : AppColors.destaque,
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                     ),
