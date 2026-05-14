@@ -76,7 +76,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return FirebaseFirestore.instance
-        .collection('main_screens')
+        .collection('startups')
         .doc(startup.id)
         .collection('chatsPrivados')
         .doc(uid)
@@ -106,7 +106,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
       _messageController.clear();
 
       await FirebaseFirestore.instance
-          .collection('main_screens')
+          .collection('startups')
           .doc(startup.id)
           .collection('chatsPrivados')
           .doc(user.uid)

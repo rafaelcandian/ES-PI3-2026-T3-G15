@@ -96,7 +96,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
         if ((quantidade as num) > 0) {
           final doc = await firestore
-              .collection('main_screens')
+              .collection('startups')
               .doc(startupId)
               .get();
 

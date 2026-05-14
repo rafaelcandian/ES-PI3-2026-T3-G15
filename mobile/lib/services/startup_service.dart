@@ -6,14 +6,14 @@ class StartupService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<List<StartupData>> getStartups() {
-    return _firestore.collection('main_screens').snapshots().map((snapshot) {
+    return _firestore.collection('startups').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) => StartupData.fromFirestore(doc)).toList();
     });
   }
 
   Future<void> seedStartups() async {
     try {
-      final querySnapshot = await _firestore.collection('main_screens').limit(1).get();
+      final querySnapshot = await _firestore.collection('startups').limit(1).get();
       if (querySnapshot.docs.isEmpty) {
         // Collection is empty, seed initial data
         final List<Map<String, dynamic>> initialStartups = [
@@ -80,14 +80,14 @@ class StartupService {
         ];
 
         for (var startupData in initialStartups) {
-          await _firestore.collection('main_screens').add(startupData);
+          await _firestore.collection('startups').add(startupData);
         }
         print('Startups seeded successfully!');
       } else {
         print('Startups collection already contains data. Skipping seed.');
       }
     } catch (e) {
-      print('Error seeding main_screens: $e');
+      print('Error seeding startups: $e');
     }
   }
 }
