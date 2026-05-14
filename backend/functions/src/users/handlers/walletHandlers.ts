@@ -35,6 +35,8 @@ export const loadWallet = onCall(async (request) => {
   const uid = request.auth!.uid;
   const valor = request.data.valor;
 
+  console.log("loadWallet chamado para uid:", uid, "valor:", valor);
+
   if (!valor || valor <= 0) {
     throw new HttpsError("invalid-argument", "valor invalido");
   }
@@ -48,8 +50,9 @@ export const loadWallet = onCall(async (request) => {
 
     return {success: true, valorAdicionado: valor};
   } catch (e) {
+    console.error("Erro no loadWallet:", e);
     if (e instanceof HttpsError) throw e;
-    throw new HttpsError("internal", "Erro ao carregar carteira");
+    throw new HttpsError("internal", `Erro ao carregar carteira: ${e}`);
   }
 });
 
@@ -62,7 +65,7 @@ async function validateBalance(uid: string, valor: number): Promise<boolean> { /
 }
 
 // retorna se tem saldo suficiente
-export const verifyBalance = onCall(async (request) =>{
+export const verifyBalance = onCall(async (request) => {
   requireAuthenticatedUser(request);
   const uid = request.auth!.uid;
   const valorRaw = request.data.valor;
@@ -125,47 +128,47 @@ function getPeriodConfig(period: WalletChartPeriod): {
   const now = new Date();
 
   switch (period) {
-    case "1h":
-      return {
-        startDate: new Date(now.getTime() - 60 * 60 * 1000),
-        maxPoints: 12,
-        bucketType: "5min",
-      };
+  case "1h":
+    return {
+      startDate: new Date(now.getTime() - 60 * 60 * 1000),
+      maxPoints: 12,
+      bucketType: "5min",
+    };
 
-    case "24h":
-      return {
-        startDate: new Date(now.getTime() - 24 * 60 * 60 * 1000),
-        maxPoints: 24,
-        bucketType: "hour",
-      };
+  case "24h":
+    return {
+      startDate: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+      maxPoints: 24,
+      bucketType: "hour",
+    };
 
-    case "1sem":
-      return {
-        startDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        maxPoints: 14,
-        bucketType: "day",
-      };
+  case "1sem":
+    return {
+      startDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      maxPoints: 14,
+      bucketType: "day",
+    };
 
-    case "1mes":
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
-        maxPoints: 30,
-        bucketType: "day",
-      };
+  case "1mes":
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
+      maxPoints: 30,
+      bucketType: "day",
+    };
 
-    case "6meses":
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()),
-        maxPoints: 24,
-        bucketType: "week",
-      };
+  case "6meses":
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()),
+      maxPoints: 24,
+      bucketType: "week",
+    };
 
-    case "1ano":
-      return {
-        startDate: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
-        maxPoints: 12,
-        bucketType: "month",
-      };
+  case "1ano":
+    return {
+      startDate: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+      maxPoints: 12,
+      bucketType: "month",
+    };
   }
 }
 
@@ -187,27 +190,27 @@ function getBucketDate(
   const bucket = new Date(date);
 
   switch (bucketType) {
-    case "5min": {
-      const minutes = Math.floor(bucket.getMinutes() / 5) * 5;
-      bucket.setMinutes(minutes, 0, 0);
-      return bucket;
-    }
+  case "5min": {
+    const minutes = Math.floor(bucket.getMinutes() / 5) * 5;
+    bucket.setMinutes(minutes, 0, 0);
+    return bucket;
+  }
 
-    case "hour":
-      bucket.setMinutes(0, 0, 0);
-      return bucket;
+  case "hour":
+    bucket.setMinutes(0, 0, 0);
+    return bucket;
 
-    case "day":
-      bucket.setHours(0, 0, 0, 0);
-      return bucket;
+  case "day":
+    bucket.setHours(0, 0, 0, 0);
+    return bucket;
 
-    case "week":
-      return getWeekStart(bucket);
+  case "week":
+    return getWeekStart(bucket);
 
-    case "month":
-      bucket.setDate(1);
-      bucket.setHours(0, 0, 0, 0);
-      return bucket;
+  case "month":
+    bucket.setDate(1);
+    bucket.setHours(0, 0, 0, 0);
+    return bucket;
   }
 }
 
@@ -220,20 +223,20 @@ function getBucketLabel(
   bucketType: "5min" | "hour" | "day" | "week" | "month"
 ): string {
   switch (bucketType) {
-    case "5min":
-      return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  case "5min":
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
-    case "hour":
-      return `${pad(date.getHours())}:00`;
+  case "hour":
+    return `${pad(date.getHours())}:00`;
 
-    case "day":
-      return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
+  case "day":
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
 
-    case "week":
-      return `Sem. ${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
+  case "week":
+    return `Sem. ${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
 
-    case "month":
-      return `${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+  case "month":
+    return `${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
   }
 }
 
@@ -241,54 +244,60 @@ async function registerWalletSnapshot(
   uid: string,
   eventType: string
 ): Promise<void> {
-  const userRef = db.collection("usuarios").doc(uid);
-  const userDoc = await userRef.get();
+  console.log("registerWalletSnapshot chamado para uid:", uid);
+  try {
+    const userRef = db.collection("usuarios").doc(uid);
+    const userDoc = await userRef.get();
 
-  if (!userDoc.exists) {
-    throw new HttpsError("not-found", "Usuario não encontrado");
+    if (!userDoc.exists) {
+      throw new HttpsError("not-found", "Usuario não encontrado");
+    }
+
+    const userData = userDoc.data()!;
+    const saldo = Number(userData.saldo ?? 0);
+    const tokens = userData.tokens ?? {};
+
+    let valorAtivos = 0;
+    let tokensTotais = 0;
+
+    for (const [startupId, quantidadeRaw] of Object.entries(tokens)) {
+      const quantidade = Number(quantidadeRaw);
+
+      if (!quantidade || quantidade <= 0) continue;
+
+      const startupDoc = await db
+        .collection("startups")
+        .doc(startupId)
+        .get();
+
+      if (!startupDoc.exists) continue;
+
+      const startupData = startupDoc.data()!;
+      const valorToken = Number(
+        startupData.tokenValue ??
+        startupData.valorToken ??
+        startupData.valorFixoTokens ??
+        0
+      );
+
+      valorAtivos += quantidade * valorToken;
+      tokensTotais += quantidade;
+    }
+
+    const patrimonioTotal = saldo + valorAtivos;
+
+    await userRef.collection("patrimonioHistorico").add({
+      valor: patrimonioTotal,
+      saldo,
+      valorAtivos,
+      tokensTotais,
+      eventType,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("Erro no registerWalletSnapshot:", e);
+    throw e;
   }
-
-  const userData = userDoc.data()!;
-  const saldo = Number(userData.saldo ?? 0);
-  const tokens = userData.tokens ?? {};
-
-  let valorAtivos = 0;
-  let tokensTotais = 0;
-
-  for (const [startupId, quantidadeRaw] of Object.entries(tokens)) {
-    const quantidade = Number(quantidadeRaw);
-
-    if (!quantidade || quantidade <= 0) continue;
-
-    const startupDoc = await db
-      .collection("main_screens")
-      .doc(startupId)
-      .get();
-
-    if (!startupDoc.exists) continue;
-
-    const startupData = startupDoc.data()!;
-    const valorToken = Number(
-      startupData.tokenValue ??
-      startupData.valorToken ??
-      startupData.valorFixoTokens ??
-      0
-    );
-
-    valorAtivos += quantidade * valorToken;
-    tokensTotais += quantidade;
-  }
-
-  const patrimonioTotal = saldo + valorAtivos;
-
-  await userRef.collection("patrimonioHistorico").add({
-    valor: patrimonioTotal,
-    saldo,
-    valorAtivos,
-    tokensTotais,
-    eventType,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
 }
 
 export const getWalletChart = onCall(async (request) => {

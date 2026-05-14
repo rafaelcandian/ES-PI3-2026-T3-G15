@@ -1,8 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
+import 'package:mescla_invest/services/balcao_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
@@ -35,7 +34,9 @@ class OrdemConfirmScreen extends StatefulWidget {
 
 class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
   bool _concluida = false;
-  Timer? _timer;
+  // mensagem de erro retornada pelo BalcaoService (null = sem erro)
+  String? _erro;
+  bool _loading = true;
 
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
 
@@ -43,25 +44,72 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
   void initState() {
     super.initState();
 
-    _timer = Timer(const Duration(seconds: 2), () {
+    // Chama o BalcaoService real assim que a tela monta
+    _executarOrdem();
+  }
+
+  /// Envia a ordem para a Cloud Function via BalcaoService
+  /// e atualiza o estado conforme o resultado.
+  Future<void> _executarOrdem() async {
+    try {
+      String? erro;
+
+      if (_isCompra) {
+        erro = await BalcaoService().createPurchaseOffer(
+          startupId: widget.oferta.startupId,
+          quantity: widget.oferta.quantidade,
+          pricePerToken: widget.oferta.preco,
+        );
+      } else {
+        erro = await BalcaoService().createSellOffer(
+          startupId: widget.oferta.startupId,
+          quantity: widget.oferta.quantidade,
+          pricePerToken: widget.oferta.preco,
+        );
+      }
+
       if (!mounted) return;
-      setState(() => _concluida = true);
-    });
+
+      if (erro != null) {
+        // backend retornou erro — exibe mensagem e não navega
+        setState(() {
+          _erro = erro;
+          _loading = false;
+        });
+      } else {
+        // sucesso — exibe tela de conclusão
+        setState(() {
+          _concluida = true;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _erro = 'Erro inesperado ao processar a ordem.';
+        _loading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final titulo = _concluida ? 'Ordem concluída!' : 'Organizando sua ordem...';
+    final titulo = _concluida
+        ? 'Ordem concluída!'
+        : _erro != null
+            ? 'Ordem não processada'
+            : 'Organizando sua ordem...';
 
     final subtitulo = _concluida
         ? 'Sua ${_isCompra ? 'compra' : 'venda'} de ${widget.oferta.quantidade} tokens ${widget.oferta.simbolo} foi registrada com sucesso.'
-        : 'Estamos validando os dados, calculando taxas e registrando sua ordem simulada.';
+        : _erro != null
+            ? 'Não foi possível registrar a ordem. Verifique o erro abaixo.'
+            : 'Estamos validando os dados, calculando taxas e registrando sua ordem.';
 
     return Scaffold(
       backgroundColor: AppColors.fundo,
@@ -113,7 +161,9 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                           duration: const Duration(milliseconds: 250),
                           child: _concluida
                               ? _buildActions()
-                              : const _WaitingMessage(),
+                              : _erro != null
+                                  ? _buildErroMessage()
+                                  : const _WaitingMessage(),
                         ),
                       ],
                     ),
@@ -173,6 +223,43 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
             value: 'R\$ ${widget.totalFinal.toStringAsFixed(2)}',
             destaque: true,
             boxed: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Widget exibido quando o backend retorna um erro.
+  Widget _buildErroMessage() {
+    return Container(
+      key: const ValueKey('erro'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.red.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Colors.redAccent,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _erro ?? 'Erro desconhecido.',
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),

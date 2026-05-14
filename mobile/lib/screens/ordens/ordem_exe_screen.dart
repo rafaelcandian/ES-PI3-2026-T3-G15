@@ -168,6 +168,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       variacao: widget.oferta.variacao,
       volume: widget.oferta.volume,
       spread: widget.oferta.spread,
+      startupId: widget.oferta.startupId, // propaga o startupId para a tela de confirmação
     );
 
     Navigator.pushReplacement(

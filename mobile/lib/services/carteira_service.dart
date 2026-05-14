@@ -70,38 +70,34 @@ class CarteiraService {
   // Adiciona saldo fictício via Pix simulado.
   //
   // Atenção:
-  // Este método ainda atualiza direto no Firestore.
-  // Depois, para o escopo ficar 100% via Function, o ideal é migrar
-  // essa operação para chamar a Function loadWallet.
+  // Este método chama a Cloud Function loadWallet para
+  // incrementar o saldo do usuário de forma segura pelo backend.
   Future<WalletTransactionModel> addBalancePixSimulado(double valor) async {
-    if (valor <= 0) {
-      throw Exception('Valor inválido.');
+    try {
+      final callable = _functions.httpsCallable('loadWallet');
+      await callable.call({'valor': valor});
+
+      return WalletTransactionModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: _uid,
+        type: WalletTransactionType.deposit,
+        status: WalletTransactionStatus.completed,
+        amount: valor,
+        description: 'Depósito via Pix simulado',
+        method: 'pix_simulado',
+        createdAt: DateTime.now(),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'invalid-argument') {
+        throw Exception('Valor inválido.');
+      } else if (e.code == 'not-found') {
+        throw Exception('Usuário não encontrado.');
+      } else if (e.code == 'unauthenticated') {
+        throw Exception('Usuário não autenticado.');
+      } else {
+        throw Exception(e.message ?? 'Erro ao adicionar fundos.');
+      }
     }
-
-    final transacaoDoc = _transacoesRef.doc();
-
-    final transacao = WalletTransactionModel(
-      id: transacaoDoc.id,
-      userId: _uid,
-      type: WalletTransactionType.deposit,
-      status: WalletTransactionStatus.completed,
-      amount: valor,
-      description: 'Depósito via Pix simulado',
-      method: 'pix_simulado',
-      createdAt: DateTime.now(),
-    );
-
-    final batch = _firestore.batch();
-
-    batch.update(_userRef, {
-      'saldo': FieldValue.increment(valor),
-    });
-
-    batch.set(transacaoDoc, transacao.toMap());
-
-    await batch.commit();
-
-    return transacao;
   }
 
   // Método antigo mantido caso alguma tela já esteja usando.

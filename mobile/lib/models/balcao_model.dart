@@ -11,6 +11,8 @@ class Oferta {
   final double variacao;
   final String volume;
   final double spread;
+  // ID do documento no Firestore — necessário para chamar a Cloud Function createOffer
+  final String startupId;
 
   const Oferta({
     required this.tipo,
@@ -21,6 +23,7 @@ class Oferta {
     required this.variacao,
     required this.volume,
     required this.spread,
+    this.startupId = '', // opcional: vazio para ofertas sem ID (ex: dados hardcoded)
   });
 }
 

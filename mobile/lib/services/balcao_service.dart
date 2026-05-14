@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/models/order_model.dart';
@@ -37,71 +38,69 @@ class BalcaoService {
         );
   }
 
-  // cria oferta para compra
+  // cria oferta para compra — delega à Cloud Function 'createOffer' para garantir
+  // validação de saldo e atomicidade no backend (sem escrita direta no Firestore)
   Future<String?> createPurchaseOffer({
     required String startupId, // required define que o parametro é obrigatorio
     required int quantity,
     required double pricePerToken,
   }) async {
-    if (quantity <= 0) return "quantidade invalida";
-    if (pricePerToken <= 0) return "preço invalido";
-
-    final uid = await _uid;
-    if (uid == null) return "usuário não está logado";
-
-    final totalPrice = (quantity * pricePerToken);
-
-    // valida o saldo
-    final haveBalance = await _carteira.hasSufBalance(totalPrice);
-    if (!haveBalance) return "saldo insuficiente";
-
     try {
-      await _firestore.collection('orders').add({
-        'userId': uid,
+      final callable = FirebaseFunctions.instance
+          .httpsCallable('createOffer');
+      await callable.call({
         'startupId': startupId,
-        'type': OrderType.buy.name,
+        'type': 'buy',
         'quantity': quantity,
         'pricePerToken': pricePerToken,
-        'totalPrice': totalPrice,
-        'status': 'open',
-        'createdAt': Timestamp.now(),
       });
       return null; // aqui finaliza a ação depois de ter criado a ordem
+    } on FirebaseFunctionsException catch (e) {
+      switch (e.code) {
+        case 'failed-precondition':
+          return e.message ?? 'Operação não permitida';
+        case 'not-found':
+          return 'Recurso não encontrado';
+        case 'unauthenticated':
+          return 'Usuário não autenticado';
+        default:
+          return 'Erro ao criar ordem: ${e.message}';
+      }
     } catch (e) {
-      return "Erro: $e";
+      return 'Erro inesperado: $e';
     }
   }
 
-  // criar oferta de venda
+  // criar oferta de venda — delega à Cloud Function 'createOffer' para garantir
+  // validação de tokens e atomicidade no backend (sem escrita direta no Firestore)
   Future<String?> createSellOffer({
   required String startupId,
   required int quantity,
   required double pricePerToken,
 }) async {
-  final uid = await _uid;
-
-  if (uid == null) return "Usuário não está logado";
-
-  final tokens = await _carteira.getTokens();
-
-  final tokensStartup = tokens[startupId] ?? 0; // caso o tokens[startupId] for null, retorna 0
-
-  if (tokensStartup < quantity) return "tokens insuficientes";
-
   try {
-    await _firestore.collection('orders').add({
-      'userId': uid,
+    final callable = FirebaseFunctions.instance
+        .httpsCallable('createOffer');
+    await callable.call({
       'startupId': startupId,
-      'type': OrderType.sell.name, // pega direto do enum no models/order_models
+      'type': 'sell',
       'quantity': quantity,
       'pricePerToken': pricePerToken,
-      'totalPrice': (pricePerToken * quantity),
-      'status': OrderStatus.open.name, // pega direto do enum no models/order_models
-      'createdAt': Timestamp.now(),
     });
     return null;
+  } on FirebaseFunctionsException catch (e) {
+    switch (e.code) {
+      case 'failed-precondition':
+        return e.message ?? 'Operação não permitida';
+      case 'not-found':
+        return 'Recurso não encontrado';
+      case 'unauthenticated':
+        return 'Usuário não autenticado';
+      default:
+        return 'Erro ao criar ordem: ${e.message}';
+    }
   } catch (e) {
-    return "Erro: $e";
+    return 'Erro inesperado: $e';
   }
 }
 
