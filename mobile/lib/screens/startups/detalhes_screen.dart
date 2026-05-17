@@ -19,10 +19,10 @@ class DetalhesStartupPage extends StatefulWidget {
 
 class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   final PerguntaPrivadaService _perguntaPrivadaService =
-  PerguntaPrivadaService();
+      PerguntaPrivadaService();
 
   final TextEditingController _perguntaPrivadaController =
-  TextEditingController();
+      TextEditingController();
 
   bool _carregandoVerificacao = true;
   bool _temTokenDaStartup = false;
@@ -140,23 +140,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     if (arguments == null || arguments is! StartupData) {
       return Scaffold(
         backgroundColor: AppColors.fundo,
-        appBar: AppBar(
-          title: const Text('Erro'),
-          backgroundColor: AppColors.fundo,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: AppColors.destaque,
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
         body: const Center(
           child: Text(
             'Startup não encontrada',
             style: TextStyle(
-              fontSize: 20,
               color: AppColors.textoPrincipal,
             ),
           ),
@@ -190,21 +177,18 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
         iconTheme: const IconThemeData(
           color: AppColors.destaque,
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
         actions: [
           IconButton(
             onPressed: () {
-              _mostrarSnackBar('Compartilhamento disponível em breve.');
+              _mostrarSnackBar(
+                'Compartilhamento disponível em breve.',
+              );
             },
             icon: const Icon(
               Icons.share_outlined,
               color: AppColors.destaque,
             ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       bottomNavigationBar: _InvestBottomBar(
@@ -251,15 +235,20 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
                 Wrap(
                   spacing: 10,
-                  runSpacing: 8,
+                  runSpacing: 10,
                   children: [
                     _buildTag(startup.tag),
-                    _buildTag('Série A'),
-                    _buildTag('Rodada aberta'),
+                    _buildTag(startup.stage),
+                    _buildTag(startup.market),
+                    _buildTag(
+                      startup.status == 'open'
+                          ? 'Rodada aberta'
+                          : 'Rodada encerrada',
+                    ),
                   ],
                 ),
 
@@ -270,14 +259,14 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                 const SizedBox(height: 22),
 
                 _buildSectionCard(
-                  title: 'Sumário Executivo',
+                  title: 'Descrição',
                   child: Text(
-                    'A ${startup.title} está revolucionando o setor com tecnologia inovadora. '
-                        'Com ${startup.tokens} tokens disponíveis e uma meta de R\$ ${startup.goal.toStringAsFixed(2)}, '
-                        'esta é uma oportunidade de investimento estratégica dentro do ecossistema MESCLA.',
+                    startup.description.isNotEmpty
+                        ? startup.description
+                        : 'Startup sem descrição cadastrada.',
                     style: const TextStyle(
                       color: AppColors.textoFraco,
-                      height: 1.6,
+                      height: 1.7,
                       fontSize: 14,
                     ),
                   ),
@@ -290,8 +279,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   child: Column(
                     children: [
                       _buildInfoRow(
-                        'Tokens disponíveis',
-                        startup.tokens.toString(),
+                        'Mercado',
+                        startup.market,
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
@@ -300,13 +289,43 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
+                        'Estágio',
+                        startup.stage,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Tokens disponíveis',
+                        startup.tokens.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Total de tokens',
+                        startup.totalTokens.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Investidores',
+                        startup.investorsCount.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
                         'Valor do token',
                         'R\$ ${startup.tokenValue.toStringAsFixed(2)}',
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
+                        'Valuation',
+                        'R\$ ${startup.valuation.toStringAsFixed(2)}',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
                         'Meta de captação',
                         'R\$ ${startup.goal.toStringAsFixed(2)}',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Equity',
+                        '${startup.equity.toStringAsFixed(1)}%',
                       ),
                     ],
                   ),
@@ -328,25 +347,19 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       _buildQuestionCard(
                         usuario: 'Carlos',
                         tempo: 'há 2 dias',
-                        pergunta: 'Existe previsão de expansão internacional?',
+                        pergunta:
+                            'Existe previsão de expansão internacional?',
                         resposta:
-                        'Estamos estruturando entrada em mercados da América Latina em 2027.',
+                            'Estamos estruturando entrada em mercados da América Latina.',
                       ),
                       const SizedBox(height: 14),
                       _buildQuestionCard(
                         usuario: 'Fernanda',
                         tempo: 'há 5 dias',
-                        pergunta: 'A startup pretende abrir nova rodada?',
+                        pergunta:
+                            'A startup pretende abrir nova rodada?',
                         resposta:
-                        'Existe possibilidade de Série B após encerramento da rodada atual.',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildQuestionCard(
-                        usuario: 'Ricardo',
-                        tempo: 'há 1 semana',
-                        pergunta: 'Como funciona a valorização dos tokens?',
-                        resposta:
-                        'A valorização acompanha as negociações simuladas dentro da plataforma.',
+                            'Existe possibilidade de Série B após encerramento da rodada atual.',
                       ),
                       const SizedBox(height: 20),
                       const _PublicQuestionInput(),
@@ -358,7 +371,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
                 _buildSectionCard(
                   title: 'Canal do Investidor',
-                  child: _buildCanalInvestidorContent(context, startup),
+                  child: _buildCanalInvestidorContent(
+                    context,
+                    startup,
+                  ),
                 ),
               ],
             ),
@@ -368,7 +384,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  void _abrirOrdemCompra(BuildContext context, StartupData startup) {
+  void _abrirOrdemCompra(
+    BuildContext context,
+    StartupData startup,
+  ) {
     final simbolo = _gerarSimbolo(startup.title);
 
     final ofertaPrincipal = Oferta(
@@ -382,37 +401,13 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       spread: 0.4,
     );
 
-    final ofertasDisponiveis = [
-      ofertaPrincipal,
-      Oferta(
-        tipo: TipoOferta.venda,
-        quantidade: (startup.tokens * 0.70).round(),
-        preco: startup.tokenValue + 0.45,
-        empresa: startup.title,
-        simbolo: simbolo,
-        variacao: 0.8,
-        volume: '${(startup.tokens * 0.70).round()}',
-        spread: 0.6,
-      ),
-      Oferta(
-        tipo: TipoOferta.venda,
-        quantidade: (startup.tokens * 0.45).round(),
-        preco: startup.tokenValue + 0.90,
-        empresa: startup.title,
-        simbolo: simbolo,
-        variacao: 1.2,
-        volume: '${(startup.tokens * 0.45).round()}',
-        spread: 0.9,
-      ),
-    ];
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => OrdemExeScreen(
           oferta: ofertaPrincipal,
           modo: ModoNegociacao.compra,
-          ofertasDisponiveis: ofertasDisponiveis,
+          ofertasDisponiveis: [ofertaPrincipal],
         ),
       ),
     );
@@ -430,16 +425,19 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
     if (palavras.length == 1) {
       final palavra = palavras.first;
-      return palavra.substring(0, palavra.length.clamp(1, 3)).toUpperCase();
+
+      return palavra
+          .substring(0, palavra.length.clamp(1, 3))
+          .toUpperCase();
     }
 
     return palavras.take(3).map((p) => p[0]).join().toUpperCase();
   }
 
   Widget _buildCanalInvestidorContent(
-      BuildContext context,
-      StartupData startup,
-      ) {
+    BuildContext context,
+    StartupData startup,
+  ) {
     if (_carregandoVerificacao) {
       return const Center(
         child: Padding(
@@ -456,7 +454,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Você possui tokens desta startup. O canal privado está liberado para enviar perguntas exclusivas e conversar diretamente com os fundadores.',
+            'Você possui tokens desta startup. O canal privado está liberado.',
             style: TextStyle(
               color: AppColors.textoFraco,
               height: 1.5,
@@ -470,7 +468,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             ),
             maxLines: 4,
             decoration: const InputDecoration(
-              hintText: 'Envie uma pergunta privada para a startup...',
+              hintText:
+                  'Envie uma pergunta privada para a startup...',
             ),
           ),
           const SizedBox(height: 14),
@@ -481,8 +480,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                 ? null
                 : () => _enviarPerguntaPrivada(startup),
           ),
-          const SizedBox(height: 18),
-          _buildBotaoChatPrivado(context, startup),
         ],
       );
     }
@@ -493,95 +490,11 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       decoration: premiumFieldDecoration(
         radius: 16,
       ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.lock_outline_rounded,
-            color: AppColors.destaque,
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'O canal privado é exclusivo para investidores. Invista nesta startup para liberar o envio de perguntas privadas e o chat com os fundadores.',
-              style: TextStyle(
-                color: AppColors.textoFraco,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBotaoChatPrivado(
-      BuildContext context,
-      StartupData startup,
-      ) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            AppColors.destaqueClaro,
-            AppColors.destaqueEscuro,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.destaque.withOpacity(0.22),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/chat_privado',
-              arguments: startup,
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.lock_open_rounded,
-                  color: AppColors.fundo,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Abrir chat privado',
-                    style: TextStyle(
-                      color: AppColors.fundo,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: AppColors.fundo,
-                  ),
-                ),
-              ],
-            ),
-          ),
+      child: const Text(
+        'O canal privado é exclusivo para investidores.',
+        style: TextStyle(
+          color: AppColors.textoFraco,
+          height: 1.5,
         ),
       ),
     );
@@ -620,7 +533,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PremiumHeaderEyebrow(text: title.toUpperCase()),
+          PremiumHeaderEyebrow(
+            text: title.toUpperCase(),
+          ),
           const SizedBox(height: 15),
           child,
         ],
@@ -628,7 +543,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  static Widget _buildInfoRow(String label, String value) {
+  static Widget _buildInfoRow(
+    String label,
+    String value,
+  ) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: premiumFieldDecoration(
@@ -709,7 +627,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             style: const TextStyle(
               color: AppColors.textoPrincipal,
               fontWeight: FontWeight.w900,
-              height: 1.4,
             ),
           ),
           const SizedBox(height: 12),
@@ -718,9 +635,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             decoration: BoxDecoration(
               color: AppColors.card,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.bordaClara,
-              ),
             ),
             child: Text(
               resposta,
@@ -736,74 +650,16 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   }
 }
 
-// ===================== BACKGROUND =====================
-
 class _AtmosphericBackground extends StatelessWidget {
   const _AtmosphericBackground();
 
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: Stack(
-        children: [
-          Positioned(
-            top: -150,
-            right: -120,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.azul.withOpacity(0.22),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 240,
-            left: -130,
-            child: Container(
-              width: 280,
-              height: 280,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.destaque.withOpacity(0.07),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 60,
-            right: -120,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.roxo.withOpacity(0.18),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: Container(),
     );
   }
 }
-
-// ===================== HERO =====================
 
 class _HeroImage extends StatelessWidget {
   final StartupData startup;
@@ -814,84 +670,17 @@ class _HeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: premiumCardDecoration(
-        radius: 26,
-      ),
-      padding: const EdgeInsets.all(4),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Image.network(
-              startup.image,
-              height: 220,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 220,
-                  width: double.infinity,
-                  color: AppColors.campo,
-                  child: const Icon(
-                    Icons.image_not_supported_outlined,
-                    color: AppColors.textoMuitoFraco,
-                    size: 34,
-                  ),
-                );
-              },
-            ),
-            Container(
-              height: 220,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withOpacity(0.10),
-                    Colors.black.withOpacity(0.62),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [
-                    AppColors.destaqueClaro,
-                    AppColors.destaqueEscuro,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.destaque.withOpacity(0.28),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.play_arrow_rounded,
-                  color: AppColors.fundo,
-                  size: 38,
-                ),
-              ),
-            ),
-          ],
-        ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: Image.network(
+        startup.image,
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
       ),
     );
   }
 }
-
-// ===================== MÉTRICAS =====================
 
 class _MetricCard extends StatelessWidget {
   final StartupData startup;
@@ -914,14 +703,16 @@ class _MetricCard extends StatelessWidget {
               Expanded(
                 child: _MetricColumn(
                   label: 'Valor do Token',
-                  value: 'R\$ ${startup.tokenValue.toStringAsFixed(2)}',
+                  value:
+                      'R\$ ${startup.tokenValue.toStringAsFixed(2)}',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _MetricColumn(
-                  label: 'Meta',
-                  value: '${(startup.progress * 100).round()}%',
+                  label: 'Captação',
+                  value:
+                      '${(startup.progress * 100).toStringAsFixed(0)}%',
                 ),
               ),
             ],
@@ -967,7 +758,6 @@ class _MetricColumn extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textoMuitoFraco,
               fontSize: 12,
-              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
@@ -985,8 +775,6 @@ class _MetricColumn extends StatelessWidget {
   }
 }
 
-// ===================== OUTROS COMPONENTES =====================
-
 class _PitchDeckTile extends StatelessWidget {
   const _PitchDeckTile();
 
@@ -997,51 +785,20 @@ class _PitchDeckTile extends StatelessWidget {
       decoration: premiumFieldDecoration(
         radius: 18,
       ),
-      child: Row(
+      child: const Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.destaque.withOpacity(0.28),
+          Icon(
+            Icons.picture_as_pdf_rounded,
+            color: AppColors.destaque,
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Pitch Deck disponível em breve',
+              style: TextStyle(
+                color: AppColors.textoPrincipal,
+                fontWeight: FontWeight.w900,
               ),
-            ),
-            child: const Icon(
-              Icons.picture_as_pdf_rounded,
-              color: AppColors.destaque,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Pitch Deck 2026',
-                  style: TextStyle(
-                    color: AppColors.textoPrincipal,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Apresentação institucional da startup',
-                  style: TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: null,
-            icon: Icon(
-              Icons.download_rounded,
-              color: AppColors.textoMuitoFraco,
             ),
           ),
         ],
@@ -1058,10 +815,10 @@ class _PublicQuestionInput extends StatelessWidget {
     return Column(
       children: [
         const TextField(
+          maxLines: 3,
           style: TextStyle(
             color: AppColors.textoPrincipal,
           ),
-          maxLines: 3,
           decoration: InputDecoration(
             hintText: 'Envie uma pergunta pública...',
           ),
@@ -1069,7 +826,7 @@ class _PublicQuestionInput extends StatelessWidget {
         const SizedBox(height: 14),
         _PrimaryGradientButton(
           label: 'Enviar pergunta',
-          onTap: () {},
+          onTap: null,
         ),
       ],
     );
@@ -1091,49 +848,12 @@ class _PrimaryGradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.destaque.withOpacity(0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: onTap,
-            child: Center(
-              child: loading
-                  ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.4,
-                  color: AppColors.fundo,
-                ),
-              )
-                  : Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.fundo,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        ),
+      height: 52,
+      child: ElevatedButton(
+        onPressed: onTap,
+        child: loading
+            ? const CircularProgressIndicator()
+            : Text(label),
       ),
     );
   }
@@ -1149,62 +869,11 @@ class _InvestBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          border: const Border(
-            top: BorderSide(
-              color: AppColors.bordaClara,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.40),
-              blurRadius: 24,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  AppColors.destaqueClaro,
-                  AppColors.destaqueEscuro,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.destaque.withOpacity(0.22),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(18),
-                onTap: onInvestir,
-                child: const Center(
-                  child: Text(
-                    'Investir na startup',
-                    style: TextStyle(
-                      color: AppColors.fundo,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: _PrimaryGradientButton(
+          label: 'Investir na startup',
+          onTap: onInvestir,
         ),
       ),
     );
