@@ -10,10 +10,69 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   });
 
   Future<void> _handleLogout(BuildContext context) async {
-    // 🔐 desloga Firebase
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF182051),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Sair da conta',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          content: const Text(
+            'Tem certeza que deseja sair da sua conta?',
+            style: TextStyle(
+              color: Colors.white70,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text(
+                'Sair',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+
     await FirebaseAuth.instance.signOut();
 
-    // 🔁 limpa navegação e volta pro login
     if (context.mounted) {
       Navigator.pushNamedAndRemoveUntil(
         context,
@@ -32,25 +91,20 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 0,
       title: Row(
         children: [
-          // Título a esquerda
           Expanded(
             child: Container(
-              //espaçamento esquerda
               margin: const EdgeInsets.only(left: 30),
               alignment: Alignment.centerLeft,
               child: Text(
                 titulo,
                 style: const TextStyle(
                   fontSize: 20,
-                  
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
               ),
             ),
           ),
-
-          // Ícone de perfil no canto direito
           PopupMenuButton<String>(
             color: const Color(0xFF182051),
             position: PopupMenuPosition.under,
@@ -70,29 +124,42 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     Icon(Icons.notifications_none, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Notificações', style: TextStyle(color: Colors.white)),
+                    Text(
+                      'Notificações',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuDivider(color: Color.fromARGB(33, 255, 255, 255)),
+              const PopupMenuDivider(
+                color: Color.fromARGB(33, 255, 255, 255),
+              ),
               const PopupMenuItem<String>(
                 value: 'perfil',
                 child: Row(
                   children: [
                     Icon(Icons.person, color: Colors.white),
                     SizedBox(width: 8),
-                    Text('Ver Perfil', style: TextStyle(color: Colors.white)),
+                    Text(
+                      'Ver Perfil',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuDivider(color: Color.fromARGB(33, 255, 255, 255)),
+              const PopupMenuDivider(
+                color: Color.fromARGB(33, 255, 255, 255),
+              ),
               const PopupMenuItem<String>(
                 value: 'logout',
                 child: Row(
                   children: [
                     Icon(Icons.logout, color: Colors.red),
                     SizedBox(width: 8),
-                    Text('Sair', style: TextStyle(color: Colors.red)),
+                    Text(
+                      'Sair',
+                      style: TextStyle(color: Colors.red),
+                    ),
                   ],
                 ),
               ),
@@ -105,7 +172,11 @@ class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
                 color: const Color(0xFF182051),
                 borderRadius: BorderRadius.circular(50),
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 24),
+              child: const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ),
         ],

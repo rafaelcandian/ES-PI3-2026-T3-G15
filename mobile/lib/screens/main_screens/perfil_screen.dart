@@ -20,7 +20,6 @@ class PerfilPage extends StatefulWidget {
 class _PerfilPageState extends State<PerfilPage> {
   AppAppearanceMode _appearanceMode = ThemeController.appearanceMode.value;
 
-  bool _ocultarSaldo = true;
   bool _loading = true;
 
   String _nome = 'Usuário';
@@ -218,21 +217,7 @@ class _PerfilPageState extends State<PerfilPage> {
                               onChangePassword: _showChangePasswordModal,
                               onResetPassword: _sendPasswordReset,
                             ),
-                            const SizedBox(height: 18),
-                            _PrivacySection(
-                              ocultarSaldo: _ocultarSaldo,
-                              onOcultarSaldoChanged: (value) {
-                                setState(() {
-                                  _ocultarSaldo = value;
-                                });
 
-                                _showSnackBar(
-                                  value
-                                      ? 'Valores sensíveis serão ocultados.'
-                                      : 'Valores sensíveis serão exibidos.',
-                                );
-                              },
-                            ),
                             const SizedBox(height: 22),
                             _AccountActions(
                               onLogout: _logout,
@@ -357,6 +342,67 @@ class _PerfilPageState extends State<PerfilPage> {
   }
 
   Future<void> _logout() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Sair da conta',
+            style: TextStyle(
+              color: AppColors.destaque,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          content: const Text(
+            'Tem certeza que deseja sair da sua conta?',
+            style: TextStyle(
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(
+                  color: AppColors.textoFraco,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.destaque,
+                foregroundColor: AppColors.fundo,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              child: const Text(
+                'Sair',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+
     await FirebaseAuth.instance.signOut();
 
     if (!mounted) return;
@@ -364,7 +410,7 @@ class _PerfilPageState extends State<PerfilPage> {
     Navigator.pushNamedAndRemoveUntil(
       context,
       '/login',
-          (route) => false,
+      (route) => false,
     );
   }
 }
@@ -747,62 +793,6 @@ class _SecuritySection extends StatelessWidget {
           _ActionRow(
             title: 'Redefinir senha por e-mail',
             onTap: onResetPassword,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrivacySection extends StatelessWidget {
-  final bool ocultarSaldo;
-  final ValueChanged<bool> onOcultarSaldoChanged;
-
-  const _PrivacySection({
-    required this.ocultarSaldo,
-    required this.onOcultarSaldoChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'Privacidade',
-      icon: Icons.lock_outline_rounded,
-      child: Column(
-        children: [
-          _ToggleRow(
-            title: 'Ocultar saldo',
-            subtitle: 'Esconde valores sensíveis nas telas financeiras',
-            active: ocultarSaldo,
-            onTap: () => onOcultarSaldoChanged(!ocultarSaldo),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: premiumFieldDecoration(
-              radius: 16,
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.verified_user_outlined,
-                  color: AppColors.destaque,
-                  size: 20,
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Seus dados pessoais são exibidos de forma resumida nesta tela e devem ser acessados apenas pelo usuário autenticado.',
-                    style: TextStyle(
-                      color: AppColors.textoFraco,
-                      fontSize: 12,
-                      height: 1.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),

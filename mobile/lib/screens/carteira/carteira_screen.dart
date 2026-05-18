@@ -41,6 +41,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
   List<AtivoCarteira> _ativos = [];
   List<Map<String, dynamic>> _movimentacoes = [];
   bool _loading = true;
+  bool _ocultarValores = false;
 
   @override
   void initState() {
@@ -85,6 +86,16 @@ class _CarteiraPageState extends State<CarteiraPage> {
       }
 
       final saldo = await carteiraService.getBalance();
+
+      // Atualiza o saldo assim que ele é lido do Firestore.
+      // Assim, mesmo que gráfico, transações ou ativos deem erro,
+      // o saldo da carteira aparece corretamente na tela.
+      if (mounted) {
+        setState(() {
+          _saldo = saldo;
+        });
+      }
+
       final tokensMap = await carteiraService.getTokens();
 
       final List<AtivoCarteira> ativosTemp = [];
@@ -103,8 +114,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
             final title = data['title'] ?? data['nome'] ?? 'Startup';
 
             final tokenValue =
-            ((data['tokenValue'] ?? data['valorToken'] ?? 0.0) as num)
-                .toDouble();
+                ((data['tokenValue'] ?? data['valorToken'] ?? 0.0) as num)
+                    .toDouble();
 
             final precoMedio = await _calcularPrecoMedio(
               firestore: firestore,
@@ -114,15 +125,16 @@ class _CarteiraPageState extends State<CarteiraPage> {
             );
 
             final variacao = ((data['variacao'] ??
-                data['variation'] ??
-                data['variacaoPercentual'] ??
-                0.0) as num)
+                        data['variation'] ??
+                        data['variacaoPercentual'] ??
+                        0.0)
+                    as num)
                 .toDouble();
 
             final volume = (data['volume'] ??
-                data['volumeNegociado'] ??
-                data['volumeTotal'] ??
-                'Não informado')
+                    data['volumeNegociado'] ??
+                    data['volumeTotal'] ??
+                    'Não informado')
                 .toString();
 
             final spread = ((data['spread'] ?? 0.0) as num).toDouble();
@@ -144,61 +156,67 @@ class _CarteiraPageState extends State<CarteiraPage> {
         }
       }
 
-      final compras = await firestore
-          .collection('transactions')
-          .where('buyerId', isEqualTo: uid)
-          .orderBy('createdAt', descending: true)
-          .limit(5)
-          .get();
+      List<Map<String, dynamic>> movsTemp = [];
 
-      final vendas = await firestore
-          .collection('transactions')
-          .where('sellerId', isEqualTo: uid)
-          .orderBy('createdAt', descending: true)
-          .limit(5)
-          .get();
+      try {
+        final compras = await firestore
+            .collection('transactions')
+            .where('buyerId', isEqualTo: uid)
+            .orderBy('createdAt', descending: true)
+            .limit(5)
+            .get();
 
-      final transacoesCarteira = await firestore
-          .collection('usuarios')
-          .doc(uid)
-          .collection('transacoesCarteira')
-          .orderBy('createdAt', descending: true)
-          .limit(5)
-          .get();
+        final vendas = await firestore
+            .collection('transactions')
+            .where('sellerId', isEqualTo: uid)
+            .orderBy('createdAt', descending: true)
+            .limit(5)
+            .get();
 
-      final todasMovs = <Map<String, dynamic>>[
-        ...compras.docs.map(
-              (doc) => {
-            ...doc.data(),
-            '_origem': 'balcao',
-          },
-        ),
-        ...vendas.docs.map(
-              (doc) => {
-            ...doc.data(),
-            '_origem': 'balcao',
-          },
-        ),
-        ...transacoesCarteira.docs.map(
-              (doc) => {
-            ...doc.data(),
-            '_origem': 'carteira',
-          },
-        ),
-      ];
+        final transacoesCarteira = await firestore
+            .collection('usuarios')
+            .doc(uid)
+            .collection('transacoesCarteira')
+            .orderBy('createdAt', descending: true)
+            .limit(5)
+            .get();
 
-      todasMovs.sort((a, b) {
-        final aDate = a['createdAt'];
-        final bDate = b['createdAt'];
+        final todasMovs = <Map<String, dynamic>>[
+          ...compras.docs.map(
+            (doc) => {
+              ...doc.data(),
+              '_origem': 'balcao',
+            },
+          ),
+          ...vendas.docs.map(
+            (doc) => {
+              ...doc.data(),
+              '_origem': 'balcao',
+            },
+          ),
+          ...transacoesCarteira.docs.map(
+            (doc) => {
+              ...doc.data(),
+              '_origem': 'carteira',
+            },
+          ),
+        ];
 
-        if (aDate is Timestamp && bDate is Timestamp) {
-          return bDate.compareTo(aDate);
-        }
+        todasMovs.sort((a, b) {
+          final aDate = a['createdAt'];
+          final bDate = b['createdAt'];
 
-        return 0;
-      });
+          if (aDate is Timestamp && bDate is Timestamp) {
+            return bDate.compareTo(aDate);
+          }
 
-      final movsTemp = todasMovs.take(5).toList();
+          return 0;
+        });
+
+        movsTemp = todasMovs.take(5).toList();
+      } catch (e) {
+        print('Erro ao carregar movimentações: $e');
+      }
 
       List<double> chartData = [];
 
@@ -206,7 +224,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
         chartData = await carteiraService.getWalletChartValues(
           periodo: selectedTimePeriod,
         );
-      } catch (_) {
+      } catch (e) {
+        print('Erro ao carregar gráfico da carteira: $e');
         chartData = [];
       }
 
@@ -219,7 +238,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
           _loading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      print('Erro ao carregar carteira: $e');
+
       if (mounted) {
         setState(() => _loading = false);
       }
@@ -510,6 +531,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           tokensTotais: tokensTotais,
                           variacaoMedia: variacaoMedia,
                           onAdicionarFundos: _abrirAdicionarFundos,
+                          ocultarValores: _ocultarValores,
+                          onToggleOcultarValores: () {
+                            setState(() {
+                              _ocultarValores = !_ocultarValores;
+                            });
+                          },
                         ),
                       ),
                       const SliverToBoxAdapter(
@@ -887,6 +914,8 @@ class _PatrimonioCard extends StatelessWidget {
   final int tokensTotais;
   final double variacaoMedia;
   final VoidCallback onAdicionarFundos;
+  final bool ocultarValores;
+  final VoidCallback onToggleOcultarValores;
 
   const _PatrimonioCard({
     required this.patrimonioTotal,
@@ -894,11 +923,19 @@ class _PatrimonioCard extends StatelessWidget {
     required this.tokensTotais,
     required this.variacaoMedia,
     required this.onAdicionarFundos,
+    required this.ocultarValores,
+    required this.onToggleOcultarValores,
   });
 
   @override
   Widget build(BuildContext context) {
     final positiva = variacaoMedia >= 0;
+    final patrimonioTexto = ocultarValores
+        ? 'R\$ ••••••'
+        : 'R\$ ${patrimonioTotal.toStringAsFixed(2)}';
+    final saldoTexto = ocultarValores
+        ? 'R\$ ••••••'
+        : 'R\$ ${saldoDisponivel.toStringAsFixed(2)}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -908,10 +945,38 @@ class _PatrimonioCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const PremiumSectionLabel(text: 'Patrimônio total'),
+            Row(
+              children: [
+                const Expanded(
+                  child: PremiumSectionLabel(text: 'Patrimônio total'),
+                ),
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(18),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: onToggleOcultarValores,
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: premiumFieldDecoration(
+                        radius: 18,
+                      ),
+                      child: Icon(
+                        ocultarValores
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        color: AppColors.destaque,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Text(
-              'R\$ ${patrimonioTotal.toStringAsFixed(2)}',
+              patrimonioTexto,
               style: const TextStyle(
                 color: AppColors.destaque,
                 fontSize: 31,
@@ -924,7 +989,7 @@ class _PatrimonioCard extends StatelessWidget {
                 Expanded(
                   child: _ResumoItem(
                     label: 'Saldo disponível',
-                    value: 'R\$ ${saldoDisponivel.toStringAsFixed(2)}',
+                    value: saldoTexto,
                   ),
                 ),
                 Expanded(

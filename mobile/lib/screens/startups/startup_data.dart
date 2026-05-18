@@ -26,6 +26,8 @@ class StartupData {
   final String market;
   final double valuation;
 
+  final List<StartupPartner> partners;
+
   const StartupData({
     required this.id,
     required this.title,
@@ -38,7 +40,6 @@ class StartupData {
     required this.goal,
     required this.image,
     required this.video,
-
     required this.description,
     required this.stage,
     required this.status,
@@ -46,6 +47,7 @@ class StartupData {
     required this.investorsCount,
     required this.market,
     required this.valuation,
+    required this.partners,
   });
 
   factory StartupData.fromMap(
@@ -70,21 +72,35 @@ class StartupData {
       video: data['video'] ?? '',
 
       description: data['description'] ?? '',
-
       stage: data['stage'] ?? data['estagio'] ?? 'Nova',
-
       status: data['status'] ?? 'open',
 
-      totalTokens:
-          (data['totalTokens'] as num?)?.toInt() ?? 0,
-
-      investorsCount:
-          (data['investorsCount'] as num?)?.toInt() ?? 0,
+      totalTokens: (data['totalTokens'] as num?)?.toInt() ?? 0,
+      investorsCount: (data['investorsCount'] as num?)?.toInt() ?? 0,
 
       market: data['market'] ?? '',
+      valuation: (data['valuation'] as num?)?.toDouble() ?? 0.0,
 
-      valuation:
-          (data['valuation'] as num?)?.toDouble() ?? 0.0,
+      partners: (data['partners'] as List<dynamic>? ?? [])
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              return StartupPartner.fromMap(item);
+            }
+
+            if (item is Map) {
+              return StartupPartner.fromMap(
+                Map<String, dynamic>.from(item),
+              );
+            }
+
+            return const StartupPartner(
+              name: '',
+              role: '',
+              equityPercent: 0.0,
+            );
+          })
+          .where((partner) => partner.name.trim().isNotEmpty)
+          .toList(),
     );
   }
 
@@ -96,6 +112,26 @@ class StartupData {
     return StartupData.fromMap(
       data,
       id: doc.id,
+    );
+  }
+}
+
+class StartupPartner {
+  final String name;
+  final String role;
+  final double equityPercent;
+
+  const StartupPartner({
+    required this.name,
+    required this.role,
+    required this.equityPercent,
+  });
+
+  factory StartupPartner.fromMap(Map<String, dynamic> data) {
+    return StartupPartner(
+      name: data['name'] ?? '',
+      role: data['role'] ?? '',
+      equityPercent: (data['equityPercent'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

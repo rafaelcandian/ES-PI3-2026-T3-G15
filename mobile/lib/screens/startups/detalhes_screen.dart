@@ -6,6 +6,7 @@ import 'package:mescla_invest/screens/startups/startup_data.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/services/pergunta_privada.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/screens/startups/startup_video_screen.dart';
 
 import '../../models/balcao_model.dart';
 import '../ordens/ordem_exe_screen.dart';
@@ -334,6 +335,41 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                 const SizedBox(height: 18),
 
                 _buildSectionCard(
+                  title: 'Sócios',
+                  child: startup.partners.isEmpty
+                      ? const Text(
+                          'Nenhum sócio cadastrado para esta startup.',
+                          style: TextStyle(
+                            color: AppColors.textoFraco,
+                            height: 1.5,
+                            fontSize: 14,
+                          ),
+                        )
+                      : Column(
+                          children: List.generate(
+                            startup.partners.length,
+                            (index) {
+                              final partner = startup.partners[index];
+
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: index == startup.partners.length - 1
+                                      ? 0
+                                      : 12,
+                                ),
+                                child: _buildInfoRow(
+                                  '${partner.name} • ${partner.role}',
+                                  '${partner.equityPercent.toStringAsFixed(1)}%',
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+
+                const SizedBox(height: 18),
+
+                _buildSectionCard(
                   title: 'Pitch Deck',
                   child: const _PitchDeckTile(),
                 ),
@@ -385,34 +421,34 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   }
 
   void _abrirOrdemCompra(
-    BuildContext context,
-    StartupData startup,
-  ) {
-    final simbolo = _gerarSimbolo(startup.title);
+  BuildContext context,
+  StartupData startup,
+) {
+  final simbolo = _gerarSimbolo(startup.title);
 
-    final ofertaPrincipal = Oferta(
-      tipo: TipoOferta.venda,
-      quantidade: startup.tokens,
-      preco: startup.tokenValue,
-      empresa: startup.title,
-      simbolo: simbolo,
-      variacao: 0,
-      volume: '${startup.tokens}',
-      spread: 0.4,
-    );
+  final ofertaPrincipal = Oferta(
+    tipo: TipoOferta.venda,
+    quantidade: startup.tokens,
+    preco: startup.tokenValue,
+    empresa: startup.title,
+    simbolo: simbolo,
+    variacao: 0,
+    volume: '${startup.tokens}',
+    spread: 0.4,
+    startupId: startup.id,
+  );
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OrdemExeScreen(
-          oferta: ofertaPrincipal,
-          modo: ModoNegociacao.compra,
-          ofertasDisponiveis: [ofertaPrincipal],
-        ),
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => OrdemExeScreen(
+        oferta: ofertaPrincipal,
+        modo: ModoNegociacao.compra,
+        ofertasDisponiveis: [ofertaPrincipal],
       ),
-    );
-  }
-
+    ),
+  );
+}
   String _gerarSimbolo(String nome) {
     final palavras = nome
         .replaceAll(RegExp(r'[^a-zA-ZÀ-ÿ0-9 ]'), '')
@@ -668,15 +704,130 @@ class _HeroImage extends StatelessWidget {
     required this.startup,
   });
 
+  void _abrirVideo(BuildContext context) {
+    if (startup.video.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vídeo não cadastrado para esta startup.'),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StartupVideoScreen(
+          title: startup.title,
+          videoUrl: startup.video,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: Image.network(
-        startup.image,
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
+    return Container(
+      decoration: premiumCardDecoration(
+        radius: 26,
+      ),
+      padding: const EdgeInsets.all(4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Image.network(
+              startup.image,
+              height: 220,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 220,
+                  width: double.infinity,
+                  color: AppColors.campo,
+                  child: const Icon(
+                    Icons.image_not_supported_outlined,
+                    color: AppColors.textoMuitoFraco,
+                    size: 34,
+                  ),
+                );
+              },
+            ),
+            Container(
+              height: 220,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.10),
+                    Colors.black.withOpacity(0.68),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _abrirVideo(context),
+              child: Container(
+                width: 74,
+                height: 74,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppColors.destaqueClaro,
+                      AppColors.destaqueEscuro,
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.destaque.withOpacity(0.30),
+                      blurRadius: 26,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: AppColors.fundo,
+                  size: 42,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 16,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      startup.video.trim().isEmpty
+                          ? 'Vídeo não cadastrado'
+                          : 'Assistir pitch da startup',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textoPrincipal,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.videocam_rounded,
+                    color: AppColors.destaque,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
