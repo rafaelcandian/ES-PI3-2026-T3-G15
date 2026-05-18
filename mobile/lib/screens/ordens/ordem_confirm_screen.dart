@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
-import 'package:mescla_invest/services/balcao_service.dart';
+import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
@@ -48,45 +48,38 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     _executarOrdem();
   }
 
-  /// Envia a ordem para a Cloud Function via BalcaoService
-  /// e atualiza o estado conforme o resultado.
+  /// Executa a compra direta de tokens da startup.
+  ///
+  /// Este fluxo não usa o Balcão de Negócios. Ele atualiza diretamente:
+  /// saldo do usuário, tokens do usuário, tokens disponíveis da startup
+  /// e histórico da carteira.
   Future<void> _executarOrdem() async {
     try {
-      String? erro;
-
-      if (_isCompra) {
-        erro = await BalcaoService().createPurchaseOffer(
-          startupId: widget.oferta.startupId,
-          quantity: widget.oferta.quantidade,
-          pricePerToken: widget.oferta.preco,
-        );
-      } else {
-        erro = await BalcaoService().createSellOffer(
-          startupId: widget.oferta.startupId,
-          quantity: widget.oferta.quantidade,
-          pricePerToken: widget.oferta.preco,
-        );
+      if (!_isCompra) {
+        throw Exception('Venda direta ainda não está disponível neste fluxo.');
       }
+
+      await CarteiraService().comprarTokensStartup(
+        startupId: widget.oferta.startupId,
+        startupNome: widget.oferta.empresa,
+        simbolo: widget.oferta.simbolo,
+        quantidade: widget.oferta.quantidade,
+        precoUnitario: widget.oferta.preco,
+        taxa: widget.taxa,
+        totalFinal: widget.totalFinal,
+      );
 
       if (!mounted) return;
 
-      if (erro != null) {
-        // backend retornou erro — exibe mensagem e não navega
-        setState(() {
-          _erro = erro;
-          _loading = false;
-        });
-      } else {
-        // sucesso — exibe tela de conclusão
-        setState(() {
-          _concluida = true;
-          _loading = false;
-        });
-      }
+      setState(() {
+        _concluida = true;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
+
       setState(() {
-        _erro = 'Erro inesperado ao processar a ordem.';
+        _erro = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
       });
     }
@@ -271,14 +264,14 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       key: const ValueKey('actions'),
       children: [
         GradientButton(
-          label: 'Voltar ao balcão',
+          label: 'Voltar às startups',
           icon: Icons.storefront_rounded,
           height: 54,
           radius: 18,
           onTap: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
-              '/balcao',
+              '/catalogo',
                   (route) => false,
             );
           },
@@ -487,7 +480,7 @@ class _StepsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _StepRow(
-            label: 'Registrando ordem no balcão',
+            label: 'Registrando compra na carteira',
             done: concluida,
           ),
         ],

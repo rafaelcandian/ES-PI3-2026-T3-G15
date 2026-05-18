@@ -116,6 +116,110 @@ class CarteiraService {
     return saldo >= valor;
   }
 
+  // Compra tokens diretamente de uma startup.
+  //
+  // Esta operação é feita dentro de uma transaction do Firestore para garantir
+  // que saldo, tokens do usuário e disponibilidade da startup sejam atualizados juntos.
+  Future<void> comprarTokensStartup({
+    required String startupId,
+    required String startupNome,
+    required String simbolo,
+    required int quantidade,
+    required double precoUnitario,
+    required double taxa,
+    required double totalFinal,
+  }) async {
+    if (startupId.trim().isEmpty) {
+      throw Exception('Startup inválida para compra.');
+    }
+
+    if (quantidade <= 0) {
+      throw Exception('Quantidade inválida de tokens.');
+    }
+
+    if (precoUnitario <= 0 || totalFinal <= 0) {
+      throw Exception('Valor da compra inválido.');
+    }
+
+    final uid = _uid;
+    final userRef = _firestore.collection('usuarios').doc(uid);
+    final startupRef = _firestore.collection('startups').doc(startupId);
+    final transacaoRef = userRef.collection('transacoesCarteira').doc();
+    final ativoRef = userRef.collection('ativos').doc(startupId);
+
+    await _firestore.runTransaction((transaction) async {
+      final userSnapshot = await transaction.get(userRef);
+      final startupSnapshot = await transaction.get(startupRef);
+
+      if (!userSnapshot.exists) {
+        throw Exception('Usuário não encontrado.');
+      }
+
+      if (!startupSnapshot.exists) {
+        throw Exception('Startup não encontrada.');
+      }
+
+      final userData = userSnapshot.data() ?? <String, dynamic>{};
+      final startupData = startupSnapshot.data() ?? <String, dynamic>{};
+
+      final saldoAtual = (userData['saldo'] as num? ?? 0).toDouble();
+      final tokensDisponiveis = (startupData['tokens'] as num? ?? 0).toInt();
+
+      if (saldoAtual < totalFinal) {
+        throw Exception(
+          'Saldo insuficiente. Saldo atual: R\$ ${saldoAtual.toStringAsFixed(2)}.',
+        );
+      }
+
+      if (tokensDisponiveis < quantidade) {
+        throw Exception(
+          'Tokens insuficientes. Disponível: $tokensDisponiveis tokens.',
+        );
+      }
+
+      transaction.update(userRef, {
+        'saldo': FieldValue.increment(-totalFinal),
+        'tokens.$startupId': FieldValue.increment(quantidade),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      transaction.update(startupRef, {
+        'tokens': FieldValue.increment(-quantidade),
+        'investorsCount': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      transaction.set(
+        ativoRef,
+        {
+          'startupId': startupId,
+          'startupNome': startupNome,
+          'simbolo': simbolo,
+          'quantidadeTokens': FieldValue.increment(quantidade),
+          'precoMedioReferencia': precoUnitario,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      transaction.set(transacaoRef, {
+        'type': 'purchase',
+        'status': 'completed',
+        'startupId': startupId,
+        'startupNome': startupNome,
+        'simbolo': simbolo,
+        'quantity': quantidade,
+        'pricePerToken': precoUnitario,
+        'taxa': taxa,
+        'totalPrice': totalFinal,
+        'amount': -totalFinal,
+        'description': 'Compra de $quantidade tokens de $startupNome',
+        'method': 'startup_investment',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
   // Converte os nomes usados no front para os períodos esperados pela Function.
   String _mapPeriodoGrafico(String periodo) {
     switch (periodo) {
