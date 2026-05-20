@@ -5,6 +5,11 @@ import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mescla_invest/services/carteira_service.dart';
+import 'package:mescla_invest/services/balcao_service.dart';
+
 import '../../models/balcao_model.dart';
 import '../../themes/app_theme.dart';
 import '../ordens/ordem_exe_screen.dart';
@@ -27,92 +32,93 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
 
-  final List<Oferta> _ofertasCompra = const [
-    Oferta(
-      tipo: TipoOferta.compra,
-      quantidade: 100,
-      preco: 25.50,
-      empresa: 'NeuroPulse AI',
-      simbolo: 'NPA',
-      variacao: 3.2,
-      volume: '2.8k',
-      spread: 0.7,
-    ),
-    Oferta(
-      tipo: TipoOferta.compra,
-      quantidade: 200,
-      preco: 24.50,
-      empresa: 'QuantLedger',
-      simbolo: 'QLG',
-      variacao: -1.4,
-      volume: '1.4k',
-      spread: 1.1,
-    ),
-    Oferta(
-      tipo: TipoOferta.compra,
-      quantidade: 350,
-      preco: 22.00,
-      empresa: 'SolarGrid',
-      simbolo: 'SLG',
-      variacao: 5.8,
-      volume: '3.6k',
-      spread: 0.5,
-    ),
-  ];
+  double _saldo = 0.0;
+  List<Oferta> _ofertasCompra = [];
+  List<Oferta> _ofertasVenda = [];
+  List<AtivoUsuario> _ativosUsuario = [];
+  bool _loading = true;
 
-  final List<Oferta> _ofertasVenda = const [
-    Oferta(
-      tipo: TipoOferta.venda,
-      quantidade: 50,
-      preco: 26.00,
-      empresa: 'NeuroPulse AI',
-      simbolo: 'NPA',
-      variacao: 2.1,
-      volume: '1.9k',
-      spread: 0.9,
-    ),
-    Oferta(
-      tipo: TipoOferta.venda,
-      quantidade: 150,
-      preco: 27.00,
-      empresa: 'QuantLedger',
-      simbolo: 'QLG',
-      variacao: -0.8,
-      volume: '950',
-      spread: 1.4,
-    ),
-    Oferta(
-      tipo: TipoOferta.venda,
-      quantidade: 80,
-      preco: 29.50,
-      empresa: 'BioSync',
-      simbolo: 'BIO',
-      variacao: 7.3,
-      volume: '4.2k',
-      spread: 0.6,
-    ),
-  ];
+  Future<void> _loadData() async {
+    try {
+      final saldo = await CarteiraService().getBalance();
+      final tokensMap = await CarteiraService().getTokens();
 
-  final List<AtivoUsuario> _ativosUsuario = const [
-    AtivoUsuario(
-      empresa: 'NeuroPulse AI',
-      simbolo: 'NPA',
-      quantidade: 120,
-      precoMedio: 22.40,
-    ),
-    AtivoUsuario(
-      empresa: 'BioSync',
-      simbolo: 'BIO',
-      quantidade: 80,
-      precoMedio: 26.10,
-    ),
-    AtivoUsuario(
-      empresa: 'QuantLedger',
-      simbolo: 'QLG',
-      quantidade: 45,
-      precoMedio: 23.70,
-    ),
-  ];
+      final startupsSnapshot = await FirebaseFirestore.instance.collection('startups').get();
+
+      List<Oferta> tempOfertasCompra = [];
+      List<Oferta> tempOfertasVenda = [];
+      List<AtivoUsuario> tempAtivosUsuario = [];
+
+      for (var doc in startupsSnapshot.docs) {
+        final data = doc.data();
+        final startupId = doc.id;
+        final title = data['title'] as String? ?? '';
+        final tokenValue = (data['tokenValue'] ?? 0).toDouble();
+        final simbolo = title.length >= 3 ? title.substring(0, 3).toUpperCase() : title.toUpperCase();
+
+        final ordens = await BalcaoService().getOpenedOrders(startupId);
+        
+        final buyOrders = ordens['buy'] ?? [];
+        for (var order in buyOrders) {
+          tempOfertasVenda.add(Oferta(
+            tipo: TipoOferta.venda,
+            quantidade: order.quantity,
+            preco: order.pricePerToken,
+            empresa: title,
+            simbolo: simbolo,
+            variacao: 0.0,
+            volume: '0',
+            spread: 0.0,
+            startupId: startupId,
+          ));
+        }
+
+        final sellOrders = ordens['sell'] ?? [];
+        for (var order in sellOrders) {
+          tempOfertasCompra.add(Oferta(
+            tipo: TipoOferta.compra,
+            quantidade: order.quantity,
+            preco: order.pricePerToken,
+            empresa: title,
+            simbolo: simbolo,
+            variacao: 0.0,
+            volume: '0',
+            spread: 0.0,
+            startupId: startupId,
+          ));
+        }
+
+        if (tokensMap.containsKey(startupId)) {
+          final quantidade = (tokensMap[startupId] as num).toInt();
+          if (quantidade > 0) {
+            tempAtivosUsuario.add(AtivoUsuario(
+              empresa: title,
+              simbolo: simbolo,
+              quantidade: quantidade,
+              precoMedio: tokenValue,
+            ));
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _saldo = saldo;
+          _ofertasCompra = tempOfertasCompra;
+          _ofertasVenda = tempOfertasVenda;
+          _ativosUsuario = tempAtivosUsuario;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      print("Erro ao carregar dados do balcao: $e");
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -129,6 +135,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
     );
 
     _fadeCtrl.forward();
+    _loadData();
   }
 
   @override
@@ -198,7 +205,11 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
         extendBody: true,
         appBar: const AppBarPadrao(titulo: 'Balcão de Tokens'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 1),
-        body: Stack(
+        body: _loading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.destaque),
+              )
+            : Stack(
           children: [
             const _AtmosphericBackground(),
             SafeArea(
@@ -211,7 +222,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                       children: [
                         _PageHeader(),
                         SizedBox(height: 20),
-                        _SaldoOperacionalCard(),
+                        _SaldoOperacionalCard(saldo: _saldo),
                         SizedBox(height: 18),
                       ],
                     ),
@@ -365,7 +376,7 @@ class _PageHeader extends StatelessWidget {
           PremiumHeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
           SizedBox(height: 14),
           Text(
-            'Compre e venda tokens simulados de main_screens conectadas ao ecossistema MESCLA.',
+            'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textoFraco,
@@ -382,7 +393,9 @@ class _PageHeader extends StatelessWidget {
 // ===================== SALDO =====================
 
 class _SaldoOperacionalCard extends StatelessWidget {
-  const _SaldoOperacionalCard();
+  final double saldo;
+
+  const _SaldoOperacionalCard({required this.saldo});
 
   @override
   Widget build(BuildContext context) {
@@ -414,15 +427,15 @@ class _SaldoOperacionalCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SmallLabel(text: 'SALDO DISPONÍVEL'),
-                  SizedBox(height: 6),
+                  const _SmallLabel(text: 'SALDO DISPONÍVEL'),
+                  const SizedBox(height: 6),
                   Text(
-                    'R\$ 12.750,00',
-                    style: TextStyle(
+                    'R\$ ${saldo.toStringAsFixed(2)}',
+                    style: const TextStyle(
                       fontSize: 23,
                       fontWeight: FontWeight.w900,
                       color: AppColors.destaque,

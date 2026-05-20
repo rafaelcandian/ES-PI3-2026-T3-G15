@@ -445,6 +445,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
         oferta: ofertaPrincipal,
         modo: ModoNegociacao.compra,
         ofertasDisponiveis: [ofertaPrincipal],
+        investimentoMinimo: startup.investimentoMinimo,
+        compraDireto: true,
       ),
     ),
   );

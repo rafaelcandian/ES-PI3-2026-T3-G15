@@ -22,12 +22,16 @@ class OrdemExeScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
   final List<Oferta> ofertasDisponiveis;
+  final double investimentoMinimo;
+  final bool compraDireto;
 
   const OrdemExeScreen({
     super.key,
     required this.oferta,
     required this.modo,
     required this.ofertasDisponiveis,
+    this.investimentoMinimo = 0.0,
+    this.compraDireto = false,
   });
 
   @override
@@ -171,6 +175,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       startupId: widget.oferta.startupId, // propaga o startupId para a tela de confirmação
     );
 
+    final totalOrdem = _quantidade * _preco;
+    final atingiuMinimo = !widget.compraDireto || totalOrdem >= widget.investimentoMinimo;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -179,6 +186,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           modo: widget.modo,
           totalFinal: _totalFinal,
           taxa: _taxa,
+          atingiuMinimo: atingiuMinimo,
         ),
       ),
     );
