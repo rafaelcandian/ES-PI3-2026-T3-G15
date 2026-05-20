@@ -217,13 +217,13 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        _PageHeader(),
-                        SizedBox(height: 20),
+                        const _PageHeader(),
+                        const SizedBox(height: 20),
                         _SaldoOperacionalCard(saldo: _saldo),
-                        SizedBox(height: 18),
+                        const SizedBox(height: 18),
                       ],
                     ),
                   ),
