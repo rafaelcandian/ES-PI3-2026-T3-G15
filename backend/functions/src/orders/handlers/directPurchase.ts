@@ -9,8 +9,8 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { DirectPurchaseData } from "../types/orderTypes";
 
 export const directPurchase = onCall(async (request) => {
-  const auth = requireAuthenticatedUser(request);
-  const uid = auth.uid;
+  requireAuthenticatedUser(request);
+  const uid = request.auth!.uid;
 
   const data = request.data as DirectPurchaseData;
   const { startupId, quantity, pricePerToken } = data;
