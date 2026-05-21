@@ -48,4 +48,4 @@ export {
 } from "./startups/index";
 
 // RELACIONADO AO MÓDULO DE ORDERS
-export {createOffer} from "./orders/index";
+export {createOffer, directPurchase} from "./orders/index";

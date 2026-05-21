@@ -44,6 +44,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   late int _quantidade;
   late double _preco;
   late final TextEditingController _quantidadeController;
+  late final TextEditingController _precoController;
 
   double _precoMedioReal = 0.0;
 
@@ -96,14 +97,22 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   void initState() {
     super.initState();
 
-    final quantidadeDisponivel = widget.oferta.quantidade;
-
-    _quantidade = quantidadeDisponivel <= 0 ? 0 : quantidadeDisponivel;
+    _quantidade = 0;
     _preco = widget.oferta.preco;
 
-    _quantidadeController = TextEditingController(
-      text: _quantidade.toString(),
-    );
+    _quantidadeController = TextEditingController(text: '0');
+
+    _precoController = TextEditingController(
+      text: _preco.toStringAsFixed(2));
+
+    _precoController.addListener(() {
+      final texto = _precoController.text
+          .replaceAll(',', '.');
+      final valor = double.tryParse(texto) ?? _preco;
+      if (valor > 0 && valor != _preco) {
+        setState(() => _preco = valor);
+      }
+    });
 
     _calcularPrecoMedioReal().then((preco) {
       if (mounted) setState(() => _precoMedioReal = preco);
@@ -113,6 +122,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   @override
   void dispose() {
     _quantidadeController.dispose();
+    _precoController.dispose();
     super.dispose();
   }
 
@@ -125,7 +135,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     }
 
     final quantidadeDigitada = int.tryParse(value) ?? 0;
-    final quantidadeAjustada = quantidadeDigitada.clamp(1, maximo).toInt();
+    final quantidadeAjustada = quantidadeDigitada.clamp(0, maximo).toInt();
 
     if (quantidadeDigitada != quantidadeAjustada) {
       _atualizarControllerQuantidade(quantidadeAjustada);
@@ -136,7 +146,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   void _alterarQuantidade(int novaQuantidade) {
     final maximo = widget.oferta.quantidade;
-    final quantidadeAjustada = novaQuantidade.clamp(1, maximo).toInt();
+    final quantidadeAjustada = novaQuantidade.clamp(0, maximo).toInt();
 
     HapticFeedback.selectionClick();
 
@@ -165,6 +175,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
     setState(() {
       _preco = (_preco + delta).clamp(0.10, 999999);
+      _precoController.text = _preco.toStringAsFixed(2);
     });
   }
 
@@ -339,6 +350,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           ),
           const SizedBox(height: 14),
           _PriceControlBox(
+            controller: _precoController,
             value: 'R\$ ${_preco.toStringAsFixed(2)}',
             onMinus: () => _alterarPreco(-0.10),
             onPlus: () => _alterarPreco(0.10),
@@ -820,11 +832,13 @@ class _QuickAmountButtons extends StatelessWidget {
 }
 
 class _PriceControlBox extends StatelessWidget {
+  final TextEditingController controller;
   final String value;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
   const _PriceControlBox({
+    required this.controller,
     required this.value,
     required this.onMinus,
     required this.onPlus,
@@ -855,14 +869,22 @@ class _PriceControlBox extends StatelessWidget {
                 onTap: onMinus,
               ),
               Expanded(
-                child: Center(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      color: AppColors.textoPrincipal,
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    ),
+                child: TextField(
+                  controller: controller,
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  ],
+                  style: const TextStyle(
+                    color: AppColors.textoPrincipal,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),

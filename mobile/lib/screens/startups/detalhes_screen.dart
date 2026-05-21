@@ -315,6 +315,13 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
+                        'Investimento mínimo',
+                        startup.investimentoMinimo > 0
+                            ? 'R\$ ${startup.investimentoMinimo.toStringAsFixed(2)}'
+                            : 'Sem mínimo',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
                         'Valuation',
                         'R\$ ${startup.valuation.toStringAsFixed(2)}',
                       ),
@@ -866,6 +873,19 @@ class _MetricCard extends StatelessWidget {
                   label: 'Captação',
                   value:
                       '${(startup.progress * 100).toStringAsFixed(0)}%',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricColumn(
+                  label: 'Investimento mínimo',
+                  value: startup.investimentoMinimo > 0
+                      ? 'R\$ ${startup.investimentoMinimo.toStringAsFixed(2)}'
+                      : 'Sem mínimo',
                 ),
               ),
             ],
