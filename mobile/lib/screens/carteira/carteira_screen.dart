@@ -280,50 +280,39 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   Future<List<Oferta>> _buscarOfertasDoAtivo(AtivoCarteira ativo) async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('ofertas')
-        .where('startupId', isEqualTo: ativo.startupId)
-        .where('status', isEqualTo: 'aberta')
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('startupId', isEqualTo: ativo.startupId)
+          .where('status', isEqualTo: 'open')
+          .get();
 
-    final ofertas = snapshot.docs.map((doc) {
-      final data = doc.data();
+      final ofertas = snapshot.docs.map((doc) {
+        final data = doc.data();
+        final tipo = data['type'] == 'buy'
+            ? TipoOferta.compra
+            : TipoOferta.venda;
 
-      final tipoTexto = (data['tipo'] ?? data['type'] ?? '')
-          .toString()
-          .toLowerCase()
-          .trim();
+        return Oferta(
+          tipo: tipo,
+          quantidade: (data['quantity'] as num?)?.toInt() ?? 0,
+          preco: (data['pricePerToken'] as num?)?.toDouble()
+              ?? ativo.valorToken,
+          empresa: ativo.nome,
+          simbolo: ativo.simbolo,
+          variacao: ativo.variacao,
+          volume: ativo.volume,
+          spread: ativo.spread,
+          startupId: ativo.startupId,
+        );
+      }).toList();
 
-      final tipo = tipoTexto.contains('compra') || tipoTexto == 'buy'
-          ? TipoOferta.compra
-          : TipoOferta.venda;
-
-      return Oferta(
-        tipo: tipo,
-        quantidade: (data['quantidade'] as num?)?.toInt() ??
-            (data['quantity'] as num?)?.toInt() ??
-            0,
-        preco: (data['preco'] as num?)?.toDouble() ??
-            (data['price'] as num?)?.toDouble() ??
-            ativo.valorToken,
-        empresa: data['empresa'] ?? data['startupNome'] ?? ativo.nome,
-        simbolo: data['simbolo'] ?? data['symbol'] ?? ativo.simbolo,
-        variacao:
-        (data['variacao'] as num?)?.toDouble() ?? ativo.variacao,
-        volume: data['volume']?.toString() ?? ativo.volume,
-        spread: (data['spread'] as num?)?.toDouble() ?? ativo.spread,
-      );
-    }).toList();
-
-    ofertas.sort((a, b) {
-      if (a.tipo == b.tipo) {
-        return a.preco.compareTo(b.preco);
-      }
-
-      return a.tipo.index.compareTo(b.tipo.index);
-    });
-
-    return ofertas;
+      ofertas.sort((a, b) => a.preco.compareTo(b.preco));
+      return ofertas;
+    } catch (e) {
+      print('Erro ao buscar ofertas do ativo: $e');
+      return [];
+    }
   }
 
   Future<void> _abrirDetalheAtivo(AtivoCarteira ativo) async {

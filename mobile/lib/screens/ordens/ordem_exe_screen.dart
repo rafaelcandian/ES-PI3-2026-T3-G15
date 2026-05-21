@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
@@ -43,6 +45,8 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   late double _preco;
   late final TextEditingController _quantidadeController;
 
+  double _precoMedioReal = 0.0;
+
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
 
   double get _subtotal => _quantidade * _preco;
@@ -51,24 +55,41 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   double get _totalFinal => _isCompra ? _subtotal + _taxa : _subtotal - _taxa;
 
-  double get _precoMedio {
-    final ofertas = widget.ofertasDisponiveis
-        .where((item) => item.simbolo == widget.oferta.simbolo)
-        .toList();
-
-    if (ofertas.isEmpty) return widget.oferta.preco;
-
-    final soma = ofertas.fold<double>(
-      0,
-          (total, item) => total + item.preco,
-    );
-
-    return soma / ofertas.length;
+  double get _diferenca {
+    final media = _precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco;
+    if (media == 0) return 0;
+    return ((_preco - media) / media) * 100;
   }
 
-  double get _diferenca {
-    if (_precoMedio == 0) return 0;
-    return ((_preco - _precoMedio) / _precoMedio) * 100;
+  Future<double> _calcularPrecoMedioReal() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return widget.oferta.preco;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('transactions')
+          .where('buyerId', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final transacoesDaStartup = snapshot.docs
+          .where((doc) => 
+              doc.data()['startupId'] == widget.oferta.startupId)
+          .toList();
+
+      if (transacoesDaStartup.isEmpty) return widget.oferta.preco;
+
+      final soma = transacoesDaStartup.fold<double>(
+        0,
+        (total, doc) =>
+            total + ((doc.data()['pricePerToken'] as num?)
+                ?.toDouble() ?? 0),
+      );
+
+      return soma / transacoesDaStartup.length;
+    } catch (e) {
+      return widget.oferta.preco;
+    }
   }
 
   @override
@@ -83,6 +104,10 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     _quantidadeController = TextEditingController(
       text: _quantidade.toString(),
     );
+
+    _calcularPrecoMedioReal().then((preco) {
+      if (mounted) setState(() => _precoMedioReal = preco);
+    });
   }
 
   @override
@@ -268,7 +293,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
               Expanded(
                 child: _MarketMetricTile(
                   label: 'Preço médio',
-                  value: 'R\$ ${_precoMedio.toStringAsFixed(2)}',
+                  value: 'R\$ ${(_precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco).toStringAsFixed(2)}',
                 ),
               ),
             ],

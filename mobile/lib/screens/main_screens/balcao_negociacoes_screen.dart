@@ -60,8 +60,8 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
         
         final buyOrders = ordens['buy'] ?? [];
         for (var order in buyOrders) {
-          tempOfertasVenda.add(Oferta(
-            tipo: TipoOferta.venda,
+          tempOfertasCompra.add(Oferta(
+            tipo: TipoOferta.compra,
             quantidade: order.quantity,
             preco: order.pricePerToken,
             empresa: title,
@@ -75,8 +75,8 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
 
         final sellOrders = ordens['sell'] ?? [];
         for (var order in sellOrders) {
-          tempOfertasCompra.add(Oferta(
-            tipo: TipoOferta.compra,
+          tempOfertasVenda.add(Oferta(
+            tipo: TipoOferta.venda,
             quantidade: order.quantity,
             preco: order.pricePerToken,
             empresa: title,
