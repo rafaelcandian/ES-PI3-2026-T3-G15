@@ -20,6 +20,7 @@ class OrdemConfirmScreen extends StatefulWidget {
   final double totalFinal;
   final double taxa;
   final bool atingiuMinimo;
+  final bool compraDireto;
 
   const OrdemConfirmScreen({
     super.key,
@@ -28,6 +29,7 @@ class OrdemConfirmScreen extends StatefulWidget {
     required this.totalFinal,
     required this.taxa,
     this.atingiuMinimo = true,
+    required this.compraDireto,
   });
 
   @override
@@ -61,11 +63,20 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
         throw Exception('Venda direta ainda não está disponível neste fluxo.');
       }
 
-      final erro = await BalcaoService().createPurchaseOffer(
-        startupId: widget.oferta.startupId,
-        quantity: widget.oferta.quantidade,
-        pricePerToken: widget.oferta.preco,
-      );
+      String? erro;
+      if (widget.atingiuMinimo == true && widget.compraDireto == true) {
+        erro = await BalcaoService().comprarDiretoDaStartup(
+          startupId: widget.oferta.startupId,
+          quantity: widget.oferta.quantidade,
+          pricePerToken: widget.oferta.preco,
+        );
+      } else {
+        erro = await BalcaoService().createPurchaseOffer(
+          startupId: widget.oferta.startupId,
+          quantity: widget.oferta.quantidade,
+          pricePerToken: widget.oferta.preco,
+        );
+      }
 
       if (erro != null) throw Exception(erro);
 

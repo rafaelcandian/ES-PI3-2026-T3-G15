@@ -104,6 +104,34 @@ class BalcaoService {
   }
 }
 
+  Future<String?> comprarDiretoDaStartup({
+    required String startupId,
+    required int quantity,
+    required double pricePerToken,
+  }) async {
+    try {
+      final callable = FirebaseFunctions.instance
+          .httpsCallable('directPurchase');
+      await callable.call({
+        'startupId': startupId,
+        'quantity': quantity,
+        'pricePerToken': pricePerToken,
+      });
+      return null;
+    } on FirebaseFunctionsException catch (e) {
+      switch (e.code) {
+        case 'failed-precondition':
+          return e.message ?? 'Operação não permitida';
+        case 'not-found':
+          return 'Recurso não encontrado';
+        default:
+          return 'Erro ao realizar compra: ${e.message}';
+      }
+    } catch (e) {
+      return 'Erro inesperado: $e';
+    }
+  }
+
     // busca todas as ordens abertas de uma startup e retorna duas listas separadas
     Future<Map<String, List<OrderModel>>> getOpenedOrders(
     String startupId,

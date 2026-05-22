@@ -223,6 +223,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           totalFinal: _totalFinal,
           taxa: _taxa,
           atingiuMinimo: atingiuMinimo,
+          compraDireto: widget.compraDireto,
         ),
       ),
     );
