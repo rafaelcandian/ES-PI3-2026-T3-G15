@@ -12,6 +12,7 @@ class StartupData {
   final double tokenValue;
   final double progress;
   final double goal;
+  final double investimentoMinimo;
 
   final String image;
   final String video;
@@ -38,6 +39,7 @@ class StartupData {
     required this.tokenValue,
     required this.progress,
     required this.goal,
+    required this.investimentoMinimo,
     required this.image,
     required this.video,
     required this.description,
@@ -67,6 +69,7 @@ class StartupData {
       tokenValue: (data['tokenValue'] as num?)?.toDouble() ?? 0.0,
       progress: (data['progress'] as num?)?.toDouble() ?? 0.0,
       goal: (data['goal'] as num?)?.toDouble() ?? 0.0,
+      investimentoMinimo: (data['investimentoMinimo'] as num?)?.toDouble() ?? 0.0,
 
       image: data['image'] ?? '',
       video: data['video'] ?? '',

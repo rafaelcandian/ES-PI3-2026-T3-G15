@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
@@ -22,12 +24,16 @@ class OrdemExeScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
   final List<Oferta> ofertasDisponiveis;
+  final double investimentoMinimo;
+  final bool compraDireto;
 
   const OrdemExeScreen({
     super.key,
     required this.oferta,
     required this.modo,
     required this.ofertasDisponiveis,
+    this.investimentoMinimo = 0.0,
+    this.compraDireto = false,
   });
 
   @override
@@ -38,6 +44,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   late int _quantidade;
   late double _preco;
   late final TextEditingController _quantidadeController;
+  late final TextEditingController _precoController;
+
+  double _precoMedioReal = 0.0;
 
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
 
@@ -47,43 +56,73 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   double get _totalFinal => _isCompra ? _subtotal + _taxa : _subtotal - _taxa;
 
-  double get _precoMedio {
-    final ofertas = widget.ofertasDisponiveis
-        .where((item) => item.simbolo == widget.oferta.simbolo)
-        .toList();
-
-    if (ofertas.isEmpty) return widget.oferta.preco;
-
-    final soma = ofertas.fold<double>(
-      0,
-          (total, item) => total + item.preco,
-    );
-
-    return soma / ofertas.length;
+  double get _diferenca {
+    final media = _precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco;
+    if (media == 0) return 0;
+    return ((_preco - media) / media) * 100;
   }
 
-  double get _diferenca {
-    if (_precoMedio == 0) return 0;
-    return ((_preco - _precoMedio) / _precoMedio) * 100;
+  Future<double> _calcularPrecoMedioReal() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return widget.oferta.preco;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('transactions')
+          .where('buyerId', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final transacoesDaStartup = snapshot.docs
+          .where((doc) => 
+              doc.data()['startupId'] == widget.oferta.startupId)
+          .toList();
+
+      if (transacoesDaStartup.isEmpty) return widget.oferta.preco;
+
+      final soma = transacoesDaStartup.fold<double>(
+        0,
+        (total, doc) =>
+            total + ((doc.data()['pricePerToken'] as num?)
+                ?.toDouble() ?? 0),
+      );
+
+      return soma / transacoesDaStartup.length;
+    } catch (e) {
+      return widget.oferta.preco;
+    }
   }
 
   @override
   void initState() {
     super.initState();
 
-    final quantidadeDisponivel = widget.oferta.quantidade;
-
-    _quantidade = quantidadeDisponivel <= 0 ? 0 : quantidadeDisponivel;
+    _quantidade = 0;
     _preco = widget.oferta.preco;
 
-    _quantidadeController = TextEditingController(
-      text: _quantidade.toString(),
-    );
+    _quantidadeController = TextEditingController(text: '0');
+
+    _precoController = TextEditingController(
+      text: _preco.toStringAsFixed(2));
+
+    _precoController.addListener(() {
+      final texto = _precoController.text
+          .replaceAll(',', '.');
+      final valor = double.tryParse(texto) ?? _preco;
+      if (valor > 0 && valor != _preco) {
+        setState(() => _preco = valor);
+      }
+    });
+
+    _calcularPrecoMedioReal().then((preco) {
+      if (mounted) setState(() => _precoMedioReal = preco);
+    });
   }
 
   @override
   void dispose() {
     _quantidadeController.dispose();
+    _precoController.dispose();
     super.dispose();
   }
 
@@ -96,7 +135,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     }
 
     final quantidadeDigitada = int.tryParse(value) ?? 0;
-    final quantidadeAjustada = quantidadeDigitada.clamp(1, maximo).toInt();
+    final quantidadeAjustada = quantidadeDigitada.clamp(0, maximo).toInt();
 
     if (quantidadeDigitada != quantidadeAjustada) {
       _atualizarControllerQuantidade(quantidadeAjustada);
@@ -107,7 +146,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   void _alterarQuantidade(int novaQuantidade) {
     final maximo = widget.oferta.quantidade;
-    final quantidadeAjustada = novaQuantidade.clamp(1, maximo).toInt();
+    final quantidadeAjustada = novaQuantidade.clamp(0, maximo).toInt();
 
     HapticFeedback.selectionClick();
 
@@ -136,6 +175,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
     setState(() {
       _preco = (_preco + delta).clamp(0.10, 999999);
+      _precoController.text = _preco.toStringAsFixed(2);
     });
   }
 
@@ -171,6 +211,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       startupId: widget.oferta.startupId, // propaga o startupId para a tela de confirmação
     );
 
+    final totalOrdem = _quantidade * _preco;
+    final atingiuMinimo = !widget.compraDireto || totalOrdem >= widget.investimentoMinimo;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -179,6 +222,8 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           modo: widget.modo,
           totalFinal: _totalFinal,
           taxa: _taxa,
+          atingiuMinimo: atingiuMinimo,
+          compraDireto: widget.compraDireto,
         ),
       ),
     );
@@ -260,7 +305,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
               Expanded(
                 child: _MarketMetricTile(
                   label: 'Preço médio',
-                  value: 'R\$ ${_precoMedio.toStringAsFixed(2)}',
+                  value: 'R\$ ${(_precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco).toStringAsFixed(2)}',
                 ),
               ),
             ],
@@ -306,6 +351,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           ),
           const SizedBox(height: 14),
           _PriceControlBox(
+            controller: _precoController,
             value: 'R\$ ${_preco.toStringAsFixed(2)}',
             onMinus: () => _alterarPreco(-0.10),
             onPlus: () => _alterarPreco(0.10),
@@ -787,11 +833,13 @@ class _QuickAmountButtons extends StatelessWidget {
 }
 
 class _PriceControlBox extends StatelessWidget {
+  final TextEditingController controller;
   final String value;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
   const _PriceControlBox({
+    required this.controller,
     required this.value,
     required this.onMinus,
     required this.onPlus,
@@ -822,14 +870,22 @@ class _PriceControlBox extends StatelessWidget {
                 onTap: onMinus,
               ),
               Expanded(
-                child: Center(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      color: AppColors.textoPrincipal,
-                      fontSize: 23,
-                      fontWeight: FontWeight.w900,
-                    ),
+                child: TextField(
+                  controller: controller,
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  ],
+                  style: const TextStyle(
+                    color: AppColors.textoPrincipal,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),

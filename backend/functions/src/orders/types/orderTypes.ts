@@ -21,3 +21,9 @@ export interface CreateOfferData {
   quantity: number;
   pricePerToken: number;
 }
+
+export interface DirectPurchaseData {
+  startupId: string;
+  quantity: number;
+  pricePerToken: number;
+}

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
-import 'package:mescla_invest/services/carteira_service.dart';
+import 'package:mescla_invest/services/balcao_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
@@ -19,6 +19,8 @@ class OrdemConfirmScreen extends StatefulWidget {
   final ModoNegociacao modo;
   final double totalFinal;
   final double taxa;
+  final bool atingiuMinimo;
+  final bool compraDireto;
 
   const OrdemConfirmScreen({
     super.key,
@@ -26,6 +28,8 @@ class OrdemConfirmScreen extends StatefulWidget {
     required this.modo,
     required this.totalFinal,
     required this.taxa,
+    this.atingiuMinimo = true,
+    required this.compraDireto,
   });
 
   @override
@@ -59,15 +63,22 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
         throw Exception('Venda direta ainda não está disponível neste fluxo.');
       }
 
-      await CarteiraService().comprarTokensStartup(
-        startupId: widget.oferta.startupId,
-        startupNome: widget.oferta.empresa,
-        simbolo: widget.oferta.simbolo,
-        quantidade: widget.oferta.quantidade,
-        precoUnitario: widget.oferta.preco,
-        taxa: widget.taxa,
-        totalFinal: widget.totalFinal,
-      );
+      String? erro;
+      if (widget.atingiuMinimo == true && widget.compraDireto == true) {
+        erro = await BalcaoService().comprarDiretoDaStartup(
+          startupId: widget.oferta.startupId,
+          quantity: widget.oferta.quantidade,
+          pricePerToken: widget.oferta.preco,
+        );
+      } else {
+        erro = await BalcaoService().createPurchaseOffer(
+          startupId: widget.oferta.startupId,
+          quantity: widget.oferta.quantidade,
+          pricePerToken: widget.oferta.preco,
+        );
+      }
+
+      if (erro != null) throw Exception(erro);
 
       if (!mounted) return;
 
@@ -93,13 +104,15 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
   @override
   Widget build(BuildContext context) {
     final titulo = _concluida
-        ? 'Ordem concluída!'
+        ? (widget.atingiuMinimo ? 'Investimento realizado!' : 'Ordem registrada!')
         : _erro != null
             ? 'Ordem não processada'
             : 'Organizando sua ordem...';
 
     final subtitulo = _concluida
-        ? 'Sua ${_isCompra ? 'compra' : 'venda'} de ${widget.oferta.quantidade} tokens ${widget.oferta.simbolo} foi registrada com sucesso.'
+        ? (widget.atingiuMinimo 
+            ? 'Seus tokens foram adquiridos com sucesso.' 
+            : 'Seu pedido foi postado no balcão de compras. Será executado quando houver uma oferta compatível.')
         : _erro != null
             ? 'Não foi possível registrar a ordem. Verifique o erro abaixo.'
             : 'Estamos validando os dados, calculando taxas e registrando sua ordem.';

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
-import 'package:mescla_invest/services/pergunta_privada.dart';
+import 'package:mescla_invest/services/pergunta_service.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/screens/startups/startup_video_screen.dart';
 
@@ -19,20 +19,24 @@ class DetalhesStartupPage extends StatefulWidget {
 }
 
 class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
-  final PerguntaPrivadaService _perguntaPrivadaService =
-      PerguntaPrivadaService();
+  final PerguntaService _perguntaService = PerguntaService();
 
-  final TextEditingController _perguntaPrivadaController =
-      TextEditingController();
+  final TextEditingController _perguntaPrivadaController = TextEditingController();
+  final TextEditingController _perguntaPublicaController = TextEditingController();
+
+  List<Map<String, dynamic>> _perguntas = [];
+  bool _carregandoPerguntas = true;
 
   bool _carregandoVerificacao = true;
   bool _temTokenDaStartup = false;
   bool _verificacaoIniciada = false;
   bool _enviandoPerguntaPrivada = false;
+  bool _enviandoPerguntaPublica = false;
 
   @override
   void dispose() {
     _perguntaPrivadaController.dispose();
+    _perguntaPublicaController.dispose();
     super.dispose();
   }
 
@@ -54,14 +58,11 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       final doc = await FirebaseFirestore.instance
           .collection('usuarios')
           .doc(user.uid)
-          .collection('ativos')
-          .doc(startupId)
           .get();
 
       final data = doc.data();
-
-      final int quantidadeTokens =
-          (data?['quantidadeTokens'] as num?)?.toInt() ?? 0;
+      final Map<String, dynamic> tokens = data?['tokens'] as Map<String, dynamic>? ?? {};
+      final int quantidadeTokens = (tokens[startupId] as num?)?.toInt() ?? 0;
 
       if (!mounted) return;
 
@@ -79,6 +80,55 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     }
   }
 
+  Future<void> _carregarPerguntas(String startupId) async {
+    if (!mounted) return;
+    setState(() {
+      _carregandoPerguntas = true;
+    });
+
+    final perguntas = await _perguntaService.buscarPerguntas(startupId);
+
+    if (!mounted) return;
+
+    setState(() {
+      _perguntas = perguntas;
+      _carregandoPerguntas = false;
+    });
+  }
+
+  Future<void> _enviarPerguntaPublica(StartupData startup) async {
+    final texto = _perguntaPublicaController.text.trim();
+
+    if (texto.isEmpty) {
+      _mostrarSnackBar('Digite uma pergunta antes de enviar.');
+      return;
+    }
+
+    setState(() {
+      _enviandoPerguntaPublica = true;
+    });
+
+    final error = await _perguntaService.enviarPergunta(
+      startupId: startup.id,
+      texto: texto,
+      isPrivada: false,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _enviandoPerguntaPublica = false;
+    });
+
+    if (error == null) {
+      _perguntaPublicaController.clear();
+      _mostrarSnackBar('Pergunta enviada com sucesso.');
+      _carregarPerguntas(startup.id);
+    } else {
+      _mostrarSnackBar(error);
+    }
+  }
+
   Future<void> _enviarPerguntaPrivada(StartupData startup) async {
     final texto = _perguntaPrivadaController.text.trim();
 
@@ -91,28 +141,24 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       _enviandoPerguntaPrivada = true;
     });
 
-    try {
-      await _perguntaPrivadaService.enviarPerguntaPrivada(
-        startupId: startup.id,
-        startupNome: startup.title,
-        pergunta: texto,
-      );
+    final error = await _perguntaService.enviarPergunta(
+      startupId: startup.id,
+      texto: texto,
+      isPrivada: true,
+    );
 
+    if (!mounted) return;
+
+    setState(() {
+      _enviandoPerguntaPrivada = false;
+    });
+
+    if (error == null) {
       _perguntaPrivadaController.clear();
-
-      if (!mounted) return;
-
       _mostrarSnackBar('Pergunta privada enviada com sucesso.');
-    } catch (_) {
-      if (!mounted) return;
-
-      _mostrarSnackBar('Erro ao enviar pergunta privada.');
-    } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _enviandoPerguntaPrivada = false;
-      });
+      _carregarPerguntas(startup.id);
+    } else {
+      _mostrarSnackBar(error);
     }
   }
 
@@ -159,6 +205,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _verificarSeUsuarioTemToken(startup.id);
+        _carregarPerguntas(startup.id);
       });
     }
 
@@ -315,6 +362,13 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
+                        'Investimento mínimo',
+                        startup.investimentoMinimo > 0
+                            ? 'R\$ ${startup.investimentoMinimo.toStringAsFixed(2)}'
+                            : 'Sem mínimo',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoRow(
                         'Valuation',
                         'R\$ ${startup.valuation.toStringAsFixed(2)}',
                       ),
@@ -377,28 +431,46 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                 const SizedBox(height: 18),
 
                 _buildSectionCard(
-                  title: 'Perguntas Públicas',
+                  title: 'Perguntas',
                   child: Column(
                     children: [
-                      _buildQuestionCard(
-                        usuario: 'Carlos',
-                        tempo: 'há 2 dias',
-                        pergunta:
-                            'Existe previsão de expansão internacional?',
-                        resposta:
-                            'Estamos estruturando entrada em mercados da América Latina.',
-                      ),
-                      const SizedBox(height: 14),
-                      _buildQuestionCard(
-                        usuario: 'Fernanda',
-                        tempo: 'há 5 dias',
-                        pergunta:
-                            'A startup pretende abrir nova rodada?',
-                        resposta:
-                            'Existe possibilidade de Série B após encerramento da rodada atual.',
-                      ),
+                      if (_carregandoPerguntas)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.destaque),
+                          ),
+                        )
+                      else if (_perguntas.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Text(
+                            'Nenhuma pergunta ainda.',
+                            style: TextStyle(color: AppColors.textoFraco),
+                          ),
+                        )
+                      else
+                        ..._perguntas.map((p) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: _buildQuestionCard(
+                              usuario: p['autorNome'] ?? 'Usuário',
+                              tempo: _formatarTempo(p['createdAt']),
+                              pergunta: p['texto'] ?? '',
+                              resposta: p['isPrivada'] == true
+                                  ? 'Pergunta enviada pelo Canal do Investidor.'
+                                  : 'Aguardando resposta da startup...',
+                            ),
+                          );
+                        }).toList(),
                       const SizedBox(height: 20),
-                      const _PublicQuestionInput(),
+                      _PublicQuestionInput(
+                        controller: _perguntaPublicaController,
+                        loading: _enviandoPerguntaPublica,
+                        onTap: _enviandoPerguntaPublica
+                            ? null
+                            : () => _enviarPerguntaPublica(startup),
+                      ),
                     ],
                   ),
                 ),
@@ -445,6 +517,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
         oferta: ofertaPrincipal,
         modo: ModoNegociacao.compra,
         ofertasDisponiveis: [ofertaPrincipal],
+        investimentoMinimo: startup.investimentoMinimo,
+        compraDireto: true,
       ),
     ),
   );
@@ -468,6 +542,28 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     }
 
     return palavras.take(3).map((p) => p[0]).join().toUpperCase();
+  }
+
+  static String _formatarTempo(dynamic createdAt) {
+    if (createdAt == null) return '';
+    DateTime? data;
+
+    if (createdAt is int) {
+      data = DateTime.fromMillisecondsSinceEpoch(createdAt);
+    } else if (createdAt is String) {
+      data = DateTime.tryParse(createdAt);
+    } else if (createdAt is Map) {
+      final seconds = createdAt['_seconds'] ?? createdAt['seconds'] ?? 0;
+      data = DateTime.fromMillisecondsSinceEpoch((seconds as int) * 1000);
+    }
+
+    if (data == null) return '';
+
+    final diferenca = DateTime.now().difference(data);
+    if (diferenca.inDays > 0) return 'há ${diferenca.inDays} d';
+    if (diferenca.inHours > 0) return 'há ${diferenca.inHours} h';
+    if (diferenca.inMinutes > 0) return 'há ${diferenca.inMinutes} min';
+    return 'agora';
   }
 
   Widget _buildCanalInvestidorContent(
@@ -868,6 +964,19 @@ class _MetricCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _MetricColumn(
+                  label: 'Investimento mínimo',
+                  value: startup.investimentoMinimo > 0
+                      ? 'R\$ ${startup.investimentoMinimo.toStringAsFixed(2)}'
+                      : 'Sem mínimo',
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
@@ -959,25 +1068,35 @@ class _PitchDeckTile extends StatelessWidget {
 }
 
 class _PublicQuestionInput extends StatelessWidget {
-  const _PublicQuestionInput();
+  final TextEditingController controller;
+  final bool loading;
+  final VoidCallback? onTap;
+
+  const _PublicQuestionInput({
+    required this.controller,
+    required this.loading,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const TextField(
+        TextField(
+          controller: controller,
           maxLines: 3,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textoPrincipal,
           ),
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: 'Envie uma pergunta pública...',
           ),
         ),
         const SizedBox(height: 14),
         _PrimaryGradientButton(
           label: 'Enviar pergunta',
-          onTap: null,
+          loading: loading,
+          onTap: onTap,
         ),
       ],
     );

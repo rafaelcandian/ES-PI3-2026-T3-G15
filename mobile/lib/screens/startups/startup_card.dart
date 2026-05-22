@@ -100,6 +100,22 @@ class StartupCard extends StatelessWidget {
                       ],
                     ),
 
+                    const SizedBox(height: 10),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _InfoItem(
+                            label: 'Mín. de entrada',
+                            value: data.investimentoMinimo > 0
+                                ? 'R\$ ${data.investimentoMinimo.toStringAsFixed(2)}'
+                                : 'Sem mínimo',
+                            icon: Icons.trending_up_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 18),
 
                     _ProgressBlock(
