@@ -39,6 +39,8 @@ export {
   loadWallet,
   verifyBalance,
   getWalletChart,
+  sendLoginTwoFactorCode,
+  verifyLoginTwoFactorCode,
 } from "./users/index";
 
 // RELACIONADO AO MÓDULO DE STARTUPS

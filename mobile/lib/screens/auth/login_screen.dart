@@ -13,6 +13,7 @@ import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 import 'cadastro_screen.dart';
 import 'recuperacao_senha_screen.dart';
+import 'verificacao_login_screen.dart';
 
 class LoginTela extends StatefulWidget {
   const LoginTela({super.key});
@@ -275,7 +276,7 @@ class _LoginTelaState extends State<LoginTela>
     });
 
     try {
-      final error = await _auth.login(
+      final twoFactor = await _auth.startTwoFactorLogin(
         emailController.text.trim(),
         senhaController.text.trim(),
       );
@@ -286,18 +287,23 @@ class _LoginTelaState extends State<LoginTela>
         _isLoading = false;
       });
 
-      if (error == null) {
-        AppSnackBar.show(
-          context,
-          message: 'Login realizado com sucesso!',
-          success: true,
-          duration: const Duration(seconds: 2),
-        );
+      AppSnackBar.show(
+        context,
+        message: 'Codigo de verificacao enviado para seu e-mail.',
+        success: true,
+        duration: const Duration(seconds: 3),
+      );
 
-        Navigator.pushReplacementNamed(context, '/catalogo');
-      } else {
-        _showLoginError(error);
-      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VerificacaoLoginTela(
+            email: twoFactor.email,
+            senha: twoFactor.senha,
+            sessionId: twoFactor.sessionId,
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
 
@@ -305,7 +311,7 @@ class _LoginTelaState extends State<LoginTela>
         _isLoading = false;
       });
 
-      _showLoginError('Erro ao realizar login: $e');
+      _showLoginError(e.toString().replaceFirst('Exception: ', ''));
     }
   }
 

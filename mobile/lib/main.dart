@@ -12,6 +12,7 @@ import 'package:mescla_invest/screens/auth/splash_screen.dart';
 import 'package:mescla_invest/screens/auth/login_screen.dart';
 import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
 import 'package:mescla_invest/screens/auth/recuperacao_senha_screen.dart';
+import 'package:mescla_invest/screens/auth/verificacao_login_screen.dart';
 import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
 
 import 'package:mescla_invest/screens/testes/balcao_teste_screen.dart';
@@ -45,6 +46,16 @@ class MesclaInvestApp extends StatelessWidget {
             "/login": (context) => const LoginTela(),
             "/cadastro": (context) => const CadastroPage(),
             "/recuperacao_senha": (context) => const RecuperacaoSenhaTela(),
+            "/verificacao_login": (context) {
+              final args = ModalRoute.of(context)?.settings.arguments
+                  as Map<String, String>?;
+
+              return VerificacaoLoginTela(
+                email: args?['email'] ?? '',
+                senha: args?['senha'] ?? '',
+                sessionId: args?['sessionId'] ?? '',
+              );
+            },
             "/catalogo": (context) => const CatalogoStartupsPage(),
             "/detalhes": (context) => const DetalhesStartupPage(),
             '/balcao-teste': (context) => const BalcaoTesteScreen(),

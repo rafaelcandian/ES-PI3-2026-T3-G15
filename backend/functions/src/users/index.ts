@@ -10,3 +10,7 @@ export {
   verifyBalance,
   getWalletChart,
 } from "./handlers/walletHandlers";
+export {
+  sendLoginTwoFactorCode,
+  verifyLoginTwoFactorCode,
+} from "./handlers/twoFactorHandlers";
