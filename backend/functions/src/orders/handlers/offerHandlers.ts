@@ -1,160 +1,367 @@
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
-// Descrição: Handlers para as ofertas de compra e venda e sistema de matching.
+// Descrição: Handlers para ofertas de compra/venda e matching seguro do balcão.
 
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import {requireAuthenticatedUser} from "../../shared/auth";
-import {db} from "../../shared/firebase";
+import { requireAuthenticatedUser } from "../../shared/auth";
+import { db } from "../../shared/firebase";
+import { registerWalletSnapshot } from "../../users/handlers/walletHandlers";
 
-// criar oferta
+type OfferType = "buy" | "sell";
+
+type OpenOrder = {
+  userId: string;
+  startupId: string;
+  type: OfferType;
+  quantity: number;
+  pricePerToken: number;
+};
+
+function toPositiveNumber(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function getReservedBuyTotal(userId: string): Promise<number> {
+  const snapshot = await db
+    .collection("orders")
+    .where("userId", "==", userId)
+    .where("type", "==", "buy")
+    .where("status", "==", "open")
+    .get();
+
+  return snapshot.docs.reduce((total, doc) => {
+    const data = doc.data();
+    return total + toPositiveNumber(data.totalPrice);
+  }, 0);
+}
+
+async function getReservedSellQuantity(
+  userId: string,
+  startupId: string,
+): Promise<number> {
+  const snapshot = await db
+    .collection("orders")
+    .where("userId", "==", userId)
+    .where("startupId", "==", startupId)
+    .where("type", "==", "sell")
+    .where("status", "==", "open")
+    .get();
+
+  return snapshot.docs.reduce((total, doc) => {
+    const data = doc.data();
+    return total + toPositiveNumber(data.quantity);
+  }, 0);
+}
+
 export const createOffer = onCall(async (request) => {
   requireAuthenticatedUser(request);
 
   const uid = request.auth!.uid;
-  const {startupId, type, quantity, pricePerToken} = request.data;
+  const startupId = String(request.data?.startupId ?? "").trim();
+  const type = String(request.data?.type ?? "") as OfferType;
+  const quantity = toPositiveNumber(request.data?.quantity);
+  const pricePerToken = toPositiveNumber(request.data?.pricePerToken);
 
   if (!startupId || !type || !quantity || !pricePerToken) {
-    throw new HttpsError("invalid-argument", "campos obrigatorios faltando");
+    throw new HttpsError("invalid-argument", "Campos obrigatórios faltando.");
+  }
+
+  if (type !== "buy" && type !== "sell") {
+    throw new HttpsError("invalid-argument", "Tipo de ordem inválido.");
   }
 
   if (quantity <= 0 || pricePerToken <= 0) {
-    throw new HttpsError("invalid-argument", "quantidade e preço devem ser positivos");
+    throw new HttpsError(
+      "invalid-argument",
+      "Quantidade e preço devem ser positivos.",
+    );
   }
 
-  const totalPrice = (quantity * pricePerToken);
+  const quantityInt = Math.floor(quantity);
+
+  if (quantityInt <= 0) {
+    throw new HttpsError("invalid-argument", "Quantidade inválida.");
+  }
+
+  const totalPrice = quantityInt * pricePerToken;
 
   try {
     const userDoc = await db.collection("usuarios").doc(uid).get();
+
     if (!userDoc.exists) {
-      throw new HttpsError("not-found", "usuario não encontrado");
+      throw new HttpsError("not-found", "Usuário não encontrado.");
     }
 
-    const userData = userDoc.data();
+    const startupDoc = await db.collection("startups").doc(startupId).get();
 
-    // valida saldo para compra
+    if (!startupDoc.exists) {
+      throw new HttpsError("not-found", "Startup não encontrada.");
+    }
+
+    const userData = userDoc.data()!;
+    const startupData = startupDoc.data()!;
+
     if (type === "buy") {
-      const saldo = userData!.saldo ?? 0;
-      if (saldo < totalPrice) {
-        throw new HttpsError("failed-precondition", "Saldo insuficiente");
+      const minBuyPrice = Number(
+        startupData.minBuyPrice ??
+          startupData.tokenValue ??
+          startupData.valorToken ??
+          1,
+      );
+
+      if (pricePerToken < minBuyPrice) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Preço mínimo de compra: R$ ${minBuyPrice.toFixed(2)}.`,
+        );
+      }
+
+      const saldo = Number(userData.saldo ?? 0);
+      const reservado = await getReservedBuyTotal(uid);
+      const disponivel = saldo - reservado;
+
+      if (disponivel < totalPrice) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Saldo insuficiente. Disponível considerando ordens abertas: R$ ${disponivel.toFixed(2)}.`,
+        );
       }
     }
 
     if (type === "sell") {
-      const tokens = userData!.tokens ?? {};
-      const tokensStartup = tokens[startupId] ?? 0;
-      if (tokensStartup < quantity) {
-        throw new HttpsError("failed-precondition", "tokens insuficientes");
+      const tokens = userData.tokens ?? {};
+      const tokensStartup = Number(tokens[startupId] ?? 0);
+      const reservado = await getReservedSellQuantity(uid, startupId);
+      const disponivel = tokensStartup - reservado;
+
+      if (disponivel < quantityInt) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Tokens insuficientes. Disponível considerando ordens abertas: ${disponivel} tokens.`,
+        );
       }
     }
 
-    // criar oferta
     const newOfferRef = await db.collection("orders").add({
       userId: uid,
       startupId,
       type,
-      quantity,
+      quantity: quantityInt,
+      originalQuantity: quantityInt,
       pricePerToken,
       totalPrice,
       status: "open",
       createdAt: admin.firestore.Timestamp.now(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     await tryMatching(newOfferRef.id, {
       userId: uid,
       startupId,
       type,
-      quantity,
+      quantity: quantityInt,
       pricePerToken,
     });
 
-    return {sucess: true};
+    return { success: true };
   } catch (e) {
     if (e instanceof HttpsError) throw e;
     throw new HttpsError("internal", `Erro: ${e}`);
   }
 });
 
-// Matching
-/*  Sempre que for criada uma oferta de compra, o sistema vai procurar se existe uma oferta de venda equivalente
-    isso seria o matching, quando acontece varias operações acontecem, debitar saldo comprador, creditar saldo do vendedor
-    transferir os tokens, trocar o status, etc. Se alguma operação falhar tudo precisa ser revertido para evitar problemas
-*/
+async function tryMatching(
+  newOfferId: string,
+  newOffer: OpenOrder,
+): Promise<void> {
+  const oppositeType: OfferType = newOffer.type === "buy" ? "sell" : "buy";
 
-// função chamada depois de criar uma oferta
-async function tryMatching(newOfferId: string, newOffer: any): Promise<void> { // garante que devolve um dado quando termina (no caso aqui não garante pq é void)
-  const opositeType = newOffer.type === "buy" ? "sell" : "buy"; // ternario, se o tipo da nova oferta for "buy" ele vai voltar como sell, se não fica como buy
-  const offerSnapshot = await db.collection("orders").where("startupId", "==", newOffer.startupId).where("type", "==", opositeType).where("status", "==", "open").orderBy("createdAt", "asc").get();
+  const offerSnapshot = await db
+    .collection("orders")
+    .where("startupId", "==", newOffer.startupId)
+    .where("type", "==", oppositeType)
+    .where("status", "==", "open")
+    .orderBy("createdAt", "asc")
+    .get();
 
   if (offerSnapshot.empty) return;
 
+  let remainingNewQuantity = newOffer.quantity;
+
   for (const offerDoc of offerSnapshot.docs) {
+    if (remainingNewQuantity <= 0) break;
+
     const offer = offerDoc.data();
 
-    // verifica compatibilidade do preço
-    const compatiblePrice = newOffer.type === "buy" ? newOffer.pricePerToken >= offer.pricePerToken : newOffer.pricePerToken <= offer.pricePerToken;
+    if (offer.userId === newOffer.userId) {
+      continue;
+    }
 
-    if (!compatiblePrice) continue; // se não for compativel ele continua (obviamente)
+    const offerQuantity = Number(offer.quantity ?? 0);
 
-    const buyerId = newOffer.type === "buy" ? newOffer.userId : offer.userId; // ternario
+    if (offerQuantity <= 0) continue;
+
+    const compatiblePrice =
+      newOffer.type === "buy"
+        ? newOffer.pricePerToken >= Number(offer.pricePerToken)
+        : newOffer.pricePerToken <= Number(offer.pricePerToken);
+
+    if (!compatiblePrice) continue;
+
+    const buyerId = newOffer.type === "buy" ? newOffer.userId : offer.userId;
     const sellerId = newOffer.type === "sell" ? newOffer.userId : offer.userId;
-    const price = offer.pricePerToken;
-    const quantity = Math.min(newOffer.quantity, offer.quantity); // vai retornar o menor valor entre os dois argumentos
-    const total = quantity * price;
+    const price = Number(offer.pricePerToken);
+    const matchedQuantity = Math.min(remainingNewQuantity, offerQuantity);
+    const total = matchedQuantity * price;
+    const remainingExistingQuantity = offerQuantity - matchedQuantity;
+    const remainingAfterNew = remainingNewQuantity - matchedQuantity;
 
-    await db.runTransaction(async (t) => { // vai transcrever os arquivos do firebase (collections e documents)
+    await db.runTransaction(async (t) => {
       const buyerRef = db.collection("usuarios").doc(buyerId);
       const sellerRef = db.collection("usuarios").doc(sellerId);
       const newOfferRef = db.collection("orders").doc(newOfferId);
       const offerRef = db.collection("orders").doc(offerDoc.id);
+      const startupRef = db.collection("startups").doc(newOffer.startupId);
 
       const buyerDoc = await t.get(buyerRef);
       const sellerDoc = await t.get(sellerRef);
+      const startupDoc = await t.get(startupRef);
+      const newOfferDoc = await t.get(newOfferRef);
+      const existingOfferDoc = await t.get(offerRef);
 
-      const buyerTokens = buyerDoc.data()?.tokens ?? {};
-      const sellerTokens = sellerDoc.data()?.tokens ?? {};
+      if (!buyerDoc.exists || !sellerDoc.exists) {
+        throw new HttpsError(
+          "not-found",
+          "Comprador ou vendedor não encontrado.",
+        );
+      }
 
-      // debitar saldo do comprador
+      if (!newOfferDoc.exists || !existingOfferDoc.exists) {
+        throw new HttpsError("not-found", "Ordem não encontrada.");
+      }
+
+      const buyerData = buyerDoc.data()!;
+      const sellerData = sellerDoc.data()!;
+      const startupData = startupDoc.exists ? startupDoc.data()! : {};
+
+      const buyerSaldo = Number(buyerData.saldo ?? 0);
+      const sellerTokens = sellerData.tokens ?? {};
+      const sellerTokensStartup = Number(sellerTokens[newOffer.startupId] ?? 0);
+
+      if (buyerSaldo < total) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Saldo insuficiente do comprador.",
+        );
+      }
+
+      if (sellerTokensStartup < matchedQuantity) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Tokens insuficientes do vendedor.",
+        );
+      }
+
       t.update(buyerRef, {
         saldo: admin.firestore.FieldValue.increment(-total),
+        [`tokens.${newOffer.startupId}`]:
+          admin.firestore.FieldValue.increment(matchedQuantity),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // adicionar saldo do vendedor
       t.update(sellerRef, {
         saldo: admin.firestore.FieldValue.increment(total),
-      });
-
-      // remover tokens do vendedor
-      // remover tokens do vendedor
-      t.update(sellerRef, {
-        [`tokens.${newOffer.startupId}`]: Math.max(
-          0,
-          (sellerTokens[newOffer.startupId] ?? 0) - quantity
-        ),
-      });
-
-      // adicionar tokens do comprador
-      t.update(buyerRef, {
         [`tokens.${newOffer.startupId}`]:
-                    (buyerTokens[newOffer.startupId] ?? 0) + quantity,
+          admin.firestore.FieldValue.increment(-matchedQuantity),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // troca o status para filled
-      t.update(newOfferRef, {status: "filled"});
-      t.update(offerRef, {status: "filled"});
+      t.update(newOfferRef, {
+        quantity: remainingAfterNew,
+        remainingQuantity: remainingAfterNew,
+        filledQuantity: admin.firestore.FieldValue.increment(
+          matchedQuantity,
+        ),
+        totalPrice: remainingAfterNew * newOffer.pricePerToken,
+        status: remainingAfterNew <= 0 ? "filled" : "open",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
-      // faz o registro da transação
+      t.update(offerRef, {
+        quantity: remainingExistingQuantity,
+        remainingQuantity: remainingExistingQuantity,
+        filledQuantity: admin.firestore.FieldValue.increment(
+          matchedQuantity,
+        ),
+        totalPrice:
+          remainingExistingQuantity * Number(offer.pricePerToken),
+        status: remainingExistingQuantity <= 0 ? "filled" : "open",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
       const regRef = db.collection("transactions").doc();
       t.set(regRef, {
-        buyerId: buyerId,
-        sellerId: sellerId,
+        buyerId,
+        sellerId,
         startupId: newOffer.startupId,
-        quantity: quantity,
+        quantity: matchedQuantity,
         pricePerToken: price,
         totalPrice: total,
+        type: "balcao",
         createdAt: admin.firestore.Timestamp.now(),
       });
+
+      const startupName = startupData.title ?? startupData.nome ?? "Startup";
+      const ticker = startupData.ticker ?? startupData.simbolo ?? "";
+
+      const buyerWalletRef = buyerRef.collection("transacoesCarteira").doc();
+      t.set(buyerWalletRef, {
+        type: "purchase",
+        operationType: "compra",
+        status: "completed",
+        startupId: newOffer.startupId,
+        startupName,
+        ticker,
+        quantity: matchedQuantity,
+        pricePerToken: price,
+        subtotal: total,
+        fee: 0,
+        totalPrice: total,
+        amount: -total,
+        description: `Compra de ${matchedQuantity} tokens de ${startupName}`,
+        method: "balcao_trade",
+        source: "balcao",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      const sellerWalletRef = sellerRef.collection("transacoesCarteira").doc();
+      t.set(sellerWalletRef, {
+        type: "sale",
+        operationType: "venda",
+        status: "completed",
+        startupId: newOffer.startupId,
+        startupName,
+        ticker,
+        quantity: matchedQuantity,
+        pricePerToken: price,
+        subtotal: total,
+        fee: 0,
+        totalPrice: total,
+        amount: total,
+        description: `Venda de ${matchedQuantity} tokens de ${startupName}`,
+        method: "balcao_trade",
+        source: "balcao",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
     });
-    break;
+
+    remainingNewQuantity = remainingAfterNew;
+
+    await Promise.all([
+      registerWalletSnapshot(buyerId, "purchase"),
+      registerWalletSnapshot(sellerId, "sale"),
+    ]);
   }
 }

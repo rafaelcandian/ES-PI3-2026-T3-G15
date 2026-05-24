@@ -15,7 +15,7 @@ class OrderModel {
   final OrderStatus status;
   final DateTime createdAt;
 
-  OrderModel({
+  const OrderModel({
     required this.id,
     required this.userId,
     required this.startupId,
@@ -27,29 +27,27 @@ class OrderModel {
     required this.createdAt,
   });
 
-  /*
-    o factory é um construtor que é utilizado para criar instancias de classes que não nescessariamente
-    criam uma nova instância da propria classem, permite retornar instancias de subclasses, realizar logicas
-    antes da incialização e permitem o uso de return 
-  */
-
   factory OrderModel.fromFirestore(Map<String, dynamic> data, String id) {
+    final createdAtRaw = data['createdAt'];
+
     return OrderModel(
       id: id,
-      userId: data['userId'] ?? '', // se for valor null vai vir uma string vazia ao inves de null
-      startupId: data['startupId'] ?? '',
+      userId: (data['userId'] ?? '').toString(),
+      startupId: (data['startupId'] ?? '').toString(),
       type: OrderType.values.firstWhere(
-        (e) => e.name == data['type'], //verifica se o nome do enum é igual ao type da data se não for ele vai definir como 'buy'
+        (e) => e.name == data['type'],
         orElse: () => OrderType.buy,
       ),
-      quantity: data['quantity'] ?? 0,
-      pricePerToken: (data['pricePerToken'] as num).toDouble(), // passa de num para double 
-      totalPrice: (data['totalPrice'] as num).toDouble(),
+      quantity: (data['quantity'] as num?)?.toInt() ?? 0,
+      pricePerToken: (data['pricePerToken'] as num?)?.toDouble() ?? 0.0,
+      totalPrice: (data['totalPrice'] as num?)?.toDouble() ?? 0.0,
       status: OrderStatus.values.firstWhere(
         (e) => e.name == data['status'],
         orElse: () => OrderStatus.open,
       ),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: createdAtRaw is Timestamp
+          ? createdAtRaw.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -57,7 +55,7 @@ class OrderModel {
     return {
       'userId': userId,
       'startupId': startupId,
-      'type': type.name, // vai salvar como string (pega o nome)
+      'type': type.name,
       'quantity': quantity,
       'pricePerToken': pricePerToken,
       'totalPrice': totalPrice,
@@ -66,19 +64,9 @@ class OrderModel {
     };
   }
 
-  /*
-    Logica de inversão de sinais que o Matheus comentou na aula, funciona para que um unico algoritimo de inserção
-    que sempre insere em ordem crescente consiga servir tanto para as ordens de compra quanto as de venda que possuem
-    logica invertida de organização (Venda: mais barato em cima / Compra: mais caro em cima)
-  */
-
-
-  // Isso vai ser util para dar display nos tokens no balcão (aparentemente)
-
-
-  // converte lista para mapa com preços negativos
   static Map<int, OrderModel> _invertSignals(List<OrderModel> list) {
     final map = <int, OrderModel>{};
+
     for (int i = 0; i < list.length; i++) {
       map[i] = OrderModel(
         id: list[i].id,
@@ -92,10 +80,10 @@ class OrderModel {
         createdAt: list[i].createdAt,
       );
     }
+
     return map;
   }
 
-  // restaura os sinais
   static List<OrderModel> _restoreSignals(Map<int, OrderModel> map) {
     return map.values
         .map(
@@ -114,41 +102,42 @@ class OrderModel {
         .toList();
   }
 
-  // algoritmo de inserção no mapa
   static void _insertMap(Map<int, OrderModel> map, OrderModel newOrder) {
     int pos = 0;
     final list = map.values.toList();
+
     while (pos < list.length &&
         newOrder.pricePerToken > list[pos].pricePerToken) {
       pos++;
     }
 
     for (int i = map.length; i > pos; i--) {
-      map[i] = map[i - 1]!; // garantir que o valor não vai ser um null
+      map[i] = map[i - 1]!;
     }
 
     map[pos] = newOrder;
   }
 
-  // metodo publico de inserir ordem de venda (os outros são privados pois vão entrar neste)
   static List<OrderModel> insertSellOrder(
     List<OrderModel> list,
     OrderModel newOrder,
   ) {
     final map = <int, OrderModel>{};
+
     for (int i = 0; i < list.length; i++) {
       map[i] = list[i];
     }
+
     _insertMap(map, newOrder);
     return map.values.toList();
   }
 
-  // metodo publico de inserir ordem de compra
   static List<OrderModel> insertBuyOrder(
     List<OrderModel> list,
     OrderModel newOrder,
   ) {
     final invMap = _invertSignals(list);
+
     final invertedOrder = OrderModel(
       id: newOrder.id,
       userId: newOrder.userId,
@@ -162,7 +151,6 @@ class OrderModel {
     );
 
     _insertMap(invMap, invertedOrder);
-
     return _restoreSignals(invMap);
   }
 }

@@ -27,12 +27,10 @@ class CarteiraService {
     return _userRef.collection('transacoesCarteira');
   }
 
-  // Retorna o documento do usuário em tempo real.
   Stream<DocumentSnapshot<Map<String, dynamic>>> getUserStream() {
     return _userRef.snapshots();
   }
 
-  // Retorna o saldo atual do usuário.
   Future<double> getBalance() async {
     final doc = await _userRef.get();
     final data = doc.data();
@@ -42,7 +40,6 @@ class CarteiraService {
     return (data['saldo'] as num? ?? 0).toDouble();
   }
 
-  // Retorna o mapa de tokens do usuário.
   Future<Map<String, dynamic>> getTokens() async {
     final doc = await _userRef.get();
     final data = doc.data();
@@ -52,7 +49,6 @@ class CarteiraService {
     return Map<String, dynamic>.from(data['tokens'] ?? {});
   }
 
-  // Retorna o histórico de transações da carteira em tempo real.
   Stream<List<WalletTransactionModel>> getTransacoesStream() {
     return _transacoesRef
         .orderBy('createdAt', descending: true)
@@ -67,15 +63,13 @@ class CarteiraService {
     });
   }
 
-  // Adiciona saldo fictício via Pix simulado.
-  //
-  // Atenção:
-  // Este método chama a Cloud Function loadWallet para
-  // incrementar o saldo do usuário de forma segura pelo backend.
   Future<WalletTransactionModel> addBalancePixSimulado(double valor) async {
     try {
       final callable = _functions.httpsCallable('loadWallet');
-      await callable.call({'valor': valor});
+
+      await callable.call({
+        'valor': valor,
+      });
 
       return WalletTransactionModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -100,7 +94,6 @@ class CarteiraService {
     }
   }
 
-  // Método antigo mantido caso alguma tela já esteja usando.
   Future<String?> addBalance(double valor) async {
     try {
       await addBalancePixSimulado(valor);
@@ -110,16 +103,11 @@ class CarteiraService {
     }
   }
 
-  // Verifica se o usuário tem saldo suficiente.
   Future<bool> hasSufBalance(double valor) async {
     final saldo = await getBalance();
     return saldo >= valor;
   }
 
-  // Compra tokens diretamente de uma startup.
-  //
-  // Esta operação é feita dentro de uma transaction do Firestore para garantir
-  // que saldo, tokens do usuário e disponibilidade da startup sejam atualizados juntos.
   Future<void> comprarTokensStartup({
     required String startupId,
     required String startupNome,
@@ -220,7 +208,6 @@ class CarteiraService {
     });
   }
 
-  // Converte os nomes usados no front para os períodos esperados pela Function.
   String _mapPeriodoGrafico(String periodo) {
     switch (periodo) {
       case '1h':
@@ -240,48 +227,23 @@ class CarteiraService {
     }
   }
 
-  // Busca os valores do gráfico da carteira usando a Function getWalletChart.
-  //
-  // A Function retorna uma lista de pontos com:
-  // {
-  //   value: double,
-  //   label: string,
-  //   createdAt: string
-  // }
-  //
-  // Como o LineChartPainter atual só precisa de List<double>,
-  // este método extrai apenas os valores.
   Future<List<double>> getWalletChartValues({
     required String periodo,
   }) async {
     try {
-      final callable = _functions.httpsCallable('getWalletChart');
+      final points = await getWalletChartPoints(periodo: periodo);
 
-      final result = await callable.call({
-        'period': _mapPeriodoGrafico(periodo),
-      });
-
-      final data = Map<String, dynamic>.from(result.data as Map);
-      final points = List<dynamic>.from(data['points'] ?? []);
-
-      final values = points
-          .map((point) {
-        final pointMap = Map<String, dynamic>.from(point as Map);
-        return (pointMap['value'] as num?)?.toDouble() ?? 0.0;
-      })
-          .where((value) => value > 0)
-          .toList();
-
-      return values;
+      return points.map((point) {
+        return (point['value'] as num?)?.toDouble() ?? 0.0;
+      }).where((value) {
+        return value > 0;
+      }).toList();
     } catch (e) {
-      throw Exception('Erro ao carregar gráfico da carteira: $e');
+      print('Erro ao carregar gráfico da carteira: $e');
+      return [];
     }
   }
 
-  // Busca os pontos completos do gráfico.
-  //
-  // Esse método é opcional, mas já deixo pronto porque depois pode ser útil
-  // para exibir labels no gráfico, como "10:00", "11/05", "05/2026" etc.
   Future<List<Map<String, dynamic>>> getWalletChartPoints({
     required String periodo,
   }) async {
@@ -299,7 +261,8 @@ class CarteiraService {
         return Map<String, dynamic>.from(point as Map);
       }).toList();
     } catch (e) {
-      throw Exception('Erro ao carregar pontos do gráfico da carteira: $e');
+      print('Erro ao carregar pontos do gráfico da carteira: $e');
+      return [];
     }
   }
 }

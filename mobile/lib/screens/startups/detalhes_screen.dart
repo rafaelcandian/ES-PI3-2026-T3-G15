@@ -358,7 +358,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         'Valor do token',
-                        'R\$ ${startup.tokenValue.toStringAsFixed(2)}',
+                        'R\$ ${startup.minBuyPrice.toStringAsFixed(2)}',
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
@@ -498,18 +498,19 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 ) {
   final simbolo = _gerarSimbolo(startup.title);
 
-  final ofertaPrincipal = Oferta(
+    final ofertaPrincipal = Oferta(
     tipo: TipoOferta.venda,
     quantidade: startup.tokens,
-    preco: startup.tokenValue,
+    preco: startup.minBuyPrice,
     empresa: startup.title,
     simbolo: simbolo,
     variacao: 0,
     volume: '${startup.tokens}',
     spread: 0.4,
     startupId: startup.id,
+    minBuyPrice: startup.minBuyPrice,
   );
-
+  
   Navigator.push(
     context,
     MaterialPageRoute(
@@ -951,7 +952,7 @@ class _MetricCard extends StatelessWidget {
                 child: _MetricColumn(
                   label: 'Valor do Token',
                   value:
-                      'R\$ ${startup.tokenValue.toStringAsFixed(2)}',
+                      'R\$ ${startup.minBuyPrice.toStringAsFixed(2)}',
                 ),
               ),
               const SizedBox(width: 12),

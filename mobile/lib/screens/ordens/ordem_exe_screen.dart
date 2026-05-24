@@ -170,12 +170,26 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     );
   }
 
+  double get _precoMinimoPermitido {
+    // Compra não pode ficar abaixo do preço mínimo definido na startup.
+    // Venda continua livre para o usuário definir preço abaixo ou acima.
+    if (_isCompra) return widget.oferta.minBuyPrice;
+    return 0.10;
+  }
+
+  bool get _precoAbaixoDoMinimo {
+    return _isCompra && _preco < widget.oferta.minBuyPrice;
+  }
+
   void _alterarPreco(double delta) {
     HapticFeedback.selectionClick();
 
     setState(() {
-      _preco = (_preco + delta).clamp(0.10, 999999);
+      _preco = (_preco + delta).clamp(_precoMinimoPermitido, 999999);
       _precoController.text = _preco.toStringAsFixed(2);
+      _precoController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _precoController.text.length),
+      );
     });
   }
 
@@ -199,6 +213,16 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       return;
     }
 
+    if (_precoAbaixoDoMinimo) {
+      AppSnackBar.show(
+        context,
+        message:
+        'O preço mínimo de compra desta startup é R\$ ${widget.oferta.minBuyPrice.toStringAsFixed(2)}.',
+        error: true,
+      );
+      return;
+    }
+
     final ofertaFinal = Oferta(
       tipo: widget.oferta.tipo,
       quantidade: _quantidade,
@@ -209,6 +233,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       volume: widget.oferta.volume,
       spread: widget.oferta.spread,
       startupId: widget.oferta.startupId, // propaga o startupId para a tela de confirmação
+      minBuyPrice: widget.oferta.minBuyPrice,
     );
 
     final totalOrdem = _quantidade * _preco;
@@ -317,6 +342,14 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
             '${_diferenca >= 0 ? '+' : ''}${_diferenca.toStringAsFixed(1)}%',
             fullWidth: true,
           ),
+          if (_isCompra) ...[
+            const SizedBox(height: 10),
+            _MarketMetricTile(
+              label: 'Preço mínimo de compra',
+              value: 'R\$ ${widget.oferta.minBuyPrice.toStringAsFixed(2)}',
+              fullWidth: true,
+            ),
+          ],
         ],
       ),
     );
@@ -353,6 +386,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           _PriceControlBox(
             controller: _precoController,
             value: 'R\$ ${_preco.toStringAsFixed(2)}',
+            isCompra: _isCompra,
+            minBuyPrice: widget.oferta.minBuyPrice,
+            precoAbaixoDoMinimo: _precoAbaixoDoMinimo,
             onMinus: () => _alterarPreco(-0.10),
             onPlus: () => _alterarPreco(0.10),
           ),
@@ -835,12 +871,18 @@ class _QuickAmountButtons extends StatelessWidget {
 class _PriceControlBox extends StatelessWidget {
   final TextEditingController controller;
   final String value;
+  final bool isCompra;
+  final double minBuyPrice;
+  final bool precoAbaixoDoMinimo;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
 
   const _PriceControlBox({
     required this.controller,
     required this.value,
+    required this.isCompra,
+    required this.minBuyPrice,
+    required this.precoAbaixoDoMinimo,
     required this.onMinus,
     required this.onPlus,
   });
@@ -895,6 +937,21 @@ class _PriceControlBox extends StatelessWidget {
               ),
             ],
           ),
+          if (isCompra) ...[
+            const SizedBox(height: 8),
+            Text(
+              precoAbaixoDoMinimo
+                  ? 'Preço abaixo do mínimo permitido: R\$ ${minBuyPrice.toStringAsFixed(2)}.'
+                  : 'Preço mínimo de compra: R\$ ${minBuyPrice.toStringAsFixed(2)}.',
+              style: TextStyle(
+                color: precoAbaixoDoMinimo
+                    ? Colors.redAccent
+                    : AppColors.textoMuitoFraco,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
       ),
     );

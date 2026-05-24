@@ -30,11 +30,11 @@ class _PerfilPageState extends State<PerfilPage> {
   String get _appearanceLabel {
     switch (_appearanceMode) {
       case AppAppearanceMode.light:
-        return 'Light';
+        return 'Claro';
       case AppAppearanceMode.dark:
-        return 'Dark';
+        return 'Escuro';
       case AppAppearanceMode.auto:
-        return 'Auto';
+        return 'Automático';
     }
   }
 
@@ -139,7 +139,7 @@ class _PerfilPageState extends State<PerfilPage> {
     });
 
     _showSnackBar(
-      'Modo de aparência alterado para $_appearanceLabel.',
+      'Aparência alterada para $_appearanceLabel.',
     );
   }
 
@@ -214,7 +214,6 @@ class _PerfilPageState extends State<PerfilPage> {
                             ),
                             const SizedBox(height: 18),
                             _SecuritySection(
-                              onChangePassword: _showChangePasswordModal,
                               onResetPassword: _sendPasswordReset,
                             ),
 
@@ -237,29 +236,74 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
-  void _showEditProfileModal() {
-    _showInfoModal(
-      title: 'Editar perfil',
-      icon: Icons.edit_rounded,
-      message:
-      'A edição direta do perfil ainda não está ativa nesta versão. Os dados exibidos vêm do usuário autenticado e do Firestore.',
+  Future<void> _showEditProfileModal() async {
+    final resultado = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _EditProfileSheet(
+          nomeInicial: _nome,
+          telefoneInicial: _telefone,
+          cpfInicial: _cpf,
+          email: _email,
+          onSave: _salvarPerfil,
+        );
+      },
     );
+
+    if (resultado == true && mounted) {
+      await _carregarDadosUsuario();
+    }
   }
 
-  void _showChangePasswordModal() {
-    _showInfoModal(
-      title: 'Alterar senha',
-      icon: Icons.lock_reset_rounded,
-      message:
-      'Para alterar a senha com segurança, use o fluxo de redefinição por e-mail.',
+  Future<void> _salvarPerfil({
+    required String nome,
+    required String telefone,
+    required String cpf,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    final telefoneLimpo = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    final cpfLimpo = cpf.replaceAll(RegExp(r'[^0-9]'), '');
+
+    await user.updateDisplayName(nome);
+
+    await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set(
+      {
+        'nome': nome,
+        'displayName': nome,
+        'email': user.email ?? _email,
+        'telefone': telefoneLimpo,
+        'cpf': cpfLimpo,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
     );
+
+    if (!mounted) return;
+
+    setState(() {
+      _nome = nome;
+      _telefone = telefoneLimpo;
+      _cpf = cpfLimpo;
+    });
   }
 
   Future<void> _sendPasswordReset() async {
     final email = FirebaseAuth.instance.currentUser?.email ?? _email;
 
     if (email.isEmpty) {
-      _showSnackBar('Não encontramos um e-mail para redefinição de senha.');
+      _showPasswordResetDialog(
+        title: 'E-mail não encontrado',
+        message: 'Não encontramos um e-mail vinculado à sua conta para enviar a redefinição de senha.',
+        success: false,
+      );
       return;
     }
 
@@ -268,12 +312,83 @@ class _PerfilPageState extends State<PerfilPage> {
 
       if (!mounted) return;
 
-      _showSnackBar('E-mail de redefinição enviado para $email.');
+      _showPasswordResetDialog(
+        title: 'E-mail enviado',
+        message: 'Enviamos um link de redefinição de senha para $email. Verifique sua caixa de entrada e o spam.',
+        success: true,
+      );
     } catch (_) {
       if (!mounted) return;
 
-      _showSnackBar('Não foi possível enviar o e-mail de redefinição.');
+      _showPasswordResetDialog(
+        title: 'Não foi possível enviar',
+        message: 'Tente novamente em alguns instantes. Se o problema continuar, confirme se seu e-mail está correto.',
+        success: false,
+      );
     }
+  }
+
+  void _showPasswordResetDialog({
+    required String title,
+    required String message,
+    required bool success,
+  }) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                color: success ? AppColors.destaque : Colors.redAccent,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.destaque,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.destaque,
+                foregroundColor: AppColors.fundo,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showDeleteAccountModal() {
@@ -715,13 +830,13 @@ class _AppearanceSection extends StatelessWidget {
           Row(
             children: [
               _ThemePill(
-                label: 'Light',
+                label: 'Claro',
                 active: selectedMode == AppAppearanceMode.light,
                 onTap: () => onChanged(AppAppearanceMode.light),
               ),
               const SizedBox(width: 8),
               _ThemePill(
-                label: 'Dark',
+                label: 'Escuro',
                 active: selectedMode == AppAppearanceMode.dark,
                 onTap: () => onChanged(AppAppearanceMode.dark),
               ),
@@ -765,11 +880,9 @@ class _AppearanceSection extends StatelessWidget {
 }
 
 class _SecuritySection extends StatelessWidget {
-  final VoidCallback onChangePassword;
   final VoidCallback onResetPassword;
 
   const _SecuritySection({
-    required this.onChangePassword,
     required this.onResetPassword,
   });
 
@@ -787,12 +900,16 @@ class _SecuritySection extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _ActionRow(
-            title: 'Alterar senha',
-            onTap: onChangePassword,
-          ),
-          _ActionRow(
-            title: 'Redefinir senha por e-mail',
+            title: 'Alterar/redefinir senha por e-mail',
+            subtitle: 'Envia um link seguro pelo Firebase',
+            icon: Icons.lock_reset_rounded,
             onTap: onResetPassword,
+          ),
+          const SizedBox(height: 2),
+          const _StatusRow(
+            title: 'Autenticação de dois fatores',
+            subtitle: 'Em desenvolvimento pela equipe',
+            active: false,
           ),
         ],
       ),
@@ -999,19 +1116,22 @@ class _AppearancePreview extends StatelessWidget {
 
 class _ActionRow extends StatelessWidget {
   final String title;
+  final String? subtitle;
+  final IconData? icon;
   final bool danger;
   final VoidCallback onTap;
 
   const _ActionRow({
     required this.title,
     required this.onTap,
+    this.subtitle,
+    this.icon,
     this.danger = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 44,
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: AppColors.campo,
@@ -1020,7 +1140,7 @@ class _ActionRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
@@ -1029,16 +1149,40 @@ class _ActionRow extends StatelessWidget {
             ),
             child: Row(
               children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    color: AppColors.destaque,
+                    size: 19,
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: danger
-                          ? AppColors.destaque
-                          : AppColors.textoSecundario,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: danger
+                              ? AppColors.destaque
+                              : AppColors.textoSecundario,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle!,
+                          style: const TextStyle(
+                            color: AppColors.textoMuitoFraco,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 const Icon(
@@ -1201,6 +1345,403 @@ class _StatusText extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProfileEditField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final bool enabled;
+  final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
+  final String? Function(String?)? validator;
+
+  const _ProfileEditField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    required this.enabled,
+    this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+    this.inputFormatters,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: premiumFieldDecoration(radius: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: TextFormField(
+        controller: controller,
+        enabled: enabled,
+        keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
+        inputFormatters: inputFormatters,
+        validator: validator,
+        cursorColor: AppColors.destaque,
+        style: const TextStyle(
+          color: AppColors.textoPrincipal,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+        ),
+        decoration: InputDecoration(
+          icon: Icon(
+            icon,
+            color: AppColors.destaque,
+            size: 19,
+          ),
+          labelText: label,
+          labelStyle: const TextStyle(
+            color: AppColors.textoMuitoFraco,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+          errorStyle: const TextStyle(
+            color: Colors.redAccent,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+}
+
+class CpfInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (text.length > 11) {
+      text = text.substring(0, 11);
+    }
+
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < text.length; i++) {
+      if (i == 3 || i == 6) buffer.write('.');
+      if (i == 9) buffer.write('-');
+
+      buffer.write(text[i]);
+    }
+
+    final formatted = buffer.toString();
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(
+        offset: formatted.length,
+      ),
+    );
+  }
+}
+
+class TelefoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (text.length > 11) {
+      text = text.substring(0, 11);
+    }
+
+    final buffer = StringBuffer();
+
+    for (int i = 0; i < text.length; i++) {
+      if (i == 0) buffer.write('(');
+      if (i == 2) buffer.write(') ');
+      if (i == 7) buffer.write('-');
+
+      buffer.write(text[i]);
+    }
+
+    final formatted = buffer.toString();
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(
+        offset: formatted.length,
+      ),
+    );
+  }
+}
+
+class _EditProfileSheet extends StatefulWidget {
+  final String nomeInicial;
+  final String telefoneInicial;
+  final String cpfInicial;
+  final String email;
+  final Future<void> Function({
+    required String nome,
+    required String telefone,
+    required String cpf,
+  }) onSave;
+
+  const _EditProfileSheet({
+    required this.nomeInicial,
+    required this.telefoneInicial,
+    required this.cpfInicial,
+    required this.email,
+    required this.onSave,
+  });
+
+  @override
+  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+}
+
+class _EditProfileSheetState extends State<_EditProfileSheet> {
+  final _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _nomeController;
+  late final TextEditingController _telefoneController;
+  late final TextEditingController _cpfController;
+
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _nomeController = TextEditingController(text: widget.nomeInicial);
+    _telefoneController = TextEditingController(
+      text: _formatarTelefoneInicial(widget.telefoneInicial),
+    );
+    _cpfController = TextEditingController(
+      text: _formatarCpfInicial(widget.cpfInicial),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _telefoneController.dispose();
+    _cpfController.dispose();
+    super.dispose();
+  }
+
+  static String _formatarCpfInicial(String cpf) {
+    final numeros = cpf.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numeros.length != 11) return cpf;
+
+    return '${numeros.substring(0, 3)}.${numeros.substring(3, 6)}.${numeros.substring(6, 9)}-${numeros.substring(9, 11)}';
+  }
+
+  static String _formatarTelefoneInicial(String telefone) {
+    final numeros = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numeros.length != 11) return telefone;
+
+    return '(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7, 11)}';
+  }
+
+  bool _validarCPF(String cpf) {
+    final numeros = cpf.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (numeros.length != 11) return false;
+    if (RegExp(r'^(\d)\1*$').hasMatch(numeros)) return false;
+
+    int calcularDigito(String base) {
+      int soma = 0;
+
+      for (int i = 0; i < base.length; i++) {
+        soma += int.parse(base[i]) * (base.length + 1 - i);
+      }
+
+      final resto = soma % 11;
+      return resto < 2 ? 0 : 11 - resto;
+    }
+
+    final primeiroDigito = calcularDigito(numeros.substring(0, 9));
+    final segundoDigito = calcularDigito(numeros.substring(0, 10));
+
+    return primeiroDigito == int.parse(numeros[9]) &&
+        segundoDigito == int.parse(numeros[10]);
+  }
+
+  bool _validarTelefone(String telefone) {
+    final numeros = telefone.replaceAll(RegExp(r'[^0-9]'), '');
+    return numeros.length == 11;
+  }
+
+  String? _validarNome(String? value) {
+    final nome = value?.trim() ?? '';
+
+    if (nome.isEmpty) return 'Campo obrigatório';
+    if (nome.split(RegExp(r'\s+')).length < 2) return 'Informe nome e sobrenome';
+
+    return null;
+  }
+
+  String? _validarCampoCpf(String? value) {
+    final cpf = value?.trim() ?? '';
+
+    if (cpf.isEmpty) return 'Campo obrigatório';
+    if (!_validarCPF(cpf)) return 'CPF inválido';
+
+    return null;
+  }
+
+  String? _validarCampoTelefone(String? value) {
+    final telefone = value?.trim() ?? '';
+
+    if (telefone.isEmpty) return 'Campo obrigatório';
+    if (!_validarTelefone(telefone)) return 'Telefone inválido';
+
+    return null;
+  }
+
+  Future<void> _salvar() async {
+    FocusScope.of(context).unfocus();
+
+    final valido = _formKey.currentState?.validate() ?? false;
+
+    if (!valido) return;
+
+    setState(() => _saving = true);
+
+    try {
+      await widget.onSave(
+        nome: _nomeController.text.trim(),
+        telefone: _telefoneController.text.trim(),
+        cpf: _cpfController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      Navigator.pop(context, true);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() => _saving = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Não foi possível atualizar o perfil.',
+            style: TextStyle(color: AppColors.textoPrincipal),
+          ),
+          backgroundColor: AppColors.card,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PremiumBottomSheet(
+      title: 'Editar perfil',
+      icon: Icons.edit_rounded,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ProfileEditField(
+                controller: _nomeController,
+                label: 'Nome completo',
+                icon: Icons.person_outline_rounded,
+                enabled: !_saving,
+                keyboardType: TextInputType.name,
+                textCapitalization: TextCapitalization.words,
+                validator: _validarNome,
+              ),
+              const SizedBox(height: 12),
+              _ProfileEditField(
+                controller: _telefoneController,
+                label: 'Telefone celular',
+                icon: Icons.phone_outlined,
+                enabled: !_saving,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  TelefoneInputFormatter(),
+                ],
+                validator: _validarCampoTelefone,
+              ),
+              const SizedBox(height: 12),
+              _ProfileEditField(
+                controller: _cpfController,
+                label: 'CPF',
+                icon: Icons.badge_outlined,
+                enabled: !_saving,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  CpfInputFormatter(),
+                ],
+                validator: _validarCampoCpf,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: premiumFieldDecoration(radius: 16),
+                child: Text(
+                  widget.email.isEmpty
+                      ? 'E-mail não informado'
+                      : 'E-mail: ${widget.email}',
+                  style: const TextStyle(
+                    color: AppColors.textoMuitoFraco,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _salvar,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.destaque,
+                    foregroundColor: AppColors.fundo,
+                    disabledBackgroundColor: AppColors.destaque.withOpacity(0.45),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: AppColors.fundo,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Salvar alterações',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
