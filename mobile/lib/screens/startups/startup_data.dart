@@ -10,6 +10,7 @@ class StartupData {
   final double equity;
   final int tokens;
   final double tokenValue;
+  final double minBuyPrice;
   final double progress;
   final double goal;
   final double investimentoMinimo;
@@ -37,6 +38,7 @@ class StartupData {
     required this.equity,
     required this.tokens,
     required this.tokenValue,
+    required this.minBuyPrice,
     required this.progress,
     required this.goal,
     required this.investimentoMinimo,
@@ -56,34 +58,37 @@ class StartupData {
     Map<String, dynamic> data, {
     String id = '',
   }) {
+    final tokenValue = (data['tokenValue'] as num?)?.toDouble() ??
+        (data['valorToken'] as num?)?.toDouble() ??
+        1.0;
+
+    final minBuyPrice = (data['minBuyPrice'] as num?)?.toDouble() ??
+        (data['tokenValue'] as num?)?.toDouble() ??
+        (data['valorToken'] as num?)?.toDouble() ??
+        1.0;
+
     return StartupData(
       id: id,
-
       title: data['title'] ?? '',
       subtitle: data['subtitle'] ?? '',
       tag: data['tag'] ?? '',
-
       equity: (data['equity'] as num?)?.toDouble() ?? 0.0,
       tokens: (data['tokens'] as num?)?.toInt() ?? 0,
-
-      tokenValue: (data['tokenValue'] as num?)?.toDouble() ?? 0.0,
+      tokenValue: tokenValue,
+      minBuyPrice: minBuyPrice,
       progress: (data['progress'] as num?)?.toDouble() ?? 0.0,
       goal: (data['goal'] as num?)?.toDouble() ?? 0.0,
-      investimentoMinimo: (data['investimentoMinimo'] as num?)?.toDouble() ?? 0.0,
-
+      investimentoMinimo:
+          (data['investimentoMinimo'] as num?)?.toDouble() ?? 0.0,
       image: data['image'] ?? '',
       video: data['video'] ?? '',
-
       description: data['description'] ?? '',
       stage: data['stage'] ?? data['estagio'] ?? 'Nova',
       status: data['status'] ?? 'open',
-
       totalTokens: (data['totalTokens'] as num?)?.toInt() ?? 0,
       investorsCount: (data['investorsCount'] as num?)?.toInt() ?? 0,
-
       market: data['market'] ?? '',
       valuation: (data['valuation'] as num?)?.toDouble() ?? 0.0,
-
       partners: (data['partners'] as List<dynamic>? ?? [])
           .map((item) {
             if (item is Map<String, dynamic>) {

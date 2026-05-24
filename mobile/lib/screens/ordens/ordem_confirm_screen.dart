@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/balcao_service.dart';
@@ -52,26 +53,38 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     _executarOrdem();
   }
 
-  /// Executa a compra direta de tokens da startup.
+  /// Executa a ordem usando o backend.
   ///
-  /// Este fluxo não usa o Balcão de Negócios. Ele atualiza diretamente:
-  /// saldo do usuário, tokens do usuário, tokens disponíveis da startup
-  /// e histórico da carteira.
+  /// Fluxos cobertos:
+  /// - compra direta da startup;
+  /// - criação de oferta de compra no balcão;
+  /// - criação de oferta de venda no balcão.
   Future<void> _executarOrdem() async {
     try {
-      if (!_isCompra) {
-        throw Exception('Venda direta ainda não está disponível neste fluxo.');
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+
+      if (uid == null) {
+        throw Exception('Usuário não autenticado. Faça login novamente.');
       }
 
       String? erro;
-      if (widget.atingiuMinimo == true && widget.compraDireto == true) {
-        erro = await BalcaoService().comprarDiretoDaStartup(
-          startupId: widget.oferta.startupId,
-          quantity: widget.oferta.quantidade,
-          pricePerToken: widget.oferta.preco,
-        );
+
+      if (_isCompra) {
+        if (widget.atingiuMinimo == true && widget.compraDireto == true) {
+          erro = await BalcaoService().comprarDiretoDaStartup(
+            startupId: widget.oferta.startupId,
+            quantity: widget.oferta.quantidade,
+            pricePerToken: widget.oferta.preco,
+          );
+        } else {
+          erro = await BalcaoService().createPurchaseOffer(
+            startupId: widget.oferta.startupId,
+            quantity: widget.oferta.quantidade,
+            pricePerToken: widget.oferta.preco,
+          );
+        }
       } else {
-        erro = await BalcaoService().createPurchaseOffer(
+        erro = await BalcaoService().createSellOffer(
           startupId: widget.oferta.startupId,
           quantity: widget.oferta.quantidade,
           pricePerToken: widget.oferta.preco,
@@ -101,18 +114,36 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     super.dispose();
   }
 
+  String _tituloConclusao() {
+    if (_isCompra && widget.compraDireto && widget.atingiuMinimo) {
+      return 'Investimento realizado!';
+    }
+
+    return _isCompra ? 'Ordem de compra registrada!' : 'Ordem de venda registrada!';
+  }
+
+  String _subtituloConclusao() {
+    if (_isCompra && widget.compraDireto && widget.atingiuMinimo) {
+      return 'Seus tokens foram adquiridos com sucesso e a movimentação foi salva automaticamente na carteira.';
+    }
+
+    if (_isCompra) {
+      return 'Sua ordem de compra foi postada no balcão. Ela só aparecerá no histórico da carteira quando for executada.';
+    }
+
+    return 'Sua ordem de venda foi registrada no balcão. Ela só aparecerá no histórico da carteira quando for executada.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final titulo = _concluida
-        ? (widget.atingiuMinimo ? 'Investimento realizado!' : 'Ordem registrada!')
+        ? _tituloConclusao()
         : _erro != null
             ? 'Ordem não processada'
             : 'Organizando sua ordem...';
 
     final subtitulo = _concluida
-        ? (widget.atingiuMinimo 
-            ? 'Seus tokens foram adquiridos com sucesso.' 
-            : 'Seu pedido foi postado no balcão de compras. Será executado quando houver uma oferta compatível.')
+        ? _subtituloConclusao()
         : _erro != null
             ? 'Não foi possível registrar a ordem. Verifique o erro abaixo.'
             : 'Estamos validando os dados, calculando taxas e registrando sua ordem.';
@@ -315,6 +346,8 @@ class _ConfirmTopBar extends StatelessWidget {
     required this.concluida,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -345,6 +378,8 @@ class _StatusIcon extends StatelessWidget {
     required this.concluida,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
@@ -360,6 +395,8 @@ class _LoadingIcon extends StatelessWidget {
   const _LoadingIcon({
     super.key,
   });
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -394,6 +431,8 @@ class _CheckIcon extends StatelessWidget {
   const _CheckIcon({
     super.key,
   });
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -431,6 +470,8 @@ class _WaitingMessage extends StatelessWidget {
   const _WaitingMessage({
     super.key,
   });
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -476,6 +517,8 @@ class _StepsCard extends StatelessWidget {
     required this.concluida,
   });
 
+
+
   @override
   Widget build(BuildContext context) {
     return SectionCard(
@@ -493,7 +536,7 @@ class _StepsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _StepRow(
-            label: 'Registrando compra na carteira',
+            label: 'Registrando movimentação na carteira',
             done: concluida,
           ),
         ],
@@ -510,6 +553,8 @@ class _StepRow extends StatelessWidget {
     required this.label,
     required this.done,
   });
+
+
 
   @override
   Widget build(BuildContext context) {

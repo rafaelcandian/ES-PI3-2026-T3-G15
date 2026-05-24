@@ -52,9 +52,26 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       for (var doc in startupsSnapshot.docs) {
         final data = doc.data();
         final startupId = doc.id;
-        final title = data['title'] as String? ?? '';
-        final tokenValue = (data['tokenValue'] ?? 0).toDouble();
-        final simbolo = title.length >= 3 ? title.substring(0, 3).toUpperCase() : title.toUpperCase();
+        final title = (data['title'] ?? data['nome'] ?? 'Startup').toString();
+
+        final tokenValue =
+            ((data['tokenValue'] ?? data['valorToken'] ?? 1.0) as num)
+                .toDouble();
+
+        final minBuyPrice =
+            ((data['minBuyPrice'] ?? data['tokenValue'] ?? data['valorToken'] ?? 1.0)
+                    as num)
+                .toDouble();
+
+        final simbolo = (data['ticker'] ?? data['simbolo'] ?? '')
+            .toString()
+            .trim()
+            .toUpperCase()
+            .isNotEmpty
+            ? (data['ticker'] ?? data['simbolo']).toString().trim().toUpperCase()
+            : title.length >= 3
+                ? title.substring(0, 3).toUpperCase()
+                : title.toUpperCase();
 
         final ordens = await BalcaoService().getOpenedOrders(startupId);
         
@@ -70,6 +87,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
             volume: '0',
             spread: 0.0,
             startupId: startupId,
+            minBuyPrice: minBuyPrice,
           ));
         }
 
@@ -85,6 +103,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
             volume: '0',
             spread: 0.0,
             startupId: startupId,
+            minBuyPrice: minBuyPrice,
           ));
         }
 
@@ -96,6 +115,11 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
               simbolo: simbolo,
               quantidade: quantidade,
               precoMedio: tokenValue,
+              startupId: startupId,
+              minBuyPrice: minBuyPrice,
+              variacao: 0.0,
+              volume: '0',
+              spread: 0.0,
             ));
           }
         }
@@ -247,6 +271,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                         padding: const EdgeInsets.only(top: 18),
                         child: _AtivosUsuarioCard(
                           ativos: _ativosFiltrados,
+                          ofertasDisponiveis: _ofertasCompra,
                         ),
                       ),
                     ),
@@ -648,9 +673,11 @@ class _ModeButton extends StatelessWidget {
 
 class _AtivosUsuarioCard extends StatelessWidget {
   final List<AtivoUsuario> ativos;
+  final List<Oferta> ofertasDisponiveis;
 
   const _AtivosUsuarioCard({
     required this.ativos,
+    required this.ofertasDisponiveis,
   });
 
   @override
@@ -661,7 +688,7 @@ class _AtivosUsuarioCard extends StatelessWidget {
         child: _EmptyState(
           icon: Icons.inventory_2_outlined,
           title: 'Nenhum ativo encontrado para venda.',
-          subtitle: 'Tente buscar por outro nome ou ticker.',
+          subtitle: 'Quando você tiver tokens em carteira, eles aparecerão aqui para criar uma ordem de venda.',
         ),
       );
     }
@@ -675,11 +702,24 @@ class _AtivosUsuarioCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const PremiumHeaderEyebrow(text: 'ATIVOS DISPONÍVEIS PARA VENDA'),
+            const SizedBox(height: 8),
+            const Text(
+              'Toque em um ativo para definir quantidade e preço da sua ordem de venda.',
+              style: TextStyle(
+                color: AppColors.textoMuitoFraco,
+                fontSize: 11,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 14),
             ...ativos.map(
-                  (ativo) => Padding(
+              (ativo) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _AtivoVendaTile(ativo: ativo),
+                child: _AtivoVendaTile(
+                  ativo: ativo,
+                  ofertasDisponiveis: ofertasDisponiveis,
+                ),
               ),
             ),
           ],
@@ -691,77 +731,137 @@ class _AtivosUsuarioCard extends StatelessWidget {
 
 class _AtivoVendaTile extends StatelessWidget {
   final AtivoUsuario ativo;
+  final List<Oferta> ofertasDisponiveis;
 
   const _AtivoVendaTile({
     required this.ativo,
+    required this.ofertasDisponiveis,
   });
+
+  void _abrirVenda(BuildContext context) {
+    if (ativo.startupId.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível identificar a startup deste ativo.'),
+        ),
+      );
+      return;
+    }
+
+    final ofertaVenda = Oferta(
+      tipo: TipoOferta.venda,
+      quantidade: ativo.quantidade,
+      preco: ativo.precoMedio,
+      empresa: ativo.empresa,
+      simbolo: ativo.simbolo,
+      variacao: ativo.variacao,
+      volume: ativo.volume,
+      spread: ativo.spread,
+      startupId: ativo.startupId,
+      minBuyPrice: ativo.minBuyPrice,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrdemExeScreen(
+          oferta: ofertaVenda,
+          modo: ModoNegociacao.venda,
+          ofertasDisponiveis: ofertasDisponiveis,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final valorEstimado = ativo.quantidade * ativo.precoMedio;
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
-      child: Row(
-        children: [
-          _TickerBox(
-            simbolo: ativo.simbolo,
-            color: AppColors.destaque,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => _abrirVenda(context),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: premiumFieldDecoration(
+            radius: 18,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ativo.empresa,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textoPrincipal,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  '${ativo.quantidade} tokens disponíveis',
-                  style: const TextStyle(
-                    color: AppColors.textoFraco,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Row(
             children: [
-              const Text(
-                'Valor estimado',
-                style: TextStyle(
-                  color: AppColors.textoMuitoFraco,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+              _TickerBox(
+                simbolo: ativo.simbolo,
+                color: AppColors.azul,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ativo.empresa,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textoPrincipal,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${ativo.quantidade} tokens disponíveis',
+                      style: const TextStyle(
+                        color: AppColors.textoFraco,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Criar ordem de venda',
+                      style: TextStyle(
+                        color: AppColors.azul,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                'R\$ ${valorEstimado.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  color: AppColors.destaque,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Valor estimado',
+                    style: TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'R\$ ${valorEstimado.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: AppColors.destaque,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textoMuitoFraco,
+                    size: 20,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

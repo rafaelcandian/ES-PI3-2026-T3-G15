@@ -1,27 +1,28 @@
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
-// Descrição: Funções para o gerenciamento de saldo e tokens da carteira.
+// Descrição: Funções para o gerenciamento de saldo, tokens e dashboard da carteira.
 
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {requireAuthenticatedUser} from "../../shared/auth";
 import {db} from "../../shared/firebase";
 
-// retorna saldo e tokens do usuario
 export const getBalance = onCall(async (request) => {
   requireAuthenticatedUser(request);
   const uid = request.auth!.uid;
 
   try {
     const doc = await db.collection("usuarios").doc(uid).get();
+
     if (!doc.exists) {
       throw new HttpsError("not-found", "Usuario não encontrado");
     }
 
     const data = doc.data()!;
+
     return {
-      saldo: data.saldo ?? 0, // define como valor padrão 0 caso o saldo seja nulo (operador de coalescência)
-      tokens: data.tokens ?? {}, // define um map vazio ({}) caso o tokens seja nulo
+      saldo: data.saldo ?? 0,
+      tokens: data.tokens ?? {},
     };
   } catch (e) {
     if (e instanceof HttpsError) throw e;
@@ -29,13 +30,11 @@ export const getBalance = onCall(async (request) => {
   }
 });
 
-// Carrega a carteira
 export const loadWallet = onCall(async (request) => {
   requireAuthenticatedUser(request);
-  const uid = request.auth!.uid;
-  const valor = request.data.valor;
 
-  console.log("loadWallet chamado para uid:", uid, "valor:", valor);
+  const uid = request.auth!.uid;
+  const valor = Number(request.data.valor);
 
   if (!valor || valor <= 0) {
     throw new HttpsError("invalid-argument", "valor invalido");
@@ -44,57 +43,80 @@ export const loadWallet = onCall(async (request) => {
   try {
     await db.collection("usuarios").doc(uid).update({
       saldo: admin.firestore.FieldValue.increment(valor),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     await registerWalletSnapshot(uid, "deposit");
 
-    return {success: true, valorAdicionado: valor};
+    return {
+      success: true,
+      valorAdicionado: valor,
+    };
   } catch (e) {
     console.error("Erro no loadWallet:", e);
+
     if (e instanceof HttpsError) throw e;
-    throw new HttpsError("internal", `Erro ao carregar carteira: ${e}`);
+
+    throw new HttpsError(
+      "internal",
+      `Erro ao carregar carteira: ${e}`
+    );
   }
 });
 
-// função auxiliar para validar o saldo na carteira em comparação com o valor do token que deseja comprar
-async function validateBalance(uid: string, valor: number): Promise<boolean> { // garante que vai retornar um dado boolean
+async function validateBalance(
+  uid: string,
+  valor: number
+): Promise<boolean> {
   const doc = await db.collection("usuarios").doc(uid).get();
+
   if (!doc.exists) return false;
-  const saldo = doc.data()!.saldo ?? 0; // define como valor padrão 0 caso o saldo seja nulo
+
+  const saldo = doc.data()!.saldo ?? 0;
+
   return saldo >= valor;
 }
 
-// retorna se tem saldo suficiente
 export const verifyBalance = onCall(async (request) => {
   requireAuthenticatedUser(request);
+
   const uid = request.auth!.uid;
   const valorRaw = request.data.valor;
 
-  const valor = typeof valorRaw === "string" ? parseFloat(valorRaw) : valorRaw; // transforma o valor (string) em float removendo os espaços em branco no inicio e fim
-  // retorna NaN(Not a Number) se o primeiro caractere for invalido
+  const valor =
+    typeof valorRaw === "string" ? parseFloat(valorRaw) : valorRaw;
 
-  if (isNaN(valor)) { // verifica se o uid ou valor estão presentes, se qualquer um dos dois não estiverem de acordo causa erro
+  if (isNaN(valor)) {
     throw new HttpsError("invalid-argument", "valor obrigatorio");
   }
 
-  const suf = await validateBalance(uid, valor); // puxa função auxiliar
-  return {suf, valor};
+  const suf = await validateBalance(uid, valor);
+
+  return {
+    suf,
+    valor,
+  };
 });
 
-/* 1h       → agrupa por blocos de 5 minutos e retorna até 12 pontos
-   24h      → agrupa por hora e retorna até 24 pontos
-   1sem     → agrupa por dia e retorna até 14 pontos
-   1mes     → agrupa por dia e retorna até 30 pontos
-   6meses   → agrupa por semana e retorna até 24 pontos
-   1ano     → agrupa por mês e retorna até 12 pontos
-*/
-
-type WalletChartPeriod = "1h" | "24h" | "1sem" | "1mes" | "6meses" | "1ano";
+type WalletChartPeriod =
+  | "1h"
+  | "24h"
+  | "1sem"
+  | "1mes"
+  | "6meses"
+  | "1ano";
 
 type WalletChartPoint = {
   label: string;
   value: number;
   createdAt: string;
+};
+
+type WalletSnapshotData = {
+  patrimonioTotal: number;
+  saldo: number;
+  valorAtivos: number;
+  tokensTotais: number;
 };
 
 function pad(value: number): string {
@@ -151,21 +173,33 @@ function getPeriodConfig(period: WalletChartPeriod): {
 
   case "1mes":
     return {
-      startDate: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
+      startDate: new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        now.getDate()
+      ),
       maxPoints: 30,
       bucketType: "day",
     };
 
   case "6meses":
     return {
-      startDate: new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()),
+      startDate: new Date(
+        now.getFullYear(),
+        now.getMonth() - 6,
+        now.getDate()
+      ),
       maxPoints: 24,
       bucketType: "week",
     };
 
   case "1ano":
     return {
-      startDate: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+      startDate: new Date(
+        now.getFullYear() - 1,
+        now.getMonth(),
+        now.getDate()
+      ),
       maxPoints: 12,
       bucketType: "month",
     };
@@ -240,57 +274,69 @@ function getBucketLabel(
   }
 }
 
-async function registerWalletSnapshot(
+async function calculateWalletSnapshotData(
+  uid: string
+): Promise<WalletSnapshotData> {
+  const userRef = db.collection("usuarios").doc(uid);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    throw new HttpsError("not-found", "Usuario não encontrado");
+  }
+
+  const userData = userDoc.data()!;
+  const saldo = Number(userData.saldo ?? 0);
+  const tokens = userData.tokens ?? {};
+
+  let valorAtivos = 0;
+  let tokensTotais = 0;
+
+  for (const [startupId, quantidadeRaw] of Object.entries(tokens)) {
+    const quantidade = Number(quantidadeRaw);
+
+    if (!quantidade || quantidade <= 0) continue;
+
+    const startupDoc = await db
+      .collection("startups")
+      .doc(startupId)
+      .get();
+
+    if (!startupDoc.exists) continue;
+
+    const startupData = startupDoc.data()!;
+
+    const valorToken = Number(
+      startupData.tokenValue ??
+      startupData.valorToken ??
+      startupData.valorFixoTokens ??
+      0
+    );
+
+    valorAtivos += quantidade * valorToken;
+    tokensTotais += quantidade;
+  }
+
+  return {
+    patrimonioTotal: saldo + valorAtivos,
+    saldo,
+    valorAtivos,
+    tokensTotais,
+  };
+}
+
+export async function registerWalletSnapshot(
   uid: string,
   eventType: string
 ): Promise<void> {
-  console.log("registerWalletSnapshot chamado para uid:", uid);
   try {
     const userRef = db.collection("usuarios").doc(uid);
-    const userDoc = await userRef.get();
-
-    if (!userDoc.exists) {
-      throw new HttpsError("not-found", "Usuario não encontrado");
-    }
-
-    const userData = userDoc.data()!;
-    const saldo = Number(userData.saldo ?? 0);
-    const tokens = userData.tokens ?? {};
-
-    let valorAtivos = 0;
-    let tokensTotais = 0;
-
-    for (const [startupId, quantidadeRaw] of Object.entries(tokens)) {
-      const quantidade = Number(quantidadeRaw);
-
-      if (!quantidade || quantidade <= 0) continue;
-
-      const startupDoc = await db
-        .collection("startups")
-        .doc(startupId)
-        .get();
-
-      if (!startupDoc.exists) continue;
-
-      const startupData = startupDoc.data()!;
-      const valorToken = Number(
-        startupData.tokenValue ??
-        startupData.valorToken ??
-        startupData.valorFixoTokens ??
-        0
-      );
-
-      valorAtivos += quantidade * valorToken;
-      tokensTotais += quantidade;
-    }
-
-    const patrimonioTotal = saldo + valorAtivos;
+    const snapshotData = await calculateWalletSnapshotData(uid);
 
     await userRef.collection("patrimonioHistorico").add({
-      valor: patrimonioTotal,
-      saldo,
-      valorAtivos,
-      tokensTotais,
+      valor: Number(snapshotData.patrimonioTotal.toFixed(2)),
+      saldo: Number(snapshotData.saldo.toFixed(2)),
+      valorAtivos: Number(snapshotData.valorAtivos.toFixed(2)),
+      tokensTotais: snapshotData.tokensTotais,
       eventType,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -302,8 +348,8 @@ async function registerWalletSnapshot(
 
 export const getWalletChart = onCall(async (request) => {
   requireAuthenticatedUser(request);
-  const uid = request.auth!.uid;
 
+  const uid = request.auth!.uid;
   const period = normalizePeriod(request.data?.period);
   const config = getPeriodConfig(period);
 
@@ -334,7 +380,9 @@ export const getWalletChart = onCall(async (request) => {
 
       if (!data.createdAt) return;
 
-      const createdAt = data.createdAt as admin.firestore.Timestamp;
+      const createdAt =
+        data.createdAt as admin.firestore.Timestamp;
+
       const date = createdAt.toDate();
       const valor = Number(data.valor ?? 0);
 
@@ -343,7 +391,6 @@ export const getWalletChart = onCall(async (request) => {
       const bucketDate = getBucketDate(date, config.bucketType);
       const key = getBucketKey(bucketDate);
 
-      // Se houver vários snapshots no mesmo bucket, mantém o mais recente.
       const current = buckets.get(key);
 
       if (!current || date > current.createdAt) {
@@ -355,21 +402,55 @@ export const getWalletChart = onCall(async (request) => {
       }
     });
 
-    const points: WalletChartPoint[] = Array.from(buckets.values())
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    let points: WalletChartPoint[] = Array.from(buckets.values())
+      .sort((a, b) => {
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      })
       .slice(-config.maxPoints)
-      .map((point) => ({
-        label: point.label,
-        value: point.value,
-        createdAt: point.createdAt.toISOString(),
-      }));
+      .map((point) => {
+        return {
+          label: point.label,
+          value: Number(point.value.toFixed(2)),
+          createdAt: point.createdAt.toISOString(),
+        };
+      });
+
+    if (points.length < 2) {
+      const current = await calculateWalletSnapshotData(uid);
+      const now = new Date();
+
+      if (current.patrimonioTotal > 0) {
+        const start = config.startDate;
+        const startBucket = getBucketDate(start, config.bucketType);
+        const nowBucket = getBucketDate(now, config.bucketType);
+
+        points = [
+          {
+            label: getBucketLabel(startBucket, config.bucketType),
+            value: Number(current.patrimonioTotal.toFixed(2)),
+            createdAt: start.toISOString(),
+          },
+          {
+            label: getBucketLabel(nowBucket, config.bucketType),
+            value: Number(current.patrimonioTotal.toFixed(2)),
+            createdAt: now.toISOString(),
+          },
+        ];
+      }
+    }
 
     return {
       period,
       points,
     };
   } catch (e) {
+    console.error("Erro no getWalletChart:", e);
+
     if (e instanceof HttpsError) throw e;
-    throw new HttpsError("internal", "Erro ao carregar gráfico da carteira");
+
+    throw new HttpsError(
+      "internal",
+      "Erro ao carregar gráfico da carteira"
+    );
   }
 });

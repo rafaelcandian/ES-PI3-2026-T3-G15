@@ -93,7 +93,7 @@ class StartupCard extends StatelessWidget {
                         Expanded(
                           child: _InfoItem(
                             label: 'Valor/token',
-                            value: 'R\$ ${data.tokenValue.toStringAsFixed(2)}',
+                            value: 'R\$ ${data.minBuyPrice.toStringAsFixed(2)}',
                             icon: Icons.paid_outlined,
                           ),
                         ),

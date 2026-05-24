@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
@@ -20,7 +22,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   bool _loading = false;
 
   static const double _valorMinimo = 10.0;
-  static const double _valorMaximo = 10000.0;
+  static const double _valorMaximo = 100000000.0;
 
   final List<double> _valoresRapidos = [
     50,
@@ -62,6 +64,30 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     });
   }
 
+  Future<void> _registrarAporteNoHistorico() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      throw Exception('Usuário não autenticado.');
+    }
+
+    await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(uid)
+        .collection('transacoesCarteira')
+        .add({
+      'type': 'deposit',
+      'operationType': 'aporte',
+      'description': 'Aporte via Pix simulado',
+      'method': 'pix_simulado',
+      'amount': _totalCreditado,
+      'totalPrice': _totalCreditado,
+      'fee': _taxa,
+      'status': 'completed',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> _confirmarAporte() async {
     FocusScope.of(context).unfocus();
 
@@ -90,6 +116,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
     try {
       await CarteiraService().addBalancePixSimulado(_totalCreditado);
+      await _registrarAporteNoHistorico();
 
       if (!mounted) return;
 
@@ -344,7 +371,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                     contentPadding: EdgeInsets.zero,
                     counterText: '',
                     helperText:
-                    'Mínimo R\$ ${_valorMinimo.toStringAsFixed(2)} • Máximo R\$ ${_valorMaximo.toStringAsFixed(2)}',
+                    'Mínimo R\$ ${_valorMinimo.toStringAsFixed(2)} • Máximo R\$ 100 milhões',
                     helperStyle: const TextStyle(
                       color: AppColors.textoMuitoFraco,
                       fontSize: 11,
