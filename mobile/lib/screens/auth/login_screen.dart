@@ -52,15 +52,13 @@ class _LoginTelaState extends State<LoginTela>
       curve: Curves.easeOut,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -119,10 +117,7 @@ class _LoginTelaState extends State<LoginTela>
           const AuthSectionLabel(label: 'Acesso institucional'),
           const SizedBox(height: 14),
 
-          const AuthFieldLabel(
-            label: 'E-mail',
-            required: true,
-          ),
+          const AuthFieldLabel(label: 'E-mail', required: true),
           const SizedBox(height: 7),
           AuthTextField(
             controller: emailController,
@@ -137,10 +132,7 @@ class _LoginTelaState extends State<LoginTela>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const AuthFieldLabel(
-                label: 'Senha',
-                required: true,
-              ),
+              const AuthFieldLabel(label: 'Senha', required: true),
               GestureDetector(
                 onTap: _abrirRecuperacaoSenha,
                 child: const Text(
@@ -237,9 +229,7 @@ class _LoginTelaState extends State<LoginTela>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const CadastroPage(),
-          ),
+          MaterialPageRoute(builder: (_) => const CadastroPage()),
         );
       },
       child: RichText(
@@ -289,7 +279,9 @@ class _LoginTelaState extends State<LoginTela>
 
       AppSnackBar.show(
         context,
-        message: 'Codigo de verificacao enviado para seu e-mail.',
+        message: twoFactor.setupRequired
+            ? 'Configure seu app autenticador para concluir o acesso.'
+            : 'Informe o codigo do seu app autenticador.',
         success: true,
         duration: const Duration(seconds: 3),
       );
@@ -300,7 +292,9 @@ class _LoginTelaState extends State<LoginTela>
           builder: (_) => VerificacaoLoginTela(
             email: twoFactor.email,
             senha: twoFactor.senha,
-            sessionId: twoFactor.sessionId,
+            setupRequired: twoFactor.setupRequired,
+            secret: twoFactor.secret,
+            otpAuthUri: twoFactor.otpAuthUri,
           ),
         ),
       );
@@ -327,9 +321,7 @@ class _LoginTelaState extends State<LoginTela>
   void _abrirRecuperacaoSenha() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const RecuperacaoSenhaTela(),
-      ),
+      MaterialPageRoute(builder: (_) => const RecuperacaoSenhaTela()),
     );
   }
 }

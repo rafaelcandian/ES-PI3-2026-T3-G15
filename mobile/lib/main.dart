@@ -47,13 +47,16 @@ class MesclaInvestApp extends StatelessWidget {
             "/cadastro": (context) => const CadastroPage(),
             "/recuperacao_senha": (context) => const RecuperacaoSenhaTela(),
             "/verificacao_login": (context) {
-              final args = ModalRoute.of(context)?.settings.arguments
-                  as Map<String, String>?;
+              final args =
+                  ModalRoute.of(context)?.settings.arguments
+                      as Map<String, String>?;
 
               return VerificacaoLoginTela(
                 email: args?['email'] ?? '',
                 senha: args?['senha'] ?? '',
-                sessionId: args?['sessionId'] ?? '',
+                setupRequired: args?['setupRequired'] == 'true',
+                secret: args?['secret'],
+                otpAuthUri: args?['otpAuthUri'],
               );
             },
             "/catalogo": (context) => const CatalogoStartupsPage(),

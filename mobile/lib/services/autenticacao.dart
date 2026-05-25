@@ -1,23 +1,27 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:mescla_invest/services/totp_service.dart';
 
 class TwoFactorLoginResult {
-  final String sessionId;
   final String email;
   final String senha;
+  final bool setupRequired;
+  final String? secret;
+  final String? otpAuthUri;
 
   const TwoFactorLoginResult({
-    required this.sessionId,
     required this.email,
     required this.senha,
+    required this.setupRequired,
+    this.secret,
+    this.otpAuthUri,
   });
 }
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final TotpService _totp = TotpService();
 
   // =========================
   // CADASTRO
@@ -94,16 +98,49 @@ class AuthService {
       );
 
       final userEmail = credential.user?.email ?? email;
-      final callable = _functions.httpsCallable('sendLoginTwoFactorCode');
-      final result = await callable.call();
-      final data = Map<String, dynamic>.from(result.data as Map);
+      final user = credential.user;
+
+      if (user == null) {
+        throw Exception('Usuario nao encontrado');
+      }
+
+      final userRef = _db.collection('usuarios').doc(user.uid);
+      final userDoc = await userRef.get();
+      final data = userDoc.data() ?? <String, dynamic>{};
+      final twoFactor = Map<String, dynamic>.from(data['twoFactor'] ?? {});
+      final enabled = twoFactor['enabled'] == true;
+      final secret = twoFactor['secret'] as String?;
+
+      final setupRequired = !enabled || secret == null || secret.isEmpty;
+      String? setupSecret;
+      String? otpAuthUri;
+
+      if (setupRequired) {
+        setupSecret = _totp.generateSecret();
+        otpAuthUri = _totp.buildOtpAuthUri(
+          issuer: 'MesclaInvest',
+          account: userEmail,
+          secret: setupSecret,
+        );
+
+        await userRef.set({
+          'twoFactor': {
+            'enabled': false,
+            'pendingSecret': setupSecret,
+            'pendingCreatedAt': FieldValue.serverTimestamp(),
+            'issuer': 'MesclaInvest',
+          },
+        }, SetOptions(merge: true));
+      }
 
       await _auth.signOut();
 
       return TwoFactorLoginResult(
-        sessionId: data['sessionId'] as String,
         email: userEmail,
         senha: senha,
+        setupRequired: setupRequired,
+        secret: setupSecret,
+        otpAuthUri: otpAuthUri,
       );
     } on FirebaseAuthException catch (e) {
       await _auth.signOut();
@@ -115,9 +152,6 @@ class AuthService {
       } else {
         throw Exception("Erro no login");
       }
-    } on FirebaseFunctionsException catch (e) {
-      await _auth.signOut();
-      throw Exception(e.message ?? 'Erro ao enviar codigo de verificacao');
     } catch (e) {
       await _auth.signOut();
       throw Exception('Erro ao iniciar verificacao: $e');
@@ -127,29 +161,51 @@ class AuthService {
   Future<String?> verifyTwoFactorLogin({
     required String email,
     required String senha,
-    required String sessionId,
     required String code,
   }) async {
     try {
-      final callable = _functions.httpsCallable('verifyLoginTwoFactorCode');
-      await callable.call({
-        'sessionId': sessionId,
-        'email': email,
-        'code': code,
-      });
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+      final user = credential.user;
 
-      await _auth.signInWithEmailAndPassword(email: email, password: senha);
-      return null;
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'deadline-exceeded') {
-        return 'Codigo expirado. Solicite um novo codigo.';
-      } else if (e.code == 'permission-denied') {
-        return 'Codigo invalido.';
-      } else if (e.code == 'not-found') {
-        return 'Sessao de verificacao nao encontrada.';
+      if (user == null) {
+        await _auth.signOut();
+        return 'Usuario nao encontrado.';
       }
 
-      return e.message ?? 'Erro ao validar codigo.';
+      final userRef = _db.collection('usuarios').doc(user.uid);
+      final userDoc = await userRef.get();
+      final data = userDoc.data() ?? <String, dynamic>{};
+      final twoFactor = Map<String, dynamic>.from(data['twoFactor'] ?? {});
+      final enabled = twoFactor['enabled'] == true;
+      final secret = enabled
+          ? twoFactor['secret'] as String?
+          : twoFactor['pendingSecret'] as String?;
+
+      if (secret == null || secret.isEmpty) {
+        await _auth.signOut();
+        return 'Chave de autenticacao nao encontrada.';
+      }
+
+      if (!_totp.verifyCode(secret, code)) {
+        await _auth.signOut();
+        return 'Codigo invalido.';
+      }
+
+      if (!enabled) {
+        await userRef.update({
+          'twoFactor.enabled': true,
+          'twoFactor.secret': secret,
+          'twoFactor.pendingSecret': FieldValue.delete(),
+          'twoFactor.pendingCreatedAt': FieldValue.delete(),
+          'twoFactor.enabledAt': FieldValue.serverTimestamp(),
+          'twoFactor.issuer': 'MesclaInvest',
+        });
+      }
+
+      return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
         return 'Senha incorreta.';
@@ -161,7 +217,7 @@ class AuthService {
     }
   }
 
-  Future<TwoFactorLoginResult> resendTwoFactorCode({
+  Future<TwoFactorLoginResult> resetTwoFactorSetup({
     required String email,
     required String senha,
   }) async {

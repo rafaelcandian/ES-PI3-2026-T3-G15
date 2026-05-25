@@ -16,13 +16,17 @@ import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 class VerificacaoLoginTela extends StatefulWidget {
   final String email;
   final String senha;
-  final String sessionId;
+  final bool setupRequired;
+  final String? secret;
+  final String? otpAuthUri;
 
   const VerificacaoLoginTela({
     super.key,
     required this.email,
     required this.senha,
-    required this.sessionId,
+    required this.setupRequired,
+    this.secret,
+    this.otpAuthUri,
   });
 
   @override
@@ -35,9 +39,10 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
   final _codigoController = TextEditingController();
   final _auth = AuthService();
 
-  late String _sessionId;
+  String? _secret;
+  String? _otpAuthUri;
   bool _isLoading = false;
-  bool _isResending = false;
+  bool _isGenerating = false;
 
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
@@ -46,7 +51,8 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
   @override
   void initState() {
     super.initState();
-    _sessionId = widget.sessionId;
+    _secret = widget.secret;
+    _otpAuthUri = widget.otpAuthUri;
 
     _animationController = AnimationController(
       vsync: this,
@@ -58,15 +64,13 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
       curve: Curves.easeOut,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _animationController.forward();
   }
@@ -108,9 +112,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
                             children: [
                               const SizedBox(height: 10),
                               const AuthHeader(
-                                title: 'Verificacao em duas etapas',
+                                title: 'Autenticacao em duas etapas',
                                 subtitle:
-                                    'Digite o codigo enviado para o e-mail cadastrado.',
+                                    'Use seu app autenticador para confirmar o acesso.',
                               ),
                               const SizedBox(height: 30),
                               _buildVerificationCard(),
@@ -144,16 +148,22 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
             const AuthSectionLabel(label: 'Confirmacao de acesso'),
             const SizedBox(height: 14),
             Text(
-              'Enviamos um codigo de 6 digitos para ${widget.email}. Ele expira em 10 minutos.',
+              widget.setupRequired
+                  ? 'Cadastre a chave abaixo no seu app autenticador e digite o codigo gerado para ativar a protecao.'
+                  : 'Digite o codigo de 6 digitos exibido no seu app autenticador.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textoFraco,
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
+                color: AppColors.textoFraco,
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
+            if (widget.setupRequired) ...[
+              const SizedBox(height: 18),
+              _buildSecretBox(),
+            ],
             const SizedBox(height: 24),
             const AuthFieldLabel(
-              label: 'Codigo de verificacao',
+              label: 'Codigo do app autenticador',
               required: true,
             ),
             const SizedBox(height: 8),
@@ -208,29 +218,31 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
   Widget _buildBottomLink() {
     return Column(
       children: [
-        GestureDetector(
-          onTap: _isResending ? null : _resendCode,
-          child: Text(
-            _isResending ? 'Enviando novo codigo...' : 'Reenviar codigo',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.destaque,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+        if (widget.setupRequired) ...[
+          GestureDetector(
+            onTap: _isGenerating ? null : _generateNewSecret,
+            child: Text(
+              _isGenerating ? 'Gerando nova chave...' : 'Gerar nova chave',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.destaque,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 14),
+        ],
         GestureDetector(
           onTap: _voltarParaLogin,
           child: RichText(
             textAlign: TextAlign.center,
             text: TextSpan(
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textoFraco,
-                    fontSize: 13,
-                  ),
+                color: AppColors.textoFraco,
+                fontSize: 13,
+              ),
               children: const [
-                TextSpan(text: 'Nao e seu e-mail? '),
+                TextSpan(text: 'Quer usar outra conta? '),
                 TextSpan(
                   text: 'Voltar para login',
                   style: TextStyle(
@@ -246,6 +258,53 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
     );
   }
 
+  Widget _buildSecretBox() {
+    final secret = _secret ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.bordaClara, width: 0.6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Chave manual',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textoFraco,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SelectableText(
+            secret,
+            style: const TextStyle(
+              color: AppColors.textoPrincipal,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+            ),
+          ),
+          if ((_otpAuthUri ?? '').isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Conta: ${widget.email}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textoMuitoFraco,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Future<void> _verifyCode() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -255,7 +314,6 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
     final error = await _auth.verifyTwoFactorLogin(
       email: widget.email,
       senha: widget.senha,
-      sessionId: _sessionId,
       code: _codigoController.text.trim(),
     );
 
@@ -271,11 +329,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
         duration: const Duration(seconds: 2),
       );
 
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/catalogo',
-        (_) => false,
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/catalogo', (_) => false);
     } else {
       AppSnackBar.show(
         context,
@@ -286,11 +340,11 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
     }
   }
 
-  Future<void> _resendCode() async {
-    setState(() => _isResending = true);
+  Future<void> _generateNewSecret() async {
+    setState(() => _isGenerating = true);
 
     try {
-      final result = await _auth.resendTwoFactorCode(
+      final result = await _auth.resetTwoFactorSetup(
         email: widget.email,
         senha: widget.senha,
       );
@@ -298,19 +352,20 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela>
       if (!mounted) return;
 
       setState(() {
-        _sessionId = result.sessionId;
-        _isResending = false;
+        _secret = result.secret;
+        _otpAuthUri = result.otpAuthUri;
+        _isGenerating = false;
       });
 
       AppSnackBar.show(
         context,
-        message: 'Novo codigo enviado para seu e-mail.',
+        message: 'Nova chave gerada. Atualize seu app autenticador.',
         success: true,
       );
     } catch (e) {
       if (!mounted) return;
 
-      setState(() => _isResending = false);
+      setState(() => _isGenerating = false);
 
       AppSnackBar.show(
         context,
@@ -344,10 +399,7 @@ class _BackButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.textoPrincipal.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.bordaClara,
-                width: 0.5,
-              ),
+              border: Border.all(color: AppColors.bordaClara, width: 0.5),
             ),
             child: const Icon(
               Icons.arrow_back_ios_new_rounded,

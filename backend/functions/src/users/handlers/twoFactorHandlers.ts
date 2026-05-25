@@ -1,3 +1,6 @@
+// Autor: Rafael Antonio Candian
+// RA: 25016954
+
 import {randomInt, createHash} from "crypto";
 import {getAuth} from "firebase-admin/auth";
 import {FieldValue, Timestamp} from "firebase-admin/firestore";

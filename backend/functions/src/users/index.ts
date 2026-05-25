@@ -1,5 +1,4 @@
-// Autor:
-// RA:
+
 // Descrição: Exportação centralizada das funções do módulo de usuários.
 
 export {createUser} from "./handlers/createUser";
@@ -10,7 +9,3 @@ export {
   verifyBalance,
   getWalletChart,
 } from "./handlers/walletHandlers";
-export {
-  sendLoginTwoFactorCode,
-  verifyLoginTwoFactorCode,
-} from "./handlers/twoFactorHandlers";
