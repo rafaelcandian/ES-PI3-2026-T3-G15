@@ -20,39 +20,54 @@ class AppSnackBar {
     final Color iconColor = success
         ? AppColors.destaque
         : error
-        ? AppColors.erro
-        : AppColors.textoFraco;
+            ? AppColors.erro
+            : AppColors.textoFraco;
+
+    final Color backgroundColor = error
+        ? const Color(0xFF1A0A0A) // Vermelho muito escuro para erro
+        : AppColors.card;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppColors.card,
+        backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
         duration: duration,
-        elevation: 0,
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        elevation: 8,
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: iconColor.withValues(alpha: 0.35),
-            width: 0.7,
+            color: error
+                ? AppColors.erro.withValues(alpha: 0.5)
+                : iconColor.withValues(alpha: 0.3),
+            width: error ? 1.5 : 0.8,
           ),
         ),
         content: Row(
           children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 18,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 22,
+              ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: AppColors.textoPrincipal,
-                  fontSize: 13,
-                  height: 1.4,
-                  fontWeight: FontWeight.w500,
+                style: TextStyle(
+                  color: error ? Colors.white : AppColors.textoPrincipal,
+                  fontSize: 15,
+                  height: 1.3,
+                  fontWeight: error ? FontWeight.w600 : FontWeight.w500,
+                  letterSpacing: 0.2,
                 ),
               ),
             ),

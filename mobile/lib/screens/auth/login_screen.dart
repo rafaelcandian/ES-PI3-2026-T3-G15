@@ -22,8 +22,7 @@ class LoginTela extends StatefulWidget {
   State<LoginTela> createState() => _LoginTelaState();
 }
 
-class _LoginTelaState extends State<LoginTela>
-    with SingleTickerProviderStateMixin {
+class _LoginTelaState extends State<LoginTela> {
   final _formKey = GlobalKey<FormState>();
   final _auth = AuthService();
 
@@ -34,40 +33,10 @@ class _LoginTelaState extends State<LoginTela>
   bool _obscurePassword = true;
   bool _autoValidate = false;
 
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
-    _animationController.forward();
-  }
-
   @override
   void dispose() {
     emailController.dispose();
     senhaController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -76,32 +45,27 @@ class _LoginTelaState extends State<LoginTela>
     return Scaffold(
       backgroundColor: AppColors.fundo,
       body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-              child: Form(
-                key: _formKey,
-                autovalidateMode: _autoValidate
-                    ? AutovalidateMode.onUserInteraction
-                    : AutovalidateMode.disabled,
-                child: Column(
-                  children: [
-                    const AuthHeader(
-                      title: 'Entrar',
-                      subtitle: 'Acesse sua conta institucional abaixo',
-                    ),
-                    const SizedBox(height: 28),
-                    _buildLoginCard(),
-                    const SizedBox(height: 20),
-                    _buildCadastroRedirect(),
-                    const SizedBox(height: 24),
-                    const AuthFooter(),
-                  ],
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          child: Form(
+            key: _formKey,
+            autovalidateMode: _autoValidate
+                ? AutovalidateMode.onUserInteraction
+                : AutovalidateMode.disabled,
+            child: Column(
+              children: [
+                const AuthHeader(
+                  title: 'Entrar',
+                  subtitle: 'Acesse sua conta para continuar na Mescla Invest.',
                 ),
-              ),
+                const SizedBox(height: 28),
+                _buildLoginCard(),
+                const SizedBox(height: 22),
+                _buildCadastroRedirect(),
+                const SizedBox(height: 24),
+                const AuthFooter(),
+              ],
             ),
           ),
         ),
@@ -114,11 +78,11 @@ class _LoginTelaState extends State<LoginTela>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AuthSectionLabel(label: 'Acesso institucional'),
-          const SizedBox(height: 14),
+          const AuthSectionLabel(label: 'Acesso à conta'),
+          const SizedBox(height: 16),
 
           const AuthFieldLabel(label: 'E-mail', required: true),
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           AuthTextField(
             controller: emailController,
             hint: 'seu@email.com',
@@ -127,40 +91,23 @@ class _LoginTelaState extends State<LoginTela>
             validator: _validarEmail,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 15),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const AuthFieldLabel(label: 'Senha', required: true),
-              GestureDetector(
-                onTap: _abrirRecuperacaoSenha,
-                child: const Text(
-                  'Esqueci minha senha',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.destaque,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 7),
-
+          const AuthFieldLabel(label: 'Senha', required: true),
+          const SizedBox(height: 8),
           AuthTextField(
             controller: senhaController,
             hint: 'Digite sua senha',
             icon: Icons.lock_outline_rounded,
             obscureText: _obscurePassword,
             suffixIcon: IconButton(
+              tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: Colors.white.withValues(alpha: 0.35),
-                size: 20,
+                color: Colors.white.withValues(alpha: 0.58),
+                size: 21,
               ),
               onPressed: () {
                 setState(() {
@@ -171,7 +118,11 @@ class _LoginTelaState extends State<LoginTela>
             validator: _validarSenha,
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 10),
+
+          _buildForgotPasswordLink(),
+
+          const SizedBox(height: 26),
 
           GradientButton(
             label: 'Entrar',
@@ -180,18 +131,72 @@ class _LoginTelaState extends State<LoginTela>
             onTap: _isLoading ? null : _submitLogin,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           Center(
             child: Text(
               '* Campos obrigatórios',
               style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withValues(alpha: 0.25),
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.45),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildForgotPasswordLink() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _abrirRecuperacaoSenha,
+          borderRadius: BorderRadius.circular(999),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.destaque.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: AppColors.destaque.withValues(alpha: 0.28),
+                width: 0.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.destaque.withValues(alpha: 0.06),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.lock_reset_rounded,
+                  color: AppColors.destaque,
+                  size: 17,
+                ),
+                SizedBox(width: 7),
+                Text(
+                  'Esqueci minha senha',
+                  style: TextStyle(
+                    fontSize: 14.2,
+                    color: AppColors.destaque,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.destaque,
+                    decorationThickness: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -226,7 +231,9 @@ class _LoginTelaState extends State<LoginTela>
 
   Widget _buildCadastroRedirect() {
     return GestureDetector(
-      onTap: () {
+      onTap: _isLoading
+          ? null
+          : () {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CadastroPage()),
@@ -236,16 +243,17 @@ class _LoginTelaState extends State<LoginTela>
         textAlign: TextAlign.center,
         text: TextSpan(
           style: TextStyle(
-            fontSize: 13,
-            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.68),
+            height: 1.4,
           ),
           children: const [
-            TextSpan(text: 'Ainda não possui uma conta? '),
+            TextSpan(text: 'Ainda não tem uma conta? '),
             TextSpan(
               text: 'Criar conta',
               style: TextStyle(
                 color: AppColors.destaque,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -255,21 +263,26 @@ class _LoginTelaState extends State<LoginTela>
   }
 
   Future<void> _submitLogin() async {
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _autoValidate = true;
     });
 
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _showLoginError('Preencha e-mail e senha corretamente para continuar.');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final twoFactor = await _auth.startTwoFactorLogin(
-        emailController.text.trim(),
-        senhaController.text.trim(),
-      );
+      final email = emailController.text.trim();
+      final senha = senhaController.text.trim();
+
+      final twoFactor = await _auth.startTwoFactorLogin(email, senha);
 
       if (!mounted) return;
 
@@ -281,9 +294,9 @@ class _LoginTelaState extends State<LoginTela>
         context,
         message: twoFactor.setupRequired
             ? 'Configure seu app autenticador para concluir o acesso.'
-            : 'Informe o codigo do seu app autenticador.',
+            : 'Informe o código do seu app autenticador.',
         success: true,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
       );
 
       Navigator.push(
@@ -305,17 +318,67 @@ class _LoginTelaState extends State<LoginTela>
         _isLoading = false;
       });
 
-      _showLoginError(e.toString().replaceFirst('Exception: ', ''));
+      final cleanError = e.toString().replaceFirst('Exception: ', '');
+      _showLoginError(cleanError);
     }
   }
 
   void _showLoginError(String message) {
+    final friendlyMessage = _formatarErroLogin(message);
+
     AppSnackBar.show(
       context,
-      message: message,
+      message: friendlyMessage,
       error: true,
       duration: const Duration(seconds: 4),
     );
+  }
+
+  String _formatarErroLogin(String message) {
+    final lowerMessage = message.toLowerCase().trim();
+
+    if (lowerMessage.contains('user-not-found') ||
+        lowerMessage.contains('usuario nao encontrado') ||
+        lowerMessage.contains('usuário não encontrado')) {
+      return 'Usuário não encontrado. Confira o e-mail ou crie uma conta.';
+    }
+
+    if (lowerMessage.contains('wrong-password') ||
+        lowerMessage.contains('senha incorreta') ||
+        lowerMessage.contains('invalid-credential') ||
+        lowerMessage.contains('invalid credential')) {
+      return 'E-mail ou senha incorretos. Verifique os dados e tente novamente.';
+    }
+
+    if (lowerMessage.contains('invalid-email') ||
+        lowerMessage.contains('email inválido') ||
+        lowerMessage.contains('e-mail inválido')) {
+      return 'E-mail inválido. Verifique o endereço informado.';
+    }
+
+    if (lowerMessage.contains('too-many-requests') ||
+        lowerMessage.contains('muitas tentativas')) {
+      return 'Muitas tentativas de login. Aguarde alguns minutos e tente novamente.';
+    }
+
+    if (lowerMessage.contains('network') ||
+        lowerMessage.contains('internet') ||
+        lowerMessage.contains('conexão')) {
+      return 'Verifique sua conexão com a internet e tente novamente.';
+    }
+
+    if (lowerMessage.contains('disabled') ||
+        lowerMessage.contains('desativada')) {
+      return 'Esta conta está desativada. Entre em contato com o suporte.';
+    }
+
+    if (lowerMessage.isEmpty ||
+        lowerMessage.contains('erro ao iniciar') ||
+        lowerMessage.contains('erro ao entrar')) {
+      return 'Não foi possível entrar agora. Tente novamente.';
+    }
+
+    return 'Não foi possível entrar. Verifique e-mail e senha e tente novamente.';
   }
 
   void _abrirRecuperacaoSenha() {

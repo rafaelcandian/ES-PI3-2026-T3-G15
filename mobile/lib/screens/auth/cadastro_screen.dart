@@ -21,8 +21,7 @@ class CadastroPage extends StatefulWidget {
   State<CadastroPage> createState() => _CadastroPageState();
 }
 
-class _CadastroPageState extends State<CadastroPage>
-    with SingleTickerProviderStateMixin {
+class _CadastroPageState extends State<CadastroPage> {
   final _formKey = GlobalKey<FormState>();
   final AuthService _auth = AuthService();
 
@@ -38,50 +37,27 @@ class _CadastroPageState extends State<CadastroPage>
   bool _obscureConfirmPassword = true;
   bool _aceitouTermos = false;
 
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<Offset> _slideAnimation;
-
   @override
   void initState() {
     super.initState();
+    senhaController.addListener(_atualizarForcaSenha);
+  }
 
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
-
-    _animationController.forward();
-
-    senhaController.addListener(() {
-      if (mounted) setState(() {});
-    });
+  void _atualizarForcaSenha() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    senhaController.removeListener(_atualizarForcaSenha);
+
     nomeController.dispose();
     emailController.dispose();
     cpfController.dispose();
     telefoneController.dispose();
     senhaController.dispose();
     confirmarSenhaController.dispose();
-    _animationController.dispose();
+
     super.dispose();
   }
 
@@ -126,40 +102,36 @@ class _CadastroPageState extends State<CadastroPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Voltar',
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white.withValues(alpha: 0.6),
-            size: 20,
+            color: Colors.white.withValues(alpha: 0.82),
+            size: 21,
           ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(
         top: false,
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    const AuthHeader(
-                      title: 'Criar conta',
-                      subtitle:
-                      'Preencha seus dados para acessar a Mescla Invest',
-                    ),
-                    const SizedBox(height: 28),
-                    _buildFormCard(),
-                    const SizedBox(height: 20),
-                    _buildLoginRedirect(),
-                    const SizedBox(height: 24),
-                    const AuthFooter(),
-                  ],
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const AuthHeader(
+                  title: 'Criar conta',
+                  subtitle:
+                  'Preencha seus dados para começar a usar a Mescla Invest.',
                 ),
-              ),
+                const SizedBox(height: 28),
+                _buildFormCard(),
+                const SizedBox(height: 22),
+                _buildLoginRedirect(),
+                const SizedBox(height: 24),
+                const AuthFooter(),
+              ],
             ),
           ),
         ),
@@ -244,7 +216,7 @@ class _CadastroPageState extends State<CadastroPage>
               ),
               const SizedBox(height: 8),
               _buildPasswordStrengthBar(),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               _authInput(
                 label: 'Confirmar senha',
                 controller: confirmarSenhaController,
@@ -265,15 +237,16 @@ class _CadastroPageState extends State<CadastroPage>
           ),
           _divider(),
           _buildTermosCheckbox(),
-          const SizedBox(height: 22),
+          const SizedBox(height: 24),
           _buildCadastrarButton(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Center(
             child: Text(
               '* Campos obrigatórios',
               style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withValues(alpha: 0.25),
+                fontSize: 12.5,
+                color: Colors.white.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -290,7 +263,7 @@ class _CadastroPageState extends State<CadastroPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AuthSectionLabel(label: title),
-        const SizedBox(height: 14),
+        const SizedBox(height: 15),
         ...children,
       ],
     );
@@ -309,7 +282,7 @@ class _CadastroPageState extends State<CadastroPage>
     String? Function(String?)? validator,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -317,7 +290,7 @@ class _CadastroPageState extends State<CadastroPage>
             label: label,
             required: true,
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 8),
           AuthTextField(
             controller: controller,
             hint: hint,
@@ -339,10 +312,11 @@ class _CadastroPageState extends State<CadastroPage>
     required VoidCallback onTap,
   }) {
     return IconButton(
+      tooltip: isObscure ? 'Mostrar senha' : 'Ocultar senha',
       icon: Icon(
         isObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-        color: Colors.white.withValues(alpha: 0.35),
-        size: 20,
+        color: Colors.white.withValues(alpha: 0.58),
+        size: 21,
       ),
       onPressed: onTap,
     );
@@ -350,10 +324,10 @@ class _CadastroPageState extends State<CadastroPage>
 
   Widget _divider() {
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 18),
+      padding: const EdgeInsets.only(top: 8, bottom: 20),
       child: Divider(
-        color: Colors.white.withValues(alpha: 0.07),
-        thickness: 0.5,
+        color: Colors.white.withValues(alpha: 0.1),
+        thickness: 0.6,
       ),
     );
   }
@@ -403,7 +377,7 @@ class _CadastroPageState extends State<CadastroPage>
     if (senha.isEmpty) return 'Campo obrigatório';
 
     if (!validarSenha(senha)) {
-      return 'Senha fraca: mínimo 6 caracteres e 1 número';
+      return 'Senha fraca: use no mínimo 6 caracteres e 1 número';
     }
 
     return null;
@@ -442,8 +416,8 @@ class _CadastroPageState extends State<CadastroPage>
 
     final colors = [
       Colors.transparent,
-      Colors.red,
-      Colors.orange,
+      Colors.redAccent,
+      Colors.orangeAccent,
       AppColors.destaque,
       AppColors.destaqueClaro,
       AppColors.destaqueEscuro,
@@ -455,23 +429,23 @@ class _CadastroPageState extends State<CadastroPage>
           return Expanded(
             child: Container(
               margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
-              height: 3,
+              height: 4,
               decoration: BoxDecoration(
                 color: index < forca
                     ? colors[forca]
-                    : Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(2),
+                    : Colors.white.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(4),
               ),
             ),
           );
         }),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Text(
           labels[forca],
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 12.5,
             color: colors[forca],
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -487,18 +461,17 @@ class _CadastroPageState extends State<CadastroPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 22,
-            height: 22,
+            width: 23,
+            height: 23,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 160),
               decoration: BoxDecoration(
-                color:
-                _aceitouTermos ? AppColors.destaque : Colors.transparent,
+                color: _aceitouTermos ? AppColors.destaque : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
                   color: _aceitouTermos
                       ? AppColors.destaque
-                      : Colors.white.withValues(alpha: 0.25),
+                      : Colors.white.withValues(alpha: 0.42),
                   width: 1.5,
                 ),
               ),
@@ -516,9 +489,9 @@ class _CadastroPageState extends State<CadastroPage>
             child: RichText(
               text: TextSpan(
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.55),
-                  height: 1.5,
+                  fontSize: 13.2,
+                  color: Colors.white.withValues(alpha: 0.72),
+                  height: 1.45,
                 ),
                 children: const [
                   TextSpan(text: 'Li e aceito os '),
@@ -526,7 +499,7 @@ class _CadastroPageState extends State<CadastroPage>
                     text: 'Termos de Uso',
                     style: TextStyle(
                       color: AppColors.destaque,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   TextSpan(text: ' e a '),
@@ -534,10 +507,10 @@ class _CadastroPageState extends State<CadastroPage>
                     text: 'Política de Privacidade',
                     style: TextStyle(
                       color: AppColors.destaque,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  TextSpan(text: ' da MesclaInvest'),
+                  TextSpan(text: ' da Mescla Invest.'),
                 ],
               ),
             ),
@@ -563,16 +536,17 @@ class _CadastroPageState extends State<CadastroPage>
         textAlign: TextAlign.center,
         text: TextSpan(
           style: TextStyle(
-            fontSize: 13,
-            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 14.5,
+            color: Colors.white.withValues(alpha: 0.68),
+            height: 1.4,
           ),
           children: const [
-            TextSpan(text: 'Já possui uma conta institucional? '),
+            TextSpan(text: 'Já tem uma conta? '),
             TextSpan(
-              text: 'Fazer login',
+              text: 'Entrar',
               style: TextStyle(
                 color: AppColors.destaque,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -624,18 +598,45 @@ class _CadastroPageState extends State<CadastroPage>
       if (errorMessage == null) {
         _showSuccessDialog();
       } else {
-        _showSnackBar(errorMessage, error: true);
+        _showSnackBar(
+          _formatarErroCadastro(errorMessage),
+          error: true,
+        );
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() => _isLoading = false);
 
       _showSnackBar(
-        'Erro ao realizar cadastro: $e',
+        'Não foi possível criar sua conta agora. Verifique os dados e tente novamente.',
         error: true,
       );
     }
+  }
+
+  String _formatarErroCadastro(String erro) {
+    final mensagem = erro.toLowerCase();
+
+    if (mensagem.contains('email-already-in-use') ||
+        mensagem.contains('e-mail-already-in-use') ||
+        mensagem.contains('already')) {
+      return 'Este e-mail já está cadastrado. Tente entrar ou use outro e-mail.';
+    }
+
+    if (mensagem.contains('invalid-email') || mensagem.contains('inválido')) {
+      return 'Informe um e-mail válido para continuar.';
+    }
+
+    if (mensagem.contains('weak-password') || mensagem.contains('senha')) {
+      return 'A senha informada é muito fraca. Use no mínimo 6 caracteres e 1 número.';
+    }
+
+    if (mensagem.contains('network') || mensagem.contains('internet')) {
+      return 'Verifique sua conexão com a internet e tente novamente.';
+    }
+
+    return erro;
   }
 
   void _showSnackBar(
@@ -676,8 +677,8 @@ class _CadastroPageState extends State<CadastroPage>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.destaque.withValues(alpha: 0.35),
-                        blurRadius: 22,
+                        color: AppColors.destaque.withValues(alpha: 0.28),
+                        blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                     ],
@@ -693,19 +694,19 @@ class _CadastroPageState extends State<CadastroPage>
                   'Conta criada com sucesso!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 22,
+                    fontSize: 23,
                     fontWeight: FontWeight.w700,
                     color: AppColors.destaque,
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
-                  'Seu acesso foi cadastrado. Agora você já pode fazer login na Mescla Invest.',
+                  'Seu cadastro foi concluído. Agora você já pode entrar na Mescla Invest.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.58),
+                    fontSize: 14.5,
+                    color: Colors.white.withValues(alpha: 0.72),
                     height: 1.5,
                   ),
                 ),
