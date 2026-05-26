@@ -50,7 +50,7 @@ export {
 } from "./startups/index";
 
 // RELACIONADO AO MÓDULO DE ORDERS
-export {createOffer, directPurchase} from "./orders/index";
+export {createOffer, directPurchase, cancelOffer} from "./orders/index";
 
 // RELACIONADO AO MÓDULO DE PERGUNTAS
 export {sendQuestion, getPerguntas} from "./perguntas/index";
