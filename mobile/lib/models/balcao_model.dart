@@ -12,6 +12,9 @@ class Oferta {
   final String volume;
   final double spread;
   final String startupId;
+  final String id;
+  final String userId;
+  final DateTime? createdAt;
 
   // Preço mínimo permitido para ordens de compra.
   // Para venda, o usuário continua podendo definir preço abaixo ou acima.
@@ -27,6 +30,9 @@ class Oferta {
     required this.volume,
     required this.spread,
     this.startupId = '',
+    this.id = '',
+    this.userId = '',
+    this.createdAt,
     this.minBuyPrice = 1.0,
   });
 }

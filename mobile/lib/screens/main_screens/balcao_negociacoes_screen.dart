@@ -87,6 +87,9 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
             volume: '0',
             spread: 0.0,
             startupId: startupId,
+            id: order.id,
+            userId: order.userId,
+            createdAt: order.createdAt,
             minBuyPrice: minBuyPrice,
           ));
         }
@@ -103,6 +106,9 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
             volume: '0',
             spread: 0.0,
             startupId: startupId,
+            id: order.id,
+            userId: order.userId,
+            createdAt: order.createdAt,
             minBuyPrice: minBuyPrice,
           ));
         }
@@ -196,12 +202,21 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
           oferta.simbolo.toLowerCase().contains(query);
     }).toList();
 
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
     filtradas.sort((a, b) {
-      if (_modo == ModoNegociacao.compra) {
-        return a.preco.compareTo(b.preco);
+      if (uid != null) {
+        final isAUser = a.userId == uid;
+        final isBUser = b.userId == uid;
+
+        if (isAUser && !isBUser) return -1;
+        if (!isAUser && isBUser) return 1;
       }
 
-      return b.preco.compareTo(a.preco);
+      if (a.createdAt != null && b.createdAt != null) {
+        return b.createdAt!.compareTo(a.createdAt!);
+      }
+      return 0;
     });
 
     return filtradas;
@@ -979,10 +994,47 @@ class _OfertaCard extends StatefulWidget {
 class _OfertaCardState extends State<_OfertaCard> {
   bool _pressed = false;
 
+  void _cancelarOferta(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar oferta'),
+        content: const Text('Tem certeza que deseja cancelar esta oferta?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Não'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sim'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final result = await BalcaoService().cancelarOferta(orderId: widget.oferta.id);
+    if (!mounted) return;
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Oferta cancelada com sucesso')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCompra = widget.modo == ModoNegociacao.compra;
     final accent = isCompra ? AppColors.destaque : AppColors.azul;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final isOwner = widget.oferta.userId == uid;
 
     final variationColor = widget.oferta.variacao >= 0
         ? AppColors.destaque
@@ -990,24 +1042,26 @@ class _OfertaCardState extends State<_OfertaCard> {
 
     return GestureDetector(
       onTapDown: (_) {
-        setState(() => _pressed = true);
+        if (!isOwner) setState(() => _pressed = true);
       },
       onTapUp: (_) {
-        setState(() => _pressed = false);
+        if (!isOwner) {
+          setState(() => _pressed = false);
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => OrdemExeScreen(
-              oferta: widget.oferta,
-              modo: widget.modo,
-              ofertasDisponiveis: widget.ofertasDisponiveis,
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrdemExeScreen(
+                oferta: widget.oferta,
+                modo: widget.modo,
+                ofertasDisponiveis: widget.ofertasDisponiveis,
+              ),
             ),
-          ),
-        );
+          );
+        }
       },
       onTapCancel: () {
-        setState(() => _pressed = false);
+        if (!isOwner) setState(() => _pressed = false);
       },
       child: AnimatedScale(
         scale: _pressed ? 0.985 : 1.0,
@@ -1118,46 +1172,52 @@ class _OfertaCardState extends State<_OfertaCard> {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Container(
-                        width: 86,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          gradient: isCompra
-                              ? const LinearGradient(
-                            colors: [
-                              AppColors.destaqueClaro,
-                              AppColors.destaqueEscuro,
-                            ],
-                          )
-                              : const LinearGradient(
-                            colors: [
-                              AppColors.azul,
-                              AppColors.roxo,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accent.withOpacity(0.18),
-                              blurRadius: 12,
-                              offset: const Offset(0, 5),
+                      isOwner
+                          ? IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              onPressed: () => _cancelarOferta(context),
+                              tooltip: 'Cancelar Oferta',
+                            )
+                          : Container(
+                              width: 86,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                gradient: isCompra
+                                    ? const LinearGradient(
+                                        colors: [
+                                          AppColors.destaqueClaro,
+                                          AppColors.destaqueEscuro,
+                                        ],
+                                      )
+                                    : const LinearGradient(
+                                        colors: [
+                                          AppColors.azul,
+                                          AppColors.roxo,
+                                        ],
+                                      ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accent.withOpacity(0.18),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  isCompra ? 'COMPRAR' : 'VENDER',
+                                  style: TextStyle(
+                                    color: isCompra
+                                        ? AppColors.fundo
+                                        : AppColors.textoPrincipal,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 10,
+                                    letterSpacing: 0.7,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            isCompra ? 'COMPRAR' : 'VENDER',
-                            style: TextStyle(
-                              color: isCompra
-                                  ? AppColors.fundo
-                                  : AppColors.textoPrincipal,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 0.7,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],

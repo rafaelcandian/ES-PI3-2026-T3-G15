@@ -17,7 +17,7 @@ export const cancelOffer =onCall(async (request) =>{
     const uid = request.auth!.uid;
 
     // verifica se existe o orderId fornecido, em erro joga invalid argument
-    if(!orderId.exists) throw new HttpsError("invalid-argument", "camp obrigatorio faltando");
+    if(!orderId) throw new HttpsError("invalid-argument", "Campo obrigatório faltando");
 
     try{
         // declara ordToCanc (ordem para cancelar) e espera o firestore para pegar as informações

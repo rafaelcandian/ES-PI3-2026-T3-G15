@@ -26,6 +26,7 @@ class _PerfilPageState extends State<PerfilPage> {
   String _email = '';
   String _telefone = '';
   String _cpf = '';
+  bool _twoFactorEnabled = false;
 
   String get _appearanceLabel {
     switch (_appearanceMode) {
@@ -68,6 +69,8 @@ class _PerfilPageState extends State<PerfilPage> {
 
       final data = doc.data();
 
+      bool twoFactorEnabled = false;
+
       if (data != null) {
         nome = data['nome'] ??
             data['name'] ??
@@ -82,6 +85,10 @@ class _PerfilPageState extends State<PerfilPage> {
             telefone;
 
         cpf = data['cpf'] ?? '';
+
+        if (data['twoFactor'] != null && data['twoFactor'] is Map) {
+          twoFactorEnabled = data['twoFactor']['enabled'] == true;
+        }
       }
 
       if (!mounted) return;
@@ -91,6 +98,7 @@ class _PerfilPageState extends State<PerfilPage> {
         _email = email.toString();
         _telefone = telefone.toString();
         _cpf = cpf.toString();
+        _twoFactorEnabled = twoFactorEnabled;
         _loading = false;
       });
     } catch (_) {
@@ -103,6 +111,7 @@ class _PerfilPageState extends State<PerfilPage> {
         _email = user?.email ?? '';
         _telefone = user?.phoneNumber ?? '';
         _cpf = '';
+        _twoFactorEnabled = false;
         _loading = false;
       });
     }
@@ -215,6 +224,8 @@ class _PerfilPageState extends State<PerfilPage> {
                             const SizedBox(height: 18),
                             _SecuritySection(
                               onResetPassword: _sendPasswordReset,
+                              twoFactorEnabled: _twoFactorEnabled,
+                              onToggleTwoFactor: () => _showSnackBar('Para ativar o 2FA, faça logout e login novamente'),
                             ),
 
                             const SizedBox(height: 22),
@@ -881,9 +892,13 @@ class _AppearanceSection extends StatelessWidget {
 
 class _SecuritySection extends StatelessWidget {
   final VoidCallback onResetPassword;
+  final bool twoFactorEnabled;
+  final VoidCallback onToggleTwoFactor;
 
   const _SecuritySection({
     required this.onResetPassword,
+    required this.twoFactorEnabled,
+    required this.onToggleTwoFactor,
   });
 
   @override
@@ -906,10 +921,13 @@ class _SecuritySection extends StatelessWidget {
             onTap: onResetPassword,
           ),
           const SizedBox(height: 2),
-          const _StatusRow(
+          _ToggleRow(
             title: 'Autenticação de dois fatores',
-            subtitle: 'Em desenvolvimento pela equipe',
-            active: false,
+            subtitle: twoFactorEnabled
+                ? 'Autenticação de dois fatores ativa'
+                : 'Autenticação de dois fatores inativa',
+            active: twoFactorEnabled,
+            onTap: onToggleTwoFactor,
           ),
         ],
       ),
