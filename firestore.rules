@@ -10,7 +10,7 @@ service cloud.firestore {
 
     // Coleção: usuarios
     // Permite leitura/escrita apenas se o usuário estiver autenticado e o ID do documento for igual ao seu UID
-    match /usuarios/{userId} {
+    match /usuarios/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
