@@ -24,10 +24,7 @@ class StartupCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppColors.bordaClara,
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.bordaClara, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.38),
@@ -71,9 +68,9 @@ class StartupCard extends StatelessWidget {
                       data.subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textoFraco,
+                        color: Colors.white.withOpacity(0.72),
                         height: 1.45,
                       ),
                     ),
@@ -126,9 +123,7 @@ class StartupCard extends StatelessWidget {
 
                     const SizedBox(height: 18),
 
-                    _DetailsButton(
-                      onTap: onDetailsTap,
-                    ),
+                    _DetailsButton(onTap: onDetailsTap),
                   ],
                 ),
               ),
@@ -143,9 +138,7 @@ class StartupCard extends StatelessWidget {
 class _StartupImageHeader extends StatelessWidget {
   final StartupData data;
 
-  const _StartupImageHeader({
-    required this.data,
-  });
+  const _StartupImageHeader({required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -186,18 +179,13 @@ class _StartupImageHeader extends StatelessWidget {
           Positioned(
             left: 16,
             top: 16,
-            child: _PillTag(
-              label: data.tag,
-              icon: Icons.auto_awesome_rounded,
-            ),
+            child: _PillTag(label: data.tag, icon: Icons.auto_awesome_rounded),
           ),
 
           Positioned(
             right: 16,
             top: 16,
-            child: _EquityBadge(
-              equity: data.equity,
-            ),
+            child: _EquityBadge(equity: data.equity),
           ),
 
           Positioned(
@@ -255,33 +243,21 @@ class _PillTag extends StatelessWidget {
   final String label;
   final IconData icon;
 
-  const _PillTag({
-    required this.label,
-    required this.icon,
-  });
+  const _PillTag({required this.label, required this.icon});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.azul.withOpacity(0.78),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.10),
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: AppColors.textoPrincipal,
-            size: 13,
-          ),
+          Icon(icon, color: AppColors.textoPrincipal, size: 13),
           const SizedBox(width: 6),
           Text(
             label,
@@ -300,25 +276,18 @@ class _PillTag extends StatelessWidget {
 class _EquityBadge extends StatelessWidget {
   final double equity;
 
-  const _EquityBadge({
-    required this.equity,
-  });
+  const _EquityBadge({required this.equity});
 
   @override
   Widget build(BuildContext context) {
     final equityPercent = equity <= 1 ? equity * 100 : equity;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 7,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.fundoEscuro.withOpacity(0.82),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.destaque.withOpacity(0.26),
-        ),
+        border: Border.all(color: AppColors.destaque.withOpacity(0.26)),
       ),
       child: Text(
         '${equityPercent.toStringAsFixed(1)}% Equity',
@@ -350,9 +319,7 @@ class _InfoItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.campo,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+        border: Border.all(color: AppColors.bordaClara),
       ),
       child: Row(
         children: [
@@ -362,15 +329,9 @@ class _InfoItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.destaque.withOpacity(0.11),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.destaque.withOpacity(0.22),
-              ),
+              border: Border.all(color: AppColors.destaque.withOpacity(0.22)),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.destaque,
-              size: 18,
-            ),
+            child: Icon(icon, color: AppColors.destaque, size: 18),
           ),
 
           const SizedBox(width: 10),
@@ -383,9 +344,9 @@ class _InfoItem extends StatelessWidget {
                   label.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9,
-                    color: AppColors.textoMuitoFraco,
+                    color: Colors.white.withOpacity(0.55),
                     letterSpacing: 0.9,
                     fontWeight: FontWeight.w800,
                   ),
@@ -428,19 +389,17 @@ class _ProgressBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.fundoEscuro.withOpacity(0.38),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+        border: Border.all(color: AppColors.bordaClara),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 'Captação',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textoFraco,
+                  color: Colors.white.withOpacity(0.72),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -474,19 +433,19 @@ class _ProgressBlock extends StatelessWidget {
 
           Row(
             children: [
-              const Text(
+              Text(
                 'Meta estimada',
                 style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textoMuitoFraco,
+                  color: Colors.white.withOpacity(0.55),
                 ),
               ),
               const Spacer(),
               Text(
                 'R\$ ${goal.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textoFraco,
+                  color: Colors.white.withOpacity(0.72),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -501,9 +460,7 @@ class _ProgressBlock extends StatelessWidget {
 class _DetailsButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _DetailsButton({
-    required this.onTap,
-  });
+  const _DetailsButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -513,10 +470,7 @@ class _DetailsButton extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
+            colors: [AppColors.destaqueClaro, AppColors.destaqueEscuro],
           ),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [

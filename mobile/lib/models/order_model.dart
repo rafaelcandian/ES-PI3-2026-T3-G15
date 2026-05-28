@@ -38,7 +38,11 @@ class OrderModel {
         (e) => e.name == data['type'],
         orElse: () => OrderType.buy,
       ),
-      quantity: (data['quantity'] as num?)?.toInt() ?? 0,
+      quantity:
+          (data['quantity'] as num?)?.toInt() ??
+          (data['quantidade'] as num?)?.toInt() ??
+          (data['tokens'] as num?)?.toInt() ??
+          0,
       pricePerToken: (data['pricePerToken'] as num?)?.toDouble() ?? 0.0,
       totalPrice: (data['totalPrice'] as num?)?.toDouble() ?? 0.0,
       status: OrderStatus.values.firstWhere(

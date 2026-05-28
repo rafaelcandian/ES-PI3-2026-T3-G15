@@ -5,12 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:mescla_invest/models/ativo_carteira.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 import 'package:mescla_invest/widgets/shared/info_row.dart';
-import 'package:mescla_invest/widgets/shared/outline_button.dart' as shared;
 import 'package:mescla_invest/widgets/shared/section_card.dart';
 import 'package:mescla_invest/widgets/shared/ticker_box.dart';
 import 'package:mescla_invest/widgets/shared/wallet_chart_card.dart';
@@ -82,7 +81,8 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 
   bool _isCompraAtivo(Map<String, dynamic> data) {
-    final type = (data['type'] ??
+    final type =
+    (data['type'] ??
         data['operationType'] ??
         data['tipo'] ??
         data['method'] ??
@@ -97,7 +97,8 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 
   bool _isVendaAtivo(Map<String, dynamic> data) {
-    final type = (data['type'] ??
+    final type =
+    (data['type'] ??
         data['operationType'] ??
         data['tipo'] ??
         data['method'] ??
@@ -153,9 +154,11 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
         final docs = snapshot.docs.toList()
           ..sort((a, b) {
             final dataA =
-                _dataTransacao(a.data()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+                _dataTransacao(a.data()) ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
             final dataB =
-                _dataTransacao(b.data()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+                _dataTransacao(b.data()) ??
+                    DateTime.fromMillisecondsSinceEpoch(0);
 
             return dataA.compareTo(dataB);
           });
@@ -200,7 +203,8 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
             final data = doc.data();
 
             final quantity =
-                ((data['quantity'] ?? data['quantidade']) as num?)?.toInt() ?? 0;
+                ((data['quantity'] ?? data['quantidade']) as num?)?.toInt() ??
+                    0;
 
             if (quantity <= 0) continue;
 
@@ -226,8 +230,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       }
 
       final variation = endValue - startValue;
-      final variationPercent =
-      startValue > 0 ? (variation / startValue) * 100 : 0.0;
+      final variationPercent = startValue > 0
+          ? (variation / startValue) * 100
+          : 0.0;
 
       if (!mounted) return;
 
@@ -236,8 +241,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
         _assetStartValue = startValue;
         _assetEndValue = endValue;
         _assetVariation = variation;
-        _assetVariationPercent =
-        variationPercent.isFinite ? variationPercent : 0.0;
+        _assetVariationPercent = variationPercent.isFinite
+            ? variationPercent
+            : 0.0;
         _assetStartLabel = startLabel;
         _assetEndLabel = endLabel;
         _loadingAssetChart = false;
@@ -246,8 +252,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       final startValue = widget.ativo.precoMedio * widget.ativo.tokens;
       final endValue = widget.ativo.valorTotal;
       final variation = endValue - startValue;
-      final variationPercent =
-      startValue > 0 ? (variation / startValue) * 100 : 0.0;
+      final variationPercent = startValue > 0
+          ? (variation / startValue) * 100
+          : 0.0;
 
       if (!mounted) return;
 
@@ -256,8 +263,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
         _assetStartValue = startValue;
         _assetEndValue = endValue;
         _assetVariation = variation;
-        _assetVariationPercent =
-        variationPercent.isFinite ? variationPercent : 0.0;
+        _assetVariationPercent = variationPercent.isFinite
+            ? variationPercent
+            : 0.0;
         _assetStartLabel = 'Compra';
         _assetEndLabel = 'Atual';
         _loadingAssetChart = false;
@@ -276,8 +284,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 
   Oferta? _selecionarOfertaParaModo(ModoNegociacao modo) {
-    final tipoNecessario =
-    modo == ModoNegociacao.compra ? TipoOferta.venda : TipoOferta.compra;
+    final tipoNecessario = modo == ModoNegociacao.compra
+        ? TipoOferta.venda
+        : TipoOferta.compra;
 
     final ofertasValidas = widget.ofertasDisponiveis
         .where(
@@ -306,11 +315,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
           ? 'Nenhuma oferta de venda disponível para compra.'
           : 'Nenhuma oferta de compra disponível para venda.';
 
-      AppSnackBar.show(
-        context,
-        message: mensagem,
-        error: true,
-      );
+      AppSnackBar.show(context, message: mensagem, error: true);
 
       return;
     }
@@ -340,26 +345,18 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
                     child: Row(
                       children: [
                         IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.textoPrincipal,
+                            color: AppColors.destaque,
                             size: 20,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Detalhe do ativo',
-                          style: TextStyle(
-                            color: AppColors.destaque,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
+                        const Expanded(child: SizedBox()),
                       ],
                     ),
                   ),
@@ -367,105 +364,95 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
                   sliver: SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        _AtivoHeroCard(ativo: widget.ativo),
-                        const SizedBox(height: 18),
-                        _loadingAssetChart
-                            ? Container(
-                          height: 260,
-                          decoration: premiumCardDecoration(),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.destaque,
-                            ),
-                          ),
-                        )
-                            : WalletChartCard(
-                          data: _assetChartData,
-                          selectedTimePeriod: selectedTimePeriod,
-                          startValue: _assetStartValue,
-                          endValue: _assetEndValue,
-                          variation: _assetVariation,
-                          variationPercent: _assetVariationPercent,
-                          startLabel: _assetStartLabel,
-                          endLabel: _assetEndLabel,
-                          horizontalPadding: 0,
-                          onPeriodChanged: _trocarPeriodoAtivo,
-                        ),
-                        const SizedBox(height: 18),
-                        _DetalheMetricasCard(
-                          ativo: widget.ativo,
-                          variacaoPeriodo: _assetVariationPercent,
-                          resultadoPeriodo: _assetVariation,
-                        ),
-                        const SizedBox(height: 18),
-                        SectionCard(
-                          title: 'Acompanhamento do ativo',
-                          child: Column(
-                            children: [
-                              InfoRow(
-                                label: 'Preço médio de compra',
-                                value:
-                                'R\$ ${widget.ativo.precoMedio.toStringAsFixed(2)}',
-                                boxed: true,
-                              ),
-                              const SizedBox(height: 10),
-                              InfoRow(
-                                label: 'Preço atual',
-                                value:
-                                'R\$ ${widget.ativo.valorToken.toStringAsFixed(2)}',
-                                destaque: true,
-                                boxed: true,
-                              ),
-                              const SizedBox(height: 10),
-                              InfoRow(
-                                label: 'Resultado no período',
-                                value:
-                                '${_assetVariation >= 0 ? '+' : '-'} R\$ ${_assetVariation.abs().toStringAsFixed(2)}',
-                                boxed: true,
-                              ),
-                              const SizedBox(height: 10),
-                              InfoRow(
-                                label: 'Variação no período',
-                                value:
-                                '${_assetVariation >= 0 ? '+' : ''}${_assetVariationPercent.toStringAsFixed(1)}%',
-                                destaque: true,
-                                boxed: true,
-                              ),
-                            ],
+                    delegate: SliverChildListDelegate([
+                      _AtivoHeroCard(ativo: widget.ativo),
+                      const SizedBox(height: 18),
+                      _loadingAssetChart
+                          ? Container(
+                        height: 260,
+                        decoration: premiumCardDecoration(),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.destaque,
                           ),
                         ),
-                        const SizedBox(height: 26),
-                        Row(
+                      )
+                          : WalletChartCard(
+                        data: _assetChartData,
+                        selectedTimePeriod: selectedTimePeriod,
+                        startValue: _assetStartValue,
+                        endValue: _assetEndValue,
+                        variation: _assetVariation,
+                        variationPercent: _assetVariationPercent,
+                        startLabel: _assetStartLabel,
+                        endLabel: _assetEndLabel,
+                        horizontalPadding: 0,
+                        onPeriodChanged: _trocarPeriodoAtivo,
+                      ),
+                      const SizedBox(height: 18),
+                      _DetalheMetricasCard(
+                        ativo: widget.ativo,
+                        variacaoPeriodo: _assetVariationPercent,
+                        resultadoPeriodo: _assetVariation,
+                      ),
+                      const SizedBox(height: 18),
+                      SectionCard(
+                        title: 'Acompanhamento do ativo',
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: shared.OutlineButton(
-                                label: 'Vender',
-                                height: 54,
-                                radius: 18,
-                                onTap: () => _abrirOrdem(
-                                  context,
-                                  ModoNegociacao.venda,
-                                ),
-                              ),
+                            InfoRow(
+                              label: 'Preço médio de compra',
+                              value:
+                              'R\$ ${widget.ativo.precoMedio.toStringAsFixed(2)}',
+                              boxed: true,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GradientButton(
-                                label: 'Comprar mais',
-                                height: 54,
-                                radius: 18,
-                                onTap: () => _abrirOrdem(
-                                  context,
-                                  ModoNegociacao.compra,
-                                ),
-                              ),
+                            const SizedBox(height: 10),
+                            InfoRow(
+                              label: 'Preço atual',
+                              value:
+                              'R\$ ${widget.ativo.valorToken.toStringAsFixed(2)}',
+                              destaque: true,
+                              boxed: true,
+                            ),
+                            const SizedBox(height: 10),
+                            InfoRow(
+                              label: 'Resultado no período',
+                              value:
+                              '${_assetVariation >= 0 ? '+' : '-'} R\$ ${_assetVariation.abs().toStringAsFixed(2)}',
+                              boxed: true,
+                            ),
+                            const SizedBox(height: 10),
+                            InfoRow(
+                              label: 'Variação no período',
+                              value:
+                              '${_assetVariation >= 0 ? '+' : ''}${_assetVariationPercent.toStringAsFixed(1)}%',
+                              destaque: true,
+                              boxed: true,
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 26),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppButton.outline(
+                              label: 'Vender',
+                              onTap: () =>
+                                  _abrirOrdem(context, ModoNegociacao.venda),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppButton.primary(
+                              label: 'Comprar mais',
+                              onTap: () =>
+                                  _abrirOrdem(context, ModoNegociacao.compra),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ]),
                   ),
                 ),
               ],
@@ -480,9 +467,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
 class _AtivoHeroCard extends StatelessWidget {
   final AtivoCarteira ativo;
 
-  const _AtivoHeroCard({
-    required this.ativo,
-  });
+  const _AtivoHeroCard({required this.ativo});
 
   @override
   Widget build(BuildContext context) {
@@ -509,16 +494,15 @@ class _AtivoHeroCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textoPrincipal,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 7),
                 Text(
                   '${ativo.tokens} tokens em carteira',
                   style: const TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 12,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -526,8 +510,7 @@ class _AtivoHeroCard extends StatelessWidget {
                   'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
                   style: const TextStyle(
                     color: AppColors.destaque,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -629,9 +612,7 @@ class _DetailMetricItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -640,9 +621,8 @@ class _DetailMetricItem extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+              color: Colors.white70,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 5),
@@ -652,8 +632,7 @@ class _DetailMetricItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textoPrincipal,
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],

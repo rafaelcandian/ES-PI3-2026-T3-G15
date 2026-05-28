@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 
 /// Bottom sheet de processamento da ordem.
 ///
-/// Usa o botão global GradientButton e mantém locais apenas os componentes
+/// Usa o botão global AppButton e mantém locais apenas os componentes
 /// específicos do bottom sheet.
 class OrderProcessingSheet extends StatefulWidget {
   final Oferta oferta;
@@ -64,9 +64,7 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(
-        top: Radius.circular(30),
-      ),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       child: AnimatedSize(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
@@ -79,14 +77,9 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
           ),
           decoration: BoxDecoration(
             color: AppColors.card,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(30),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
             border: const Border(
-              top: BorderSide(
-                color: AppColors.bordaClara,
-                width: 1,
-              ),
+              top: BorderSide(color: AppColors.bordaClara, width: 1),
             ),
             boxShadow: [
               BoxShadow(
@@ -117,7 +110,7 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
                 _descricao,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Colors.white70,
                   fontSize: 13,
                   height: 1.5,
                   fontWeight: FontWeight.w500,
@@ -126,13 +119,9 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
               const SizedBox(height: 26),
               _StepsList(completed: _completed),
               const SizedBox(height: 28),
-              GradientButton(
-                label: _completed ? 'VOLTAR AO BALCÃO' : 'AGUARDE...',
+              AppButton.primary(
+                label: _completed ? 'Voltar ao balcão' : 'Aguarde...',
                 loading: !_completed,
-                radius: 16,
-                height: 54,
-                fontSize: 14.5,
-                letterSpacing: 0.4,
                 onTap: _completed ? () => Navigator.pop(context) : null,
               ),
             ],
@@ -224,9 +213,7 @@ class _LoadingIcon extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.campo,
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+        border: Border.all(color: AppColors.bordaClara),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.22),
@@ -267,10 +254,7 @@ class _StepsList extends StatelessWidget {
             padding: EdgeInsets.only(
               bottom: index == steps.length - 1 ? 0 : 10,
             ),
-            child: _StepRow(
-              label: steps[index],
-              completed: completed,
-            ),
+            child: _StepRow(label: steps[index], completed: completed),
           );
         }),
       ),

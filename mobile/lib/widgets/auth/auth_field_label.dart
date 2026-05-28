@@ -5,11 +5,7 @@ class AuthFieldLabel extends StatelessWidget {
   final String label;
   final bool required;
 
-  const AuthFieldLabel({
-    super.key,
-    required this.label,
-    this.required = false,
-  });
+  const AuthFieldLabel({super.key, required this.label, this.required = false});
 
   @override
   Widget build(BuildContext context) {

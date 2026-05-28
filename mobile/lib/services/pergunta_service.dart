@@ -14,7 +14,7 @@ class PerguntaService {
         'texto': texto,
         'isPrivada': isPrivada,
       });
-      
+
       return null; // Sucesso
     } on FirebaseFunctionsException catch (e) {
       if (e.code == 'permission-denied') {
@@ -35,7 +35,7 @@ class PerguntaService {
       });
 
       final List<dynamic> data = result.data as List<dynamic>? ?? [];
-      
+
       return data.map((item) {
         return Map<String, dynamic>.from(item as Map);
       }).toList();

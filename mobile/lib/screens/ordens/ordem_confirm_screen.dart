@@ -5,16 +5,14 @@ import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/balcao_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 import 'package:mescla_invest/widgets/shared/info_row.dart';
-import 'package:mescla_invest/widgets/shared/outline_button.dart' as shared;
 import 'package:mescla_invest/widgets/shared/section_card.dart';
 
 /// Tela de processamento e conclusão da ordem.
 ///
-/// Usa os componentes globais do projeto para manter o padrão visual:
-/// AtmosphericBackground, SectionCard, InfoRow, GradientButton e OutlineButton.
+/// Usa os componentes globais do projeto para manter o padrão visual.
 class OrdemConfirmScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -176,7 +174,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                             _subtituloTela,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Colors.white70,
                               fontSize: 14,
                               height: 1.5,
                               fontWeight: FontWeight.w500,
@@ -302,13 +300,9 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     return Column(
       key: const ValueKey('actions'),
       children: [
-        GradientButton(
-          label: 'VOLTAR ÀS STARTUPS',
+        AppButton.primary(
+          label: 'Voltar às startups',
           icon: Icons.storefront_rounded,
-          height: 54,
-          radius: 18,
-          fontSize: 14.5,
-          letterSpacing: 0.4,
           onTap: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -318,11 +312,9 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
           },
         ),
         const SizedBox(height: 12),
-        shared.OutlineButton(
+        AppButton.outline(
           label: 'Ver carteira',
           icon: Icons.account_balance_wallet_rounded,
-          height: 52,
-          radius: 18,
           onTap: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -500,10 +492,7 @@ class _WaitingMessage extends StatelessWidget {
     return Container(
       key: const ValueKey('waiting'),
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: premiumFieldDecoration(radius: 18),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -600,7 +589,9 @@ class _StepRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: done ? AppColors.destaque : AppColors.campo,
-              border: Border.all(color: color),
+              border: Border.all(
+                color: color,
+              ),
             ),
             child: done
                 ? const Icon(

@@ -15,8 +15,9 @@ class StartupService {
 
   Future<void> seedStartups() async {
     try {
-      final callable = FirebaseFunctions.instance
-          .httpsCallable('seedStartupCatalog');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'seedStartupCatalog',
+      );
 
       final result = await callable.call();
 

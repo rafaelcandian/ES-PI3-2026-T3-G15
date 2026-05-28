@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/services/balcao_service.dart';
 
@@ -43,13 +43,14 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       final saldo = await CarteiraService().getBalance();
       final tokensMap = await CarteiraService().getTokens();
 
-      final startupsSnapshot = await FirebaseFirestore.instance.collection('startups').get();
+      final startupsSnapshot =
+      await FirebaseFirestore.instance.collection('startups').get();
 
       List<Oferta> tempOfertasCompra = [];
       List<Oferta> tempOfertasVenda = [];
       List<AtivoUsuario> tempAtivosUsuario = [];
 
-      for (var doc in startupsSnapshot.docs) {
+      for (final doc in startupsSnapshot.docs) {
         final data = doc.data();
         final startupId = doc.id;
         final title = (data['title'] ?? data['nome'] ?? 'Startup').toString();
@@ -59,16 +60,20 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
             .toDouble();
 
         final minBuyPrice =
-        ((data['minBuyPrice'] ?? data['tokenValue'] ?? data['valorToken'] ?? 1.0)
+        ((data['minBuyPrice'] ??
+            data['tokenValue'] ??
+            data['valorToken'] ??
+            1.0)
         as num)
             .toDouble();
 
-        final simbolo = (data['ticker'] ?? data['simbolo'] ?? '')
+        final ticker = (data['ticker'] ?? data['simbolo'] ?? '')
             .toString()
             .trim()
-            .toUpperCase()
-            .isNotEmpty
-            ? (data['ticker'] ?? data['simbolo']).toString().trim().toUpperCase()
+            .toUpperCase();
+
+        final simbolo = ticker.isNotEmpty
+            ? ticker
             : title.length >= 3
             ? title.substring(0, 3).toUpperCase()
             : title.toUpperCase();
@@ -76,51 +81,84 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
         final ordens = await BalcaoService().getOpenedOrders(startupId);
 
         final buyOrders = ordens['buy'] ?? [];
-        for (var order in buyOrders) {
-          tempOfertasCompra.add(Oferta(
-            tipo: TipoOferta.compra,
-            quantidade: order.quantity,
-            preco: order.pricePerToken,
-            empresa: title,
-            simbolo: simbolo,
-            variacao: 0.0,
-            volume: '0',
-            spread: 0.0,
-            startupId: startupId,
-            minBuyPrice: minBuyPrice,
-          ));
+        for (final order in buyOrders) {
+          tempOfertasCompra.add(
+            Oferta(
+              tipo: TipoOferta.compra,
+              quantidade: order.quantity,
+              preco: order.pricePerToken,
+              empresa: title,
+              simbolo: simbolo,
+              variacao: 0.0,
+              volume: '0',
+              spread: 0.0,
+              startupId: startupId,
+              minBuyPrice: minBuyPrice,
+            ),
+          );
         }
 
         final sellOrders = ordens['sell'] ?? [];
-        for (var order in sellOrders) {
-          tempOfertasVenda.add(Oferta(
-            tipo: TipoOferta.venda,
-            quantidade: order.quantity,
-            preco: order.pricePerToken,
-            empresa: title,
-            simbolo: simbolo,
-            variacao: 0.0,
-            volume: '0',
-            spread: 0.0,
-            startupId: startupId,
-            minBuyPrice: minBuyPrice,
-          ));
+        for (final order in sellOrders) {
+          tempOfertasVenda.add(
+            Oferta(
+              tipo: TipoOferta.venda,
+              quantidade: order.quantity,
+              preco: order.pricePerToken,
+              empresa: title,
+              simbolo: simbolo,
+              variacao: 0.0,
+              volume: '0',
+              spread: 0.0,
+              startupId: startupId,
+              minBuyPrice: minBuyPrice,
+            ),
+          );
+        }
+
+        // Alteração: inclui a própria startup como vendedora direta.
+        // Isso garante que tokens disponíveis apareçam no balcão para compra.
+        final tokensDisponiveis =
+            (data['tokens'] as num?)?.toInt() ??
+                (data['tokensDisponiveis'] as num?)?.toInt() ??
+                (data['quantidadeTokens'] as num?)?.toInt() ??
+                0;
+
+        if (tokensDisponiveis > 0) {
+          tempOfertasVenda.add(
+            Oferta(
+              tipo: TipoOferta.venda,
+              quantidade: tokensDisponiveis,
+              preco: tokenValue,
+              empresa: title,
+              simbolo: simbolo,
+              variacao: 0.0,
+              volume: 'Direto',
+              spread: 0.0,
+              startupId: startupId,
+              isStartup: true,
+              minBuyPrice: minBuyPrice,
+            ),
+          );
         }
 
         if (tokensMap.containsKey(startupId)) {
           final quantidade = (tokensMap[startupId] as num).toInt();
+
           if (quantidade > 0) {
-            tempAtivosUsuario.add(AtivoUsuario(
-              empresa: title,
-              simbolo: simbolo,
-              quantidade: quantidade,
-              precoMedio: tokenValue,
-              startupId: startupId,
-              minBuyPrice: minBuyPrice,
-              variacao: 0.0,
-              volume: '0',
-              spread: 0.0,
-            ));
+            tempAtivosUsuario.add(
+              AtivoUsuario(
+                empresa: title,
+                simbolo: simbolo,
+                quantidade: quantidade,
+                precoMedio: tokenValue,
+                startupId: startupId,
+                minBuyPrice: minBuyPrice,
+                variacao: 0.0,
+                volume: '0',
+                spread: 0.0,
+              ),
+            );
           }
         }
       }
@@ -135,7 +173,8 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
         });
       }
     } catch (e) {
-      print("Erro ao carregar dados do balcao: $e");
+      debugPrint('Erro ao carregar dados do balcão: $e');
+
       if (mounted) {
         setState(() {
           _loading = false;
@@ -153,10 +192,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       duration: const Duration(milliseconds: 350),
     );
 
-    _fadeAnim = CurvedAnimation(
-      parent: _fadeCtrl,
-      curve: Curves.easeOut,
-    );
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
 
     _fadeCtrl.forward();
     _loadData();
@@ -226,7 +262,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.fundo,
-        extendBody: true,
+        extendBody: false,
         appBar: const AppBarPadrao(titulo: 'Balcão de Tokens'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 1),
         body: _loading
@@ -244,14 +280,28 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        const _PageHeader(),
-                        const SizedBox(height: 20),
+                        const Padding(
+                          padding: EdgeInsets.fromLTRB(22, 16, 22, 16),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                height: 1.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
                         _SaldoOperacionalCard(saldo: _saldo),
                         const SizedBox(height: 18),
                       ],
                     ),
                   ),
-
                   SliverToBoxAdapter(
                     child: _TradeControlPanel(
                       controller: _searchController,
@@ -264,7 +314,6 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                       },
                     ),
                   ),
-
                   if (!isCompra)
                     SliverToBoxAdapter(
                       child: Padding(
@@ -275,25 +324,20 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                         ),
                       ),
                     ),
-
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.only(top: 24),
                       child: _SectionLabel(
                         label: isCompra
-                            ? 'MELHORES OFERTAS PARA COMPRA'
-                            : 'MELHORES OFERTAS PARA VENDA',
+                            ? 'Melhores ofertas para compra'
+                            : 'Melhores ofertas para venda',
                         hint: isCompra
                             ? 'Ordens disponíveis para você comprar tokens.'
                             : 'Ordens disponíveis para você vender seus tokens.',
                       ),
                     ),
                   ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 12),
-                  ),
-
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
                   SliverToBoxAdapter(
                     child: FadeTransition(
                       opacity: _fadeAnim,
@@ -304,10 +348,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                       ),
                     ),
                   ),
-
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 120),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
             ),
@@ -338,7 +379,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.22),
+                    AppColors.azul.withValues(alpha: 0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -355,7 +396,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.07),
+                    AppColors.destaque.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -372,39 +413,11 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.18),
+                    AppColors.roxo.withValues(alpha: 0.18),
                     Colors.transparent,
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===================== HEADER =====================
-
-class _PageHeader extends StatelessWidget {
-  const _PageHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 14),
-          Text(
-            'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textoFraco,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -425,10 +438,7 @@ class _SaldoOperacionalCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 18,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
         decoration: premiumCardDecoration(),
         child: Row(
           children: [
@@ -437,9 +447,9 @@ class _SaldoOperacionalCard extends StatelessWidget {
               height: 46,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.destaque.withOpacity(0.12),
+                color: AppColors.destaque.withValues(alpha: 0.12),
                 border: Border.all(
-                  color: AppColors.destaque.withOpacity(0.28),
+                  color: AppColors.destaque.withValues(alpha: 0.28),
                   width: 1,
                 ),
               ),
@@ -454,21 +464,28 @@ class _SaldoOperacionalCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _SmallLabel(text: 'SALDO DISPONÍVEL'),
+                  Text(
+                    'Saldo disponível',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.72),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     'R\$ ${saldo.toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 23,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.destaque,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Saldo fictício para ordens simuladas',
                     style: TextStyle(
-                      color: AppColors.textoMuitoFraco,
+                      color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -512,9 +529,15 @@ class _TradeControlPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const PremiumSectionLabel(text: 'Operação'),
+            Text(
+              'Operação',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.72),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 14),
-
             TextField(
               controller: controller,
               onChanged: onSearchChanged,
@@ -545,16 +568,13 @@ class _TradeControlPanel extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 14),
-
             Row(
               children: [
                 _ModeButton(
                   label: 'Comprar',
                   icon: Icons.add_rounded,
                   active: modo == ModoNegociacao.compra,
-                  isPrimary: true,
                   onTap: () => onModoChanged(ModoNegociacao.compra),
                 ),
                 const SizedBox(width: 10),
@@ -562,7 +582,6 @@ class _TradeControlPanel extends StatelessWidget {
                   label: 'Vender',
                   icon: Icons.swap_horiz_rounded,
                   active: modo == ModoNegociacao.venda,
-                  isPrimary: false,
                   onTap: () => onModoChanged(ModoNegociacao.venda),
                 ),
               ],
@@ -578,24 +597,19 @@ class _ModeButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool active;
-  final bool isPrimary;
   final VoidCallback onTap;
 
   const _ModeButton({
     required this.label,
     required this.icon,
     required this.active,
-    required this.isPrimary,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     const activeGradient = LinearGradient(
-      colors: [
-        AppColors.destaqueClaro,
-        AppColors.destaqueEscuro,
-      ],
+      colors: [AppColors.destaqueClaro, AppColors.destaqueEscuro],
     );
 
     final textColor = active ? AppColors.fundo : AppColors.textoSecundario;
@@ -603,17 +617,17 @@ class _ModeButton extends StatelessWidget {
     return Expanded(
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
-            height: 46,
+            height: 48,
             decoration: BoxDecoration(
               gradient: active ? activeGradient : null,
               color: active ? null : AppColors.campo,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: active ? AppColors.bordaDestaque : AppColors.bordaClara,
                 width: 0.8,
@@ -621,9 +635,9 @@ class _ModeButton extends StatelessWidget {
               boxShadow: active
                   ? [
                 BoxShadow(
-                  color: AppColors.destaque.withOpacity(0.22),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
+                  color: AppColors.destaque.withValues(alpha: 0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ]
                   : [],
@@ -631,18 +645,14 @@ class _ModeButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  color: textColor,
-                  size: 18,
-                ),
-                const SizedBox(width: 6),
+                Icon(icon, color: textColor, size: 18),
+                const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
                     color: textColor,
                     fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -673,7 +683,8 @@ class _AtivosUsuarioCard extends StatelessWidget {
         child: _EmptyState(
           icon: Icons.inventory_2_outlined,
           title: 'Nenhum ativo encontrado para venda.',
-          subtitle: 'Quando você tiver tokens em carteira, eles aparecerão aqui para criar uma ordem de venda.',
+          subtitle:
+          'Quando você tiver tokens em carteira, eles aparecerão aqui para criar uma ordem de venda.',
         ),
       );
     }
@@ -686,15 +697,22 @@ class _AtivosUsuarioCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const PremiumHeaderEyebrow(text: 'ATIVOS DISPONÍVEIS PARA VENDA'),
+            Text(
+              'Ativos disponíveis para venda',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.72),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Toque em um ativo para definir quantidade e preço da sua ordem de venda.',
               style: TextStyle(
-                color: AppColors.textoMuitoFraco,
+                color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 11,
                 height: 1.35,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 14),
@@ -743,6 +761,7 @@ class _AtivoVendaTile extends StatelessWidget {
       volume: ativo.volume,
       spread: ativo.spread,
       startupId: ativo.startupId,
+      isStartup: false,
       minBuyPrice: ativo.minBuyPrice,
     );
 
@@ -770,15 +789,10 @@ class _AtivoVendaTile extends StatelessWidget {
         onTap: () => _abrirVenda(context),
         child: Container(
           padding: const EdgeInsets.all(14),
-          decoration: premiumFieldDecoration(
-            radius: 18,
-          ),
+          decoration: premiumFieldDecoration(radius: 18),
           child: Row(
             children: [
-              _TickerBox(
-                simbolo: ativo.simbolo,
-                color: AppColors.destaque,
-              ),
+              _TickerBox(simbolo: ativo.simbolo, color: AppColors.destaque),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -791,7 +805,7 @@ class _AtivoVendaTile extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.textoPrincipal,
                         fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -809,7 +823,7 @@ class _AtivoVendaTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.destaque,
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -824,7 +838,7 @@ class _AtivoVendaTile extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.textoMuitoFraco,
                       fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -833,7 +847,7 @@ class _AtivoVendaTile extends StatelessWidget {
                     style: const TextStyle(
                       color: AppColors.destaque,
                       fontSize: 13,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -858,10 +872,7 @@ class _SectionLabel extends StatelessWidget {
   final String label;
   final String hint;
 
-  const _SectionLabel({
-    required this.label,
-    required this.hint,
-  });
+  const _SectionLabel({required this.label, required this.hint});
 
   @override
   Widget build(BuildContext context) {
@@ -872,18 +883,17 @@ class _SectionLabel extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textoMuitoFraco,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w900,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.72),
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             hint,
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -987,6 +997,7 @@ class _OfertaCardState extends State<_OfertaCard> {
               oferta: widget.oferta,
               modo: widget.modo,
               ofertasDisponiveis: widget.ofertasDisponiveis,
+              compraDireto: widget.oferta.isStartup,
             ),
           ),
         );
@@ -1001,17 +1012,11 @@ class _OfertaCardState extends State<_OfertaCard> {
           children: [
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: premiumCardDecoration(
-                radius: 22,
-              ),
+              decoration: premiumCardDecoration(radius: 22),
               child: Row(
                 children: [
-                  _TickerBox(
-                    simbolo: widget.oferta.simbolo,
-                    color: accent,
-                  ),
+                  _TickerBox(simbolo: widget.oferta.simbolo, color: accent),
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1019,7 +1024,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                         Row(
                           children: [
                             _Badge(
-                              label: isCompra ? 'VENDA' : 'COMPRA',
+                              label: isCompra ? 'Venda' : 'Compra',
                               color: accent,
                             ),
                             const SizedBox(width: 6),
@@ -1028,7 +1033,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                               style: const TextStyle(
                                 color: AppColors.textoMuitoFraco,
                                 fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -1040,7 +1045,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w800,
                             color: AppColors.textoPrincipal,
                           ),
                         ),
@@ -1067,9 +1072,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                       ],
                     ),
                   ),
-
                   const SizedBox(width: 10),
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -1077,7 +1080,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                         'R\$ ${widget.oferta.preco.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.destaque,
                         ),
                       ),
@@ -1097,15 +1100,15 @@ class _OfertaCardState extends State<_OfertaCard> {
                             style: TextStyle(
                               fontSize: 11,
                               color: variationColor,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        width: 86,
-                        height: 32,
+                        width: 90,
+                        height: 34,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [
@@ -1113,23 +1116,22 @@ class _OfertaCardState extends State<_OfertaCard> {
                               AppColors.destaqueEscuro,
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: accent.withOpacity(0.18),
-                              blurRadius: 12,
-                              offset: const Offset(0, 5),
+                              color: accent.withValues(alpha: 0.10),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
                         child: Center(
                           child: Text(
-                            isCompra ? 'COMPRAR' : 'VENDER',
-                            style: TextStyle(
+                            isCompra ? 'Comprar' : 'Vender',
+                            style: const TextStyle(
                               color: AppColors.fundo,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 10,
-                              letterSpacing: 0.7,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -1164,10 +1166,7 @@ class _TickerBox extends StatelessWidget {
   final String simbolo;
   final Color color;
 
-  const _TickerBox({
-    required this.simbolo,
-    required this.color,
-  });
+  const _TickerBox({required this.simbolo, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -1175,43 +1174,20 @@ class _TickerBox extends StatelessWidget {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: color.withOpacity(0.30),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
       child: Center(
         child: Text(
           simbolo,
           style: TextStyle(
             fontSize: simbolo.length > 3 ? 9 : 12,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
             color: color,
-            letterSpacing: 0.5,
+            letterSpacing: 0.3,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SmallLabel extends StatelessWidget {
-  final String text;
-
-  const _SmallLabel({
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 10,
-        color: AppColors.textoMuitoFraco,
-        letterSpacing: 1.5,
-        fontWeight: FontWeight.w900,
       ),
     );
   }
@@ -1221,33 +1197,23 @@ class _Badge extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _Badge({
-    required this.label,
-    required this.color,
-  });
+  const _Badge({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 7,
-        vertical: 3,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(0.35),
-          width: 0.5,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.30), width: 0.5),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontSize: 9,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           color: color,
-          letterSpacing: 1,
         ),
       ),
     );
@@ -1258,10 +1224,7 @@ class _MiniInfo extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MiniInfo({
-    required this.label,
-    required this.value,
-  });
+  const _MiniInfo({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1270,17 +1233,17 @@ class _MiniInfo extends StatelessWidget {
         children: [
           TextSpan(
             text: '$label: ',
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
               fontSize: 10,
             ),
           ),
           TextSpan(
             text: value,
-            style: const TextStyle(
-              color: AppColors.textoFraco,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1304,20 +1267,11 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 26,
-      ),
-      decoration: premiumCardDecoration(
-        radius: 22,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 26),
+      decoration: premiumCardDecoration(radius: 22),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: AppColors.textoMuitoFraco,
-            size: 42,
-          ),
+          Icon(icon, color: AppColors.textoMuitoFraco, size: 42),
           const SizedBox(height: 12),
           Text(
             title,

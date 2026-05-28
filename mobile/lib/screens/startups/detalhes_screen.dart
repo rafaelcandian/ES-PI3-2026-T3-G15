@@ -6,7 +6,7 @@ import 'package:mescla_invest/screens/startups/startup_data.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/services/pergunta_service.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/screens/startups/startup_video_screen.dart';
 
 import '../../models/balcao_model.dart';
@@ -174,9 +174,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       SnackBar(
         backgroundColor: AppColors.card,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         content: Text(
           mensagem,
           style: const TextStyle(
@@ -198,9 +196,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
         body: Center(
           child: Text(
             'Startup não encontrada',
-            style: TextStyle(
-              color: AppColors.textoPrincipal,
-            ),
+            style: TextStyle(color: AppColors.textoPrincipal),
           ),
         ),
       );
@@ -231,9 +227,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             fontWeight: FontWeight.w900,
           ),
         ),
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       bottomNavigationBar: _InvestBottomBar(
         onInvestir: () => _abrirOrdemCompra(context, startup),
@@ -249,7 +243,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
               children: [
                 _HeroImage(startup: startup),
                 const SizedBox(height: 24),
-
                 Text(
                   startup.title,
                   style: const TextStyle(
@@ -259,21 +252,17 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                     height: 1.1,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   startup.subtitle,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.white70,
                     fontSize: 15,
                     height: 1.5,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -288,13 +277,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
-
                 _MetricCard(startup: startup),
-
                 const SizedBox(height: 22),
-
                 _buildSectionCard(
                   title: 'Descrição',
                   child: Text(
@@ -302,16 +287,14 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                         ? startup.description
                         : 'Startup sem descrição cadastrada.',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.white70,
                       height: 1.7,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 _buildSectionCard(
                   title: 'Informações da Oferta',
                   child: Column(
@@ -366,19 +349,17 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 _buildSectionCard(
                   title: 'Sócios',
                   child: startup.partners.isEmpty
                       ? const Text(
                     'Nenhum sócio cadastrado para esta startup.',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.white70,
                       height: 1.5,
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   )
                       : Column(
@@ -389,8 +370,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
                         return Padding(
                           padding: EdgeInsets.only(
-                            bottom:
-                            index == startup.partners.length - 1
+                            bottom: index == startup.partners.length - 1
                                 ? 0
                                 : 12,
                           ),
@@ -404,16 +384,12 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 _buildSectionCard(
                   title: 'Pitch Deck',
                   child: const _PitchDeckTile(),
                 ),
-
                 const SizedBox(height: 18),
-
                 _buildSectionCard(
                   title: 'Perguntas',
                   child: Column(
@@ -433,7 +409,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                           child: Text(
                             'Nenhuma pergunta ainda.',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.white70,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -463,15 +439,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 _buildSectionCard(
                   title: 'Canal do Investidor',
-                  child: _buildCanalInvestidorContent(
-                    context,
-                    startup,
-                  ),
+                  child: _buildCanalInvestidorContent(context, startup),
                 ),
               ],
             ),
@@ -481,10 +452,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  void _abrirOrdemCompra(
-      BuildContext context,
-      StartupData startup,
-      ) {
+  void _abrirOrdemCompra(BuildContext context, StartupData startup) {
     final simbolo = _gerarSimbolo(startup.title);
 
     final ofertaPrincipal = Oferta(
@@ -569,9 +537,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 18),
-          child: CircularProgressIndicator(
-            color: AppColors.destaque,
-          ),
+          child: CircularProgressIndicator(color: AppColors.destaque),
         ),
       );
     }
@@ -583,7 +549,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           const Text(
             'Você possui tokens desta startup. O canal privado está liberado.',
             style: TextStyle(
-              color: Colors.white,
+              color: Colors.white70,
               height: 1.5,
               fontWeight: FontWeight.w600,
             ),
@@ -600,17 +566,14 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             decoration: InputDecoration(
               hintText: 'Envie uma pergunta privada para a startup...',
               hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.45),
+                color: Colors.white.withValues(alpha: 0.45),
               ),
             ),
           ),
           const SizedBox(height: 14),
-          GradientButton(
-            label: 'ENVIAR PERGUNTA PRIVADA',
+          AppButton.primary(
+            label: 'Enviar pergunta privada',
             loading: _enviandoPerguntaPrivada,
-            height: 54,
-            radius: 18,
-            fontSize: 13.5,
             onTap: _enviandoPerguntaPrivada
                 ? null
                 : () => _enviarPerguntaPrivada(startup),
@@ -622,13 +585,11 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       child: const Text(
         'O canal privado é exclusivo para investidores.',
         style: TextStyle(
-          color: Colors.white,
+          color: Colors.white70,
           height: 1.5,
           fontWeight: FontWeight.w600,
         ),
@@ -638,19 +599,14 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
   static Widget _buildTag(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 9,
-      ),
-      decoration: premiumFieldDecoration(
-        radius: 50,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: premiumFieldDecoration(radius: 50),
       child: Text(
         text,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 12,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
@@ -663,14 +619,18 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
+      decoration: premiumCardDecoration(radius: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PremiumHeaderEyebrow(
-            text: title.toUpperCase(),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
           ),
           const SizedBox(height: 15),
           child,
@@ -703,48 +663,33 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardElevado.withOpacity(0.92),
+        color: AppColors.cardElevado.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.destaque.withOpacity(0.34),
+          color: AppColors.destaque.withValues(alpha: 0.16),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.destaque.withOpacity(0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [
-                  AppColors.destaqueClaro,
-                  AppColors.destaqueEscuro,
-                ],
+              color: AppColors.destaque.withValues(alpha: 0.10),
+              border: Border.all(
+                color: AppColors.destaque.withValues(alpha: 0.20),
+                width: 1,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.destaque.withOpacity(0.22),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
             child: Center(
               child: Text(
                 _iniciaisSocio(name),
                 style: const TextStyle(
-                  color: AppColors.fundo,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
+                  color: AppColors.destaque,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -761,7 +706,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -772,7 +717,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -780,37 +725,22 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           ),
           const SizedBox(width: 12),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
             decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.destaque.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.destaque.withOpacity(0.38),
+                color: AppColors.destaque.withValues(alpha: 0.18),
+                width: 1,
               ),
             ),
-            child: Column(
-              children: [
-                Text(
-                  '${equityPercent.toStringAsFixed(1)}%',
-                  style: const TextStyle(
-                    color: AppColors.destaque,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'equity',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+            child: Text(
+              '${equityPercent.toStringAsFixed(1)}%',
+              style: const TextStyle(
+                color: AppColors.destaque,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
         ],
@@ -818,24 +748,19 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  static Widget _buildInfoRow(
-      String label,
-      String value,
-      ) {
+  static Widget _buildInfoRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.white70,
                 fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -848,7 +773,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -866,9 +791,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
+      decoration: premiumFieldDecoration(radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -884,7 +807,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                 usuario,
                 style: const TextStyle(
                   color: AppColors.destaque,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(width: 8),
@@ -903,7 +826,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             pergunta,
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 12),
@@ -916,7 +839,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             child: Text(
               resposta,
               style: const TextStyle(
-                color: Colors.white,
+                color: Colors.white70,
                 height: 1.5,
                 fontWeight: FontWeight.w500,
               ),
@@ -933,9 +856,7 @@ class _AtmosphericBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Container(),
-    );
+    return Positioned.fill(child: Container());
   }
 }
 
@@ -970,9 +891,7 @@ class _HeroImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: premiumCardDecoration(
-        radius: 26,
-      ),
+      decoration: premiumCardDecoration(radius: 26),
       padding: const EdgeInsets.all(4),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -1003,8 +922,8 @@ class _HeroImage extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withOpacity(0.10),
-                    Colors.black.withOpacity(0.72),
+                    Colors.black.withValues(alpha: 0.10),
+                    Colors.black.withValues(alpha: 0.72),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -1026,7 +945,7 @@ class _HeroImage extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.destaque.withOpacity(0.30),
+                      color: AppColors.destaque.withValues(alpha: 0.30),
                       blurRadius: 26,
                       offset: const Offset(0, 8),
                     ),
@@ -1055,7 +974,7 @@ class _HeroImage extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -1086,9 +1005,7 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
+      decoration: premiumCardDecoration(radius: 24),
       child: Column(
         children: [
           Row(
@@ -1152,9 +1069,7 @@ class _MetricColumn extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       child: Column(
         children: [
           Text(
@@ -1173,7 +1088,7 @@ class _MetricColumn extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.destaque,
               fontSize: 20,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -1189,22 +1104,17 @@ class _PitchDeckTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
+      decoration: premiumFieldDecoration(radius: 18),
       child: const Row(
         children: [
-          Icon(
-            Icons.picture_as_pdf_rounded,
-            color: AppColors.destaque,
-          ),
+          Icon(Icons.picture_as_pdf_rounded, color: AppColors.destaque),
           SizedBox(width: 12),
           Expanded(
             child: Text(
               'Pitch Deck disponível em breve',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -1240,17 +1150,14 @@ class _PublicQuestionInput extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Envie uma pergunta pública...',
             hintStyle: TextStyle(
-              color: Colors.white.withOpacity(0.45),
+              color: Colors.white.withValues(alpha: 0.45),
             ),
           ),
         ),
         const SizedBox(height: 14),
-        GradientButton(
-          label: 'ENVIAR PERGUNTA',
+        AppButton.primary(
+          label: 'Enviar pergunta',
           loading: loading,
-          height: 54,
-          radius: 18,
-          fontSize: 14.5,
           onTap: loading ? null : onTap,
         ),
       ],
@@ -1272,19 +1179,16 @@ class _InvestBottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         decoration: BoxDecoration(
-          color: AppColors.fundo.withOpacity(0.98),
+          color: AppColors.fundo.withValues(alpha: 0.98),
           border: Border(
             top: BorderSide(
-              color: AppColors.bordaClara.withOpacity(0.8),
+              color: AppColors.bordaClara.withValues(alpha: 0.8),
             ),
           ),
         ),
-        child: GradientButton(
-          label: 'INVESTIR NA STARTUP',
+        child: AppButton.primary(
+          label: 'Investir na startup',
           icon: Icons.trending_up_rounded,
-          height: 56,
-          radius: 18,
-          fontSize: 15.5,
           onTap: onInvestir,
         ),
       ),

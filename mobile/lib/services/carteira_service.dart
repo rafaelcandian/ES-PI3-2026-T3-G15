@@ -54,22 +54,17 @@ class CarteiraService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return WalletTransactionModel.fromFirestore(
-          doc.data(),
-          doc.id,
-        );
-      }).toList();
-    });
+          return snapshot.docs.map((doc) {
+            return WalletTransactionModel.fromFirestore(doc.data(), doc.id);
+          }).toList();
+        });
   }
 
   Future<WalletTransactionModel> addBalancePixSimulado(double valor) async {
     try {
       final callable = _functions.httpsCallable('loadWallet');
 
-      await callable.call({
-        'valor': valor,
-      });
+      await callable.call({'valor': valor});
 
       return WalletTransactionModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -177,18 +172,14 @@ class CarteiraService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      transaction.set(
-        ativoRef,
-        {
-          'startupId': startupId,
-          'startupNome': startupNome,
-          'simbolo': simbolo,
-          'quantidadeTokens': FieldValue.increment(quantidade),
-          'precoMedioReferencia': precoUnitario,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      transaction.set(ativoRef, {
+        'startupId': startupId,
+        'startupNome': startupNome,
+        'simbolo': simbolo,
+        'quantidadeTokens': FieldValue.increment(quantidade),
+        'precoMedioReferencia': precoUnitario,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       transaction.set(transacaoRef, {
         'type': 'purchase',
@@ -227,17 +218,18 @@ class CarteiraService {
     }
   }
 
-  Future<List<double>> getWalletChartValues({
-    required String periodo,
-  }) async {
+  Future<List<double>> getWalletChartValues({required String periodo}) async {
     try {
       final points = await getWalletChartPoints(periodo: periodo);
 
-      return points.map((point) {
-        return (point['value'] as num?)?.toDouble() ?? 0.0;
-      }).where((value) {
-        return value > 0;
-      }).toList();
+      return points
+          .map((point) {
+            return (point['value'] as num?)?.toDouble() ?? 0.0;
+          })
+          .where((value) {
+            return value > 0;
+          })
+          .toList();
     } catch (e) {
       print('Erro ao carregar gráfico da carteira: $e');
       return [];

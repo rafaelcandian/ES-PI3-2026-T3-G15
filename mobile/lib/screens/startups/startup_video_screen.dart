@@ -80,9 +80,7 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.fundo,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: AppColors.destaque,
-        ),
+        iconTheme: const IconThemeData(color: AppColors.destaque),
         title: Text(
           widget.title,
           maxLines: 1,
@@ -98,15 +96,9 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const PremiumHeaderEyebrow(
-              text: 'PITCH EM VÍDEO',
-            ),
+            const PremiumHeaderEyebrow(text: 'PITCH EM VÍDEO'),
             const SizedBox(height: 16),
-            Expanded(
-              child: Center(
-                child: _buildVideoContent(),
-              ),
-            ),
+            Expanded(child: Center(child: _buildVideoContent())),
           ],
         ),
       ),
@@ -115,18 +107,14 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
 
   Widget _buildVideoContent() {
     if (_loading) {
-      return const CircularProgressIndicator(
-        color: AppColors.destaque,
-      );
+      return const CircularProgressIndicator(color: AppColors.destaque);
     }
 
     if (_error) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
-        decoration: premiumCardDecoration(
-          radius: 24,
-        ),
+        decoration: premiumCardDecoration(radius: 24),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -153,9 +141,7 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          decoration: premiumCardDecoration(
-            radius: 24,
-          ),
+          decoration: premiumCardDecoration(radius: 24),
           padding: const EdgeInsets.all(6),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
@@ -186,9 +172,7 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
             ),
             label: Text(
               _controller.value.isPlaying ? 'Pausar vídeo' : 'Reproduzir vídeo',
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w900),
             ),
           ),
         ),

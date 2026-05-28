@@ -90,7 +90,9 @@ class BalcaoService {
     try {
       _uid;
 
-      final callable = FirebaseFunctions.instance.httpsCallable('directPurchase');
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'directPurchase',
+      );
 
       await callable.call({
         'startupId': startupId,
@@ -135,10 +137,7 @@ class BalcaoService {
       print('Erro ao buscar ordens: $e');
     }
 
-    return {
-      OrderType.buy.name: buyOrders,
-      OrderType.sell.name: sellOrders,
-    };
+    return {OrderType.buy.name: buyOrders, OrderType.sell.name: sellOrders};
   }
 
   String _handleFunctionError(

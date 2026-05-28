@@ -1,18 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum WalletTransactionType {
-  deposit,
-  purchase,
-  sale,
-  withdraw,
-}
+enum WalletTransactionType { deposit, purchase, sale, withdraw }
 
-enum WalletTransactionStatus {
-  pending,
-  completed,
-  cancelled,
-  failed,
-}
+enum WalletTransactionStatus { pending, completed, cancelled, failed }
 
 class WalletTransactionModel {
   final String id;
@@ -83,18 +73,18 @@ class WalletTransactionModel {
   });
 
   factory WalletTransactionModel.fromFirestore(
-      Map<String, dynamic> data,
-      String id,
-      ) {
+    Map<String, dynamic> data,
+    String id,
+  ) {
     return WalletTransactionModel(
       id: id,
       userId: data['userId'] ?? '',
       type: WalletTransactionType.values.firstWhere(
-            (item) => item.name == data['type'],
+        (item) => item.name == data['type'],
         orElse: () => WalletTransactionType.deposit,
       ),
       status: WalletTransactionStatus.values.firstWhere(
-            (item) => item.name == data['status'],
+        (item) => item.name == data['status'],
         orElse: () => WalletTransactionStatus.pending,
       ),
       amount: (data['amount'] as num? ?? 0).toDouble(),

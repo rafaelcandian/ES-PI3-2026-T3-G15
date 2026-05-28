@@ -24,8 +24,8 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
 
   // Startups disponíveis para teste
   final List<Map<String, String>> _startups = [
-    {'id': 'shoplink',  'nome': 'ShopLink Digital'},
-    {'id': 'finnova',   'nome': 'FinNova Bank Tech'},
+    {'id': 'shoplink', 'nome': 'ShopLink Digital'},
+    {'id': 'finnova', 'nome': 'FinNova Bank Tech'},
     {'id': 'logismart', 'nome': 'LogiSmart Solutions'},
   ];
 
@@ -78,12 +78,16 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
   // ─── Ordens ──────────────────────────────────────────────
 
   Future<void> _buscarOrdens() async {
-    final ordens = await _balcao.getOpenedOrders(_startupSelecionada); // 👈 correto
+    final ordens = await _balcao.getOpenedOrders(
+      _startupSelecionada,
+    ); // 👈 correto
     setState(() {
       _ordensCompra = ordens[OrderType.buy.name] ?? [];
       _ordensVenda = ordens[OrderType.sell.name] ?? [];
     });
-    _log("🔄 Ordens atualizadas — ${_ordensCompra.length} compras | ${_ordensVenda.length} vendas");
+    _log(
+      "🔄 Ordens atualizadas — ${_ordensCompra.length} compras | ${_ordensVenda.length} vendas",
+    );
   }
 
   Future<void> _criarOfertaCompra() async {
@@ -172,7 +176,6 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ── Usuário atual ──
             _buildCard(
               titulo: "👤 Usuário Atual",
@@ -187,7 +190,10 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildChip("💰 Saldo", "R\$ ${_saldo.toStringAsFixed(2)}"),
+                      _buildChip(
+                        "💰 Saldo",
+                        "R\$ ${_saldo.toStringAsFixed(2)}",
+                      ),
                       _buildChip(
                         "🪙 Tokens ($_startupSelecionada)",
                         "${_tokens[_startupSelecionada] ?? 0}",
@@ -228,7 +234,9 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: selecionada
                             ? AppColors.destaque.withOpacity(0.15)
@@ -255,8 +263,11 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
                             ),
                           ),
                           if (selecionada)
-                            const Icon(Icons.check_circle,
-                                color: AppColors.destaque, size: 18),
+                            const Icon(
+                              Icons.check_circle,
+                              color: AppColors.destaque,
+                              size: 18,
+                            ),
                         ],
                       ),
                     ),
@@ -289,7 +300,8 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 side: const BorderSide(
-                                    color: Color(0xFF43D672)),
+                                  color: Color(0xFF43D672),
+                                ),
                               ),
                             ),
                           ),
@@ -306,7 +318,8 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 side: const BorderSide(
-                                    color: Color(0xFFEC5D71)),
+                                  color: Color(0xFFEC5D71),
+                                ),
                               ),
                             ),
                           ),
@@ -413,13 +426,18 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
       ),
       child: Column(
         children: [
-          Text(label,
-              style:
-                  const TextStyle(color: Colors.white54, fontSize: 11)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
+          ),
           const SizedBox(height: 4),
-          Text(valor,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+          Text(
+            valor,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -439,15 +457,20 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(titulo,
-              style: TextStyle(
-                  color: cor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
+          Text(
+            titulo,
+            style: TextStyle(
+              color: cor,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
           const SizedBox(height: 8),
           if (ordens.isEmpty)
-            const Text("Vazio",
-                style: TextStyle(color: Colors.white38, fontSize: 12))
+            const Text(
+              "Vazio",
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+            )
           else
             ...ordens.map(
               (o) => Padding(
@@ -455,15 +478,20 @@ class _BalcaoTesteScreenState extends State<BalcaoTesteScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("${o.quantity}x",
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
+                    Text(
+                      "${o.quantity}x",
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
                     Text(
                       "R\$ ${o.pricePerToken.toStringAsFixed(2)}",
                       style: TextStyle(
-                          color: cor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
+                        color: cor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),

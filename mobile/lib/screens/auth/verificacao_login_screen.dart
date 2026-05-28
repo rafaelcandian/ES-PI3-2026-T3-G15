@@ -9,9 +9,9 @@ import 'package:mescla_invest/widgets/auth/auth_footer.dart';
 import 'package:mescla_invest/widgets/auth/auth_header.dart';
 import 'package:mescla_invest/widgets/auth/auth_section_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_text_field.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 class VerificacaoLoginTela extends StatefulWidget {
   final String email;
@@ -165,10 +165,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
               ),
             ],
             const SizedBox(height: 26),
-            GradientButton(
+            AppButton.primary(
               label: 'Validar e entrar',
               loading: _isLoading,
-              radius: 14,
               onTap: _isLoading ? null : _verifyCode,
             ),
             const SizedBox(height: 16),
@@ -197,10 +196,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppColors.bordaClara,
-          width: 0.7,
-        ),
+        border: Border.all(color: AppColors.bordaClara, width: 0.7),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,14 +262,13 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     required String message,
     required bool isError,
   }) {
-    final backgroundColor =
-    isError ? const Color(0xFF3A1118) : const Color(0xFF102C22);
+    final backgroundColor = isError
+        ? const Color(0xFF3A1118)
+        : const Color(0xFF102C22);
 
-    final borderColor =
-    isError ? const Color(0xFFFF7A86) : AppColors.destaque;
+    final borderColor = isError ? const Color(0xFFFF7A86) : AppColors.destaque;
 
-    final iconColor =
-    isError ? const Color(0xFFFF8A95) : AppColors.destaque;
+    final iconColor = isError ? const Color(0xFFFF8A95) : AppColors.destaque;
 
     final icon = isError
         ? Icons.error_outline_rounded
@@ -300,11 +295,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: iconColor,
-            size: 23,
-          ),
+          Icon(icon, color: iconColor, size: 23),
           const SizedBox(width: 11),
           Expanded(
             child: Text(
@@ -428,10 +419,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
 
         Navigator.pushNamedAndRemoveUntil(context, '/catalogo', (_) => false);
       } else {
-        _showFeedback(
-          _formatarErroVerificacao(error),
-          isError: true,
-        );
+        _showFeedback(_formatarErroVerificacao(error), isError: true);
       }
     } catch (_) {
       if (!mounted) return;
@@ -477,17 +465,11 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
 
       final cleanError = e.toString().replaceFirst('Exception: ', '');
 
-      _showFeedback(
-        _formatarErroVerificacao(cleanError),
-        isError: true,
-      );
+      _showFeedback(_formatarErroVerificacao(cleanError), isError: true);
     }
   }
 
-  void _showFeedback(
-      String message, {
-        required bool isError,
-      }) {
+  void _showFeedback(String message, {required bool isError}) {
     setState(() {
       _feedbackMessage = message;
       _feedbackIsError = isError;
@@ -569,7 +551,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _BackButton({required this.onTap});
+  const _BackButton({
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -580,22 +564,10 @@ class _BackButton extends StatelessWidget {
         child: IconButton(
           tooltip: 'Voltar',
           onPressed: onTap,
-          icon: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.textoPrincipal.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.bordaClara,
-                width: 0.6,
-              ),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.destaque,
-              size: 17,
-            ),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.destaque,
+            size: 20,
           ),
         ),
       ),

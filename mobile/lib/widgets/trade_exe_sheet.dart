@@ -33,7 +33,7 @@ class TradeExecutionSheet extends StatelessWidget {
 
     final soma = relacionadas.fold<double>(
       0,
-          (total, item) => total + item.preco,
+      (total, item) => total + item.preco,
     );
 
     return soma / relacionadas.length;
@@ -55,9 +55,7 @@ class TradeExecutionSheet extends StatelessWidget {
         return Container(
           decoration: const BoxDecoration(
             color: AppColors.card,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(30),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
           ),
           child: SingleChildScrollView(
             controller: controller,
@@ -87,10 +85,7 @@ class TradeExecutionSheet extends StatelessWidget {
                       'R\$ ${oferta.preco.toStringAsFixed(2)}',
                       highlighted: true,
                     ),
-                    _row(
-                      'Preço médio',
-                      'R\$ ${precoMedio.toStringAsFixed(2)}',
-                    ),
+                    _row('Preço médio', 'R\$ ${precoMedio.toStringAsFixed(2)}'),
                     _row(
                       'Diferença',
                       '${diferenca >= 0 ? '+' : ''}${diferenca.toStringAsFixed(1)}%',
@@ -146,9 +141,7 @@ class TradeExecutionSheet extends StatelessWidget {
           decoration: BoxDecoration(
             color: accent.withOpacity(0.13),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: accent.withOpacity(0.35),
-            ),
+            border: Border.all(color: accent.withOpacity(0.35)),
           ),
           child: Center(
             child: Text(
@@ -196,19 +189,14 @@ class TradeExecutionSheet extends StatelessWidget {
     );
   }
 
-  Widget _infoCard({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _infoCard({required String title, required List<Widget> children}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.campo,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.bordaClara,
-        ),
+        border: Border.all(color: AppColors.bordaClara),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,11 +234,7 @@ class TradeExecutionSheet extends StatelessWidget {
     );
   }
 
-  Widget _row(
-      String label,
-      String value, {
-        bool highlighted = false,
-      }) {
+  Widget _row(String label, String value, {bool highlighted = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 11),
       child: Row(
@@ -289,17 +273,9 @@ class TradeExecutionSheet extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isCompra
               ? const LinearGradient(
-            colors: [
-              AppColors.destaqueClaro,
-              AppColors.destaqueEscuro,
-            ],
-          )
-              : const LinearGradient(
-            colors: [
-              AppColors.azul,
-              AppColors.roxo,
-            ],
-          ),
+                  colors: [AppColors.destaqueClaro, AppColors.destaqueEscuro],
+                )
+              : const LinearGradient(colors: [AppColors.azul, AppColors.roxo]),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -322,10 +298,8 @@ class TradeExecutionSheet extends StatelessWidget {
                   backgroundColor: Colors.transparent,
                   isScrollControlled: true,
                   enableDrag: false,
-                  builder: (_) => OrderProcessingSheet(
-                    oferta: oferta,
-                    modo: modo,
-                  ),
+                  builder: (_) =>
+                      OrderProcessingSheet(oferta: oferta, modo: modo),
                 );
               });
             },
@@ -333,9 +307,7 @@ class TradeExecutionSheet extends StatelessWidget {
               child: Text(
                 isCompra ? 'CONFIRMAR COMPRA' : 'CONFIRMAR VENDA',
                 style: TextStyle(
-                  color: isCompra
-                      ? AppColors.card
-                      : AppColors.textoPrincipal,
+                  color: isCompra ? AppColors.card : AppColors.textoPrincipal,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.8,

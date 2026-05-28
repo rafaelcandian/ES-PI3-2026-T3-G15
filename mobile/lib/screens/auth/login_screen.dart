@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/services/autenticacao.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/auth/auth_card.dart';
 import 'package:mescla_invest/widgets/auth/auth_field_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_footer.dart';
@@ -9,7 +10,6 @@ import 'package:mescla_invest/widgets/auth/auth_header.dart';
 import 'package:mescla_invest/widgets/auth/auth_section_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_text_field.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 import 'cadastro_screen.dart';
 import 'recuperacao_senha_screen.dart';
@@ -80,7 +80,6 @@ class _LoginTelaState extends State<LoginTela> {
         children: [
           const AuthSectionLabel(label: 'Acesso à conta'),
           const SizedBox(height: 16),
-
           const AuthFieldLabel(label: 'E-mail', required: true),
           const SizedBox(height: 8),
           AuthTextField(
@@ -90,9 +89,7 @@ class _LoginTelaState extends State<LoginTela> {
             keyboardType: TextInputType.emailAddress,
             validator: _validarEmail,
           ),
-
           const SizedBox(height: 15),
-
           const AuthFieldLabel(label: 'Senha', required: true),
           const SizedBox(height: 8),
           AuthTextField(
@@ -117,27 +114,19 @@ class _LoginTelaState extends State<LoginTela> {
             ),
             validator: _validarSenha,
           ),
-
           const SizedBox(height: 10),
-
           _buildForgotPasswordLink(),
-
           const SizedBox(height: 26),
-
-          GradientButton(
+          AppButton.primary(
             label: 'Entrar',
             loading: _isLoading,
-            radius: 14,
             onTap: _isLoading ? null : _submitLogin,
           ),
-
           const SizedBox(height: 16),
-
           Center(
             child: Text(
               '* Campos obrigatórios',
               style: TextStyle(
-                fontSize: 12,
                 color: Colors.white.withValues(alpha: 0.45),
                 fontWeight: FontWeight.w500,
               ),
@@ -151,49 +140,18 @@ class _LoginTelaState extends State<LoginTela> {
   Widget _buildForgotPasswordLink() {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : _abrirRecuperacaoSenha,
-          borderRadius: BorderRadius.circular(999),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.destaque.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: AppColors.destaque.withValues(alpha: 0.28),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.destaque.withValues(alpha: 0.06),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(
-                  Icons.lock_reset_rounded,
-                  color: AppColors.destaque,
-                  size: 17,
-                ),
-                SizedBox(width: 7),
-                Text(
-                  'Esqueci minha senha',
-                  style: TextStyle(
-                    fontSize: 14.2,
-                    color: AppColors.destaque,
-                    fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.destaque,
-                    decorationThickness: 1.2,
-                  ),
-                ),
-              ],
+      child: InkWell(
+        onTap: _isLoading ? null : _abrirRecuperacaoSenha,
+        borderRadius: BorderRadius.circular(4),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          child: Text(
+            'Esqueci minha senha',
+            style: TextStyle(
+              color: AppColors.destaque,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+              decorationColor: AppColors.destaque,
             ),
           ),
         ),
@@ -242,11 +200,7 @@ class _LoginTelaState extends State<LoginTela> {
       child: RichText(
         textAlign: TextAlign.center,
         text: TextSpan(
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.68),
-            height: 1.4,
-          ),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.68)),
           children: const [
             TextSpan(text: 'Ainda não tem uma conta? '),
             TextSpan(

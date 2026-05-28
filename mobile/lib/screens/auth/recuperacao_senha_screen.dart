@@ -3,17 +3,15 @@ import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/services/autenticacao.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
-
 import 'package:mescla_invest/widgets/auth/auth_card.dart';
 import 'package:mescla_invest/widgets/auth/auth_field_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_footer.dart';
 import 'package:mescla_invest/widgets/auth/auth_header.dart';
 import 'package:mescla_invest/widgets/auth/auth_section_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_text_field.dart';
-
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 class RecuperacaoSenhaTela extends StatefulWidget {
   const RecuperacaoSenhaTela({super.key});
@@ -114,10 +112,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
               ),
             ),
             const SizedBox(height: 24),
-            const AuthFieldLabel(
-              label: 'E-mail',
-              required: true,
-            ),
+            const AuthFieldLabel(label: 'E-mail', required: true),
             const SizedBox(height: 8),
             AuthTextField(
               controller: _emailController,
@@ -134,10 +129,9 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
               ),
             ],
             const SizedBox(height: 26),
-            GradientButton(
+            AppButton.primary(
               label: 'Enviar link',
               loading: _isLoading,
-              radius: 14,
               onTap: _isLoading ? null : _sendResetEmail,
             ),
           ],
@@ -150,14 +144,13 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     required String message,
     required bool isError,
   }) {
-    final backgroundColor =
-    isError ? const Color(0xFF3A1118) : const Color(0xFF102C22);
+    final backgroundColor = isError
+        ? const Color(0xFF3A1118)
+        : const Color(0xFF102C22);
 
-    final borderColor =
-    isError ? const Color(0xFFFF7A86) : AppColors.destaque;
+    final borderColor = isError ? const Color(0xFFFF7A86) : AppColors.destaque;
 
-    final iconColor =
-    isError ? const Color(0xFFFF8A95) : AppColors.destaque;
+    final iconColor = isError ? const Color(0xFFFF8A95) : AppColors.destaque;
 
     final icon = isError
         ? Icons.error_outline_rounded
@@ -271,9 +264,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     setState(() => _isLoading = true);
 
     try {
-      final error = await _auth.resetPassword(
-        _emailController.text.trim(),
-      );
+      final error = await _auth.resetPassword(_emailController.text.trim());
 
       if (!mounted) return;
 
@@ -292,10 +283,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
           duration: const Duration(seconds: 4),
         );
       } else {
-        _showFeedback(
-          _formatarErroRecuperacao(error),
-          isError: true,
-        );
+        _showFeedback(_formatarErroRecuperacao(error), isError: true);
       }
     } catch (_) {
       if (!mounted) return;
@@ -309,10 +297,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     }
   }
 
-  void _showFeedback(
-      String message, {
-        required bool isError,
-      }) {
+  void _showFeedback(String message, {required bool isError}) {
     setState(() {
       _feedbackMessage = message;
       _feedbackIsError = isError;
@@ -369,22 +354,10 @@ class _BackButton extends StatelessWidget {
         child: IconButton(
           tooltip: 'Voltar',
           onPressed: () => Navigator.pop(context),
-          icon: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.textoPrincipal.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.bordaClara,
-                width: 0.6,
-              ),
-            ),
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.destaque,
-              size: 17,
-            ),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.destaque,
+            size: 20,
           ),
         ),
       ),

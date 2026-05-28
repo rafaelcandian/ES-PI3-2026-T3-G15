@@ -33,8 +33,39 @@ class WalletChartCard extends StatelessWidget {
     this.horizontalPadding = 22,
   });
 
+  static const List<String> _periods = [
+    '1h',
+    '24h',
+    '1 sem',
+    '1 mês',
+    '6 meses',
+    '1 ano',
+  ];
+
+  double _safeDouble(double value, [double fallback = 0.0]) {
+    return value.isFinite ? value : fallback;
+  }
+
+  List<double> _safeChartData() {
+    final cleaned = data.where((value) => value.isFinite).toList();
+
+    if (cleaned.isEmpty) {
+      final safeStart = _safeDouble(startValue);
+      final safeEnd = _safeDouble(endValue, safeStart);
+
+      return [safeStart, safeEnd];
+    }
+
+    if (cleaned.length == 1) {
+      return [cleaned.first, cleaned.first];
+    }
+
+    return cleaned;
+  }
+
   String _formatMoney(double value) {
-    return 'R\$ ${value.toStringAsFixed(2)}';
+    final safeValue = _safeDouble(value);
+    return 'R\$ ${safeValue.toStringAsFixed(2)}';
   }
 
   String _middleLabel() {
@@ -44,14 +75,39 @@ class WalletChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final periods = ['1h', '24h', '1 sem', '1 mês', '6 meses', '1 ano'];
-    final temHistorico = data.length >= 2;
-    final positivo = variation >= 0;
+    final chartData = _safeChartData();
+
+    final safeStartValue = _safeDouble(
+      startValue,
+      chartData.isNotEmpty ? chartData.first : 0.0,
+    );
+
+    final safeEndValue = _safeDouble(
+      endValue,
+      chartData.isNotEmpty ? chartData.last : safeStartValue,
+    );
+
+    final calculatedVariation = safeEndValue - safeStartValue;
+
+    final safeVariation = variation.isFinite ? variation : calculatedVariation;
+
+    final calculatedPercent = safeStartValue.abs() > 0
+        ? (calculatedVariation / safeStartValue.abs()) * 100
+        : 0.0;
+
+    final safeVariationPercent = variationPercent.isFinite
+        ? variationPercent
+        : calculatedPercent;
+
+    final positivo = safeVariation >= 0;
     final middleLabel = _middleLabel();
 
+    final startText = startLabel.trim().isEmpty ? 'Início' : startLabel;
+    final endText = endLabel.trim().isEmpty ? 'Atual' : endLabel;
+
     final variacaoTexto =
-        '${positivo ? '+' : '-'} ${_formatMoney(variation.abs())} '
-        '(${positivo ? '+' : '-'}${variationPercent.abs().toStringAsFixed(1)}%)';
+        '${positivo ? '+' : '-'} ${_formatMoney(safeVariation.abs())} '
+        '(${positivo ? '+' : '-'}${safeVariationPercent.abs().toStringAsFixed(1)}%)';
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -64,151 +120,132 @@ class WalletChartCard extends StatelessWidget {
             Row(
               children: [
                 const Expanded(
-                  child: PremiumHeaderEyebrow(
-                    text: 'EVOLUÇÃO DO PATRIMÔNIO',
+                  child: PremiumHeaderEyebrow(text: 'EVOLUÇÃO DO PATRIMÔNIO'),
+                ),
+                Text(
+                  selectedTimePeriod,
+                  style: const TextStyle(
+                    color: AppColors.destaque,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (temHistorico)
-                  Text(
-                    selectedTimePeriod,
-                    style: const TextStyle(
-                      color: AppColors.destaque,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
               ],
             ),
             const SizedBox(height: 14),
-            if (temHistorico) ...[
-              Row(
+            Row(
+              children: [
+                Expanded(
+                  child: _ChartMetricBox(
+                    label: 'Início',
+                    value: _formatMoney(safeStartValue),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _ChartMetricBox(
+                    label: 'Atual',
+                    value: _formatMoney(safeEndValue),
+                    destaque: true,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              decoration: premiumFieldDecoration(radius: 14),
+              child: Row(
                 children: [
-                  Expanded(
-                    child: _ChartMetricBox(
-                      label: 'Início',
-                      value: _formatMoney(startValue),
-                    ),
+                  Icon(
+                    positivo
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    color: positivo ? AppColors.destaque : Colors.white70,
+                    size: 18,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: _ChartMetricBox(
-                      label: 'Atual',
-                      value: _formatMoney(endValue),
-                      destaque: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: premiumFieldDecoration(radius: 14),
-                child: Row(
-                  children: [
-                    Icon(
-                      positivo
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      color:
-                      positivo ? AppColors.destaque : const Color(0xFFF87171),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Variação no período',
-                        style: TextStyle(
-                          color: AppColors.textoMuitoFraco,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
+                  const Expanded(
+                    child: Text(
+                      'Variação no período',
+                      style: TextStyle(
+                        color: AppColors.textoMuitoFraco,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(
+                  ),
+                  Flexible(
+                    child: Text(
                       variacaoTexto,
+                      textAlign: TextAlign.right,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: positivo
-                            ? AppColors.destaque
-                            : const Color(0xFFF87171),
+                        color: positivo ? AppColors.destaque : Colors.white70,
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: temHistorico
-                  ? CustomPaint(
-                painter: _LineChartPainter(data: data),
-              )
-                  : Center(
-                child: Text(
-                  'Ainda não há pontos suficientes para este período. '
-                      'Faça um aporte, compra ou venda para gerar histórico.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textoMuitoFraco.withOpacity(0.95),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            if (temHistorico) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      startLabel,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        color: AppColors.textoMuitoFraco,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  if (middleLabel.isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        middleLabel,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.textoMuitoFraco,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: Text(
-                      endLabel,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: AppColors.textoMuitoFraco,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   ),
                 ],
               ),
-            ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _LineChartPainter(data: chartData),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    startText,
+                    textAlign: TextAlign.left,
+                    style: const TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (middleLabel.isNotEmpty)
+                  Expanded(
+                    child: Text(
+                      middleLabel,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: AppColors.textoMuitoFraco,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    endText,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: periods.map((period) {
+                children: _periods.map((period) {
                   final active = selectedTimePeriod == period;
 
                   return Padding(
@@ -226,8 +263,7 @@ class WalletChartCard extends StatelessWidget {
                             vertical: 9,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                            active ? AppColors.destaque : AppColors.campo,
+                            color: active ? AppColors.destaque : AppColors.campo,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: active
@@ -306,13 +342,13 @@ class _ChartMetricBox extends StatelessWidget {
 class _LineChartPainter extends CustomPainter {
   final List<double> data;
 
-  _LineChartPainter({
-    required this.data,
-  });
+  _LineChartPainter({required this.data});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.length < 2) return;
+    final values = data.where((value) => value.isFinite).toList();
+
+    if (values.length < 2 || size.width <= 0 || size.height <= 0) return;
 
     final gridPaint = Paint()
       ..color = AppColors.bordaClara
@@ -320,31 +356,48 @@ class _LineChartPainter extends CustomPainter {
 
     for (int i = 1; i < 4; i++) {
       final y = size.height * (i / 4);
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    final minValue = data.reduce(math.min);
-    final maxValue = data.reduce(math.max);
+    var minValue = values.reduce(math.min);
+    var maxValue = values.reduce(math.max);
+
+    if (!minValue.isFinite || !maxValue.isFinite) return;
+
     final rawRange = maxValue - minValue;
     final isFlat = rawRange.abs() < 0.01;
-    final range = isFlat ? 1.0 : rawRange;
+
+    if (isFlat) {
+      final adjustment = minValue.abs() > 0 ? minValue.abs() * 0.05 : 1.0;
+      minValue -= adjustment;
+      maxValue += adjustment;
+    }
+
+    final range = maxValue - minValue;
+
+    if (range <= 0 || !range.isFinite) return;
 
     final points = <Offset>[];
     final horizontalPadding = 8.0;
+    final topPadding = 16.0;
+    final bottomPadding = 18.0;
+
     final usableWidth = size.width - (horizontalPadding * 2);
-    final space = usableWidth / (data.length - 1);
+    final usableHeight = size.height - topPadding - bottomPadding;
+    final space = usableWidth / (values.length - 1);
 
-    for (int i = 0; i < data.length; i++) {
-      final normalized = isFlat ? 0.5 : (data[i] - minValue) / range;
+    for (int i = 0; i < values.length; i++) {
+      final normalized = (values[i] - minValue) / range;
+
       final x = horizontalPadding + (i * space);
-      final y = size.height - (normalized * size.height * 0.72) - 22;
+      final y = topPadding + usableHeight - (normalized * usableHeight);
 
-      points.add(Offset(x, y));
+      if (x.isFinite && y.isFinite) {
+        points.add(Offset(x, y));
+      }
     }
+
+    if (points.length < 2) return;
 
     final path = Path()..moveTo(points.first.dx, points.first.dy);
 
@@ -364,8 +417,8 @@ class _LineChartPainter extends CustomPainter {
     }
 
     final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
+      ..lineTo(points.last.dx, size.height - bottomPadding)
+      ..lineTo(points.first.dx, size.height - bottomPadding)
       ..close();
 
     final fillPaint = Paint()
@@ -373,25 +426,18 @@ class _LineChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          AppColors.destaque.withOpacity(0.20),
-          AppColors.destaque.withOpacity(0.00),
+          AppColors.destaque.withValues(alpha: 0.20),
+          AppColors.destaque.withValues(alpha: 0.00),
         ],
-      ).createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
     canvas.drawPath(fillPath, fillPaint);
 
     final linePaint = Paint()
       ..shader = const LinearGradient(
-        colors: [
-          AppColors.destaqueClaro,
-          AppColors.destaqueEscuro,
-        ],
-      ).createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
+        colors: [AppColors.destaqueClaro, AppColors.destaqueEscuro],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -402,14 +448,14 @@ class _LineChartPainter extends CustomPainter {
       ..color = AppColors.destaque
       ..style = PaintingStyle.fill;
 
-    final lastPoint = points.last;
-    canvas.drawCircle(lastPoint, 5, dotPaint);
-
     final dotBorderPaint = Paint()
       ..color = AppColors.card
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
+    final lastPoint = points.last;
+
+    canvas.drawCircle(lastPoint, 5, dotPaint);
     canvas.drawCircle(lastPoint, 5, dotBorderPaint);
   }
 

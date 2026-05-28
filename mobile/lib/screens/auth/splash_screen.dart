@@ -50,25 +50,14 @@ class _SplashScreenState extends State<SplashScreen>
       curve: Curves.easeOut,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.94,
-      end: 1,
-    ).animate(
-      CurvedAnimation(
-        parent: _introController,
-        curve: Curves.easeOutCubic,
-      ),
+    _scaleAnimation = Tween<double>(begin: 0.94, end: 1).animate(
+      CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.06),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _introController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
+          CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
+        );
 
     _introController.forward();
     _checkUser();
@@ -127,9 +116,7 @@ class _SplashScreenState extends State<SplashScreen>
                         children: [
                           _LogoGlow(),
                           const SizedBox(height: 34),
-                          PremiumCircleLoader(
-                            animation: _loaderController,
-                          ),
+                          PremiumCircleLoader(animation: _loaderController),
                           const SizedBox(height: 22),
                           const Text(
                             'Preparando sua experiência',
@@ -185,11 +172,7 @@ class _LogoGlow extends StatelessWidget {
             ),
           ),
         ),
-        Image.asset(
-          'assets/logo01.png',
-          width: 240,
-          fit: BoxFit.contain,
-        ),
+        Image.asset('assets/logo01.png', width: 240, fit: BoxFit.contain),
       ],
     );
   }
@@ -198,10 +181,7 @@ class _LogoGlow extends StatelessWidget {
 class PremiumCircleLoader extends StatelessWidget {
   final Animation<double> animation;
 
-  const PremiumCircleLoader({
-    super.key,
-    required this.animation,
-  });
+  const PremiumCircleLoader({super.key, required this.animation});
 
   @override
   Widget build(BuildContext context) {
@@ -213,9 +193,7 @@ class PremiumCircleLoader extends StatelessWidget {
         builder: (context, _) {
           return Transform.rotate(
             angle: animation.value * 2 * math.pi,
-            child: CustomPaint(
-              painter: _PremiumCirclePainter(),
-            ),
+            child: CustomPaint(painter: _PremiumCirclePainter()),
           );
         },
       ),
@@ -242,10 +220,7 @@ class _PremiumCirclePainter extends CustomPainter {
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        8,
-      );
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -266,16 +241,8 @@ class _PremiumCirclePainter extends CustomPainter {
           AppColors.destaqueEscuro,
           Colors.transparent,
         ],
-        stops: [
-          0.0,
-          0.28,
-          0.48,
-          0.72,
-          1.0,
-        ],
-      ).createShader(
-        Rect.fromCircle(center: center, radius: radius),
-      )
+        stops: [0.0, 0.28, 0.48, 0.72, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..strokeWidth = 4.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -309,11 +276,7 @@ class _SplashBackground extends StatelessWidget {
         Positioned(
           top: -140,
           right: -120,
-          child: _GlowCircle(
-            size: 320,
-            color: AppColors.azul,
-            opacity: 0.18,
-          ),
+          child: _GlowCircle(size: 320, color: AppColors.azul, opacity: 0.18),
         ),
         Positioned(
           bottom: -170,
@@ -327,11 +290,7 @@ class _SplashBackground extends StatelessWidget {
         Positioned(
           top: 220,
           left: -130,
-          child: _GlowCircle(
-            size: 260,
-            color: AppColors.roxo,
-            opacity: 0.12,
-          ),
+          child: _GlowCircle(size: 260, color: AppColors.roxo, opacity: 0.12),
         ),
         Positioned.fill(
           child: IgnorePointer(
@@ -340,10 +299,7 @@ class _SplashBackground extends StatelessWidget {
                 gradient: RadialGradient(
                   center: Alignment.center,
                   radius: 0.85,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.18),
-                  ],
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.18)],
                 ),
               ),
             ),
@@ -373,10 +329,7 @@ class _GlowCircle extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [
-            color.withOpacity(opacity),
-            color.withOpacity(0),
-          ],
+          colors: [color.withOpacity(opacity), color.withOpacity(0)],
         ),
       ),
     );

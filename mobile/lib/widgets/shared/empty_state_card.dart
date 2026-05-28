@@ -23,17 +23,11 @@ class EmptyStateCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: padding,
-      decoration: premiumCardDecoration(
-        radius: radius,
-      ),
+      decoration: premiumCardDecoration(radius: radius),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: AppColors.destaque,
-            size: 38,
-          ),
+          Icon(icon, color: AppColors.destaque, size: 38),
           const SizedBox(height: 12),
           Text(
             title,

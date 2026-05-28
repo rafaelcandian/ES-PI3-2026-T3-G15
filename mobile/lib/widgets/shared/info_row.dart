@@ -57,9 +57,7 @@ class InfoRow extends StatelessWidget {
 
     return Container(
       padding: padding,
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       child: content,
     );
   }

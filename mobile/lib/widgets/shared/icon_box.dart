@@ -27,16 +27,12 @@ class IconBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         shape: shape,
-        borderRadius: shape == BoxShape.circle ? null : BorderRadius.circular(radius),
-        border: Border.all(
-          color: color.withValues(alpha: 0.28),
-        ),
+        borderRadius: shape == BoxShape.circle
+            ? null
+            : BorderRadius.circular(radius),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
-      child: Icon(
-        icon,
-        color: color,
-        size: iconSize,
-      ),
+      child: Icon(icon, color: color, size: iconSize),
     );
   }
 }

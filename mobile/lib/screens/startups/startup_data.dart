@@ -54,18 +54,25 @@ class StartupData {
     required this.partners,
   });
 
-  factory StartupData.fromMap(
-    Map<String, dynamic> data, {
-    String id = '',
-  }) {
-    final tokenValue = (data['tokenValue'] as num?)?.toDouble() ??
-        (data['valorToken'] as num?)?.toDouble() ??
-        1.0;
-
-    final minBuyPrice = (data['minBuyPrice'] as num?)?.toDouble() ??
+  factory StartupData.fromMap(Map<String, dynamic> data, {String id = ''}) {
+    final tokenValue =
         (data['tokenValue'] as num?)?.toDouble() ??
         (data['valorToken'] as num?)?.toDouble() ??
         1.0;
+
+    final minBuyPrice =
+        (data['minBuyPrice'] as num?)?.toDouble() ??
+        (data['tokenValue'] as num?)?.toDouble() ??
+        (data['valorToken'] as num?)?.toDouble() ??
+        1.0;
+
+    final tokens =
+        (data['tokens'] as num?)?.toInt() ??
+        (data['tokensDisponiveis'] as num?)?.toInt() ??
+        (data['quantidadeTokens'] as num?)?.toInt() ??
+        (data['availableTokens'] as num?)?.toInt() ??
+        (data['quantidade'] as num?)?.toInt() ??
+        0;
 
     return StartupData(
       id: id,
@@ -73,7 +80,7 @@ class StartupData {
       subtitle: data['subtitle'] ?? '',
       tag: data['tag'] ?? '',
       equity: (data['equity'] as num?)?.toDouble() ?? 0.0,
-      tokens: (data['tokens'] as num?)?.toInt() ?? 0,
+      tokens: tokens,
       tokenValue: tokenValue,
       minBuyPrice: minBuyPrice,
       progress: (data['progress'] as num?)?.toDouble() ?? 0.0,
@@ -96,16 +103,10 @@ class StartupData {
             }
 
             if (item is Map) {
-              return StartupPartner.fromMap(
-                Map<String, dynamic>.from(item),
-              );
+              return StartupPartner.fromMap(Map<String, dynamic>.from(item));
             }
 
-            return const StartupPartner(
-              name: '',
-              role: '',
-              equityPercent: 0.0,
-            );
+            return const StartupPartner(name: '', role: '', equityPercent: 0.0);
           })
           .where((partner) => partner.name.trim().isNotEmpty)
           .toList(),
@@ -117,10 +118,7 @@ class StartupData {
   ) {
     final data = doc.data() ?? {};
 
-    return StartupData.fromMap(
-      data,
-      id: doc.id,
-    );
+    return StartupData.fromMap(data, id: doc.id);
   }
 }
 

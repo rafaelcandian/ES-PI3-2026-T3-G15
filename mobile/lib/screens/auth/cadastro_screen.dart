@@ -3,16 +3,14 @@ import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/services/autenticacao.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
-
 import 'package:mescla_invest/widgets/auth/auth_card.dart';
 import 'package:mescla_invest/widgets/auth/auth_field_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_footer.dart';
 import 'package:mescla_invest/widgets/auth/auth_header.dart';
 import 'package:mescla_invest/widgets/auth/auth_section_label.dart';
 import 'package:mescla_invest/widgets/auth/auth_text_field.dart';
-
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
@@ -255,10 +253,7 @@ class _CadastroPageState extends State<CadastroPage> {
     );
   }
 
-  Widget _section({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _section({required String title, required List<Widget> children}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -286,10 +281,7 @@ class _CadastroPageState extends State<CadastroPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AuthFieldLabel(
-            label: label,
-            required: true,
-          ),
+          AuthFieldLabel(label: label, required: true),
           const SizedBox(height: 8),
           AuthTextField(
             controller: controller,
@@ -405,14 +397,7 @@ class _CadastroPageState extends State<CadastroPage> {
     if (senha.contains(RegExp(r'[0-9]'))) forca++;
     if (senha.contains(RegExp(r'[!@#\$%^&*]'))) forca++;
 
-    final labels = [
-      '',
-      'Fraca',
-      'Razoável',
-      'Boa',
-      'Forte',
-      'Muito forte',
-    ];
+    final labels = ['', 'Fraca', 'Razoável', 'Boa', 'Forte', 'Muito forte'];
 
     final colors = [
       Colors.transparent,
@@ -521,10 +506,9 @@ class _CadastroPageState extends State<CadastroPage> {
   }
 
   Widget _buildCadastrarButton() {
-    return GradientButton(
+    return AppButton.primary(
       label: 'Cadastrar',
       loading: _isLoading,
-      radius: 14,
       onTap: _isLoading ? null : _validarEEnviarCadastro,
     );
   }
@@ -598,10 +582,7 @@ class _CadastroPageState extends State<CadastroPage> {
       if (errorMessage == null) {
         _showSuccessDialog();
       } else {
-        _showSnackBar(
-          _formatarErroCadastro(errorMessage),
-          error: true,
-        );
+        _showSnackBar(_formatarErroCadastro(errorMessage), error: true);
       }
     } catch (_) {
       if (!mounted) return;
@@ -644,12 +625,7 @@ class _CadastroPageState extends State<CadastroPage> {
         bool success = false,
         bool error = false,
       }) {
-    AppSnackBar.show(
-      context,
-      message: message,
-      success: success,
-      error: error,
-    );
+    AppSnackBar.show(context, message: message, success: success, error: error);
   }
 
   void _showSuccessDialog() {
@@ -711,10 +687,8 @@ class _CadastroPageState extends State<CadastroPage> {
                   ),
                 ),
                 const SizedBox(height: 26),
-                GradientButton(
+                AppButton.primary(
                   label: 'Ir para login',
-                  radius: 14,
-                  height: 50,
                   onTap: () {
                     Navigator.pop(dialogContext);
                     Navigator.pushReplacementNamed(context, '/login');
@@ -754,9 +728,7 @@ class CpfInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(
-        offset: formatted.length,
-      ),
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
@@ -787,9 +759,7 @@ class TelefoneInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(
-        offset: formatted.length,
-      ),
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

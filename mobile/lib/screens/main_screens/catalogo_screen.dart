@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
@@ -43,24 +44,22 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
 
   List<StartupData> _applyFilters(List<StartupData> startups) {
     return startups.where((startup) {
-      final areaMatch = _selectedAreaFilter == 'Todas' ||
-          startup.tag.toLowerCase().trim() ==
-              _selectedAreaFilter.toLowerCase().trim();
+      final areaMatch =
+          _selectedAreaFilter == 'Todas' ||
+              startup.tag.toLowerCase().trim() ==
+                  _selectedAreaFilter.toLowerCase().trim();
 
-      final stageMatch = _selectedStageFilter == 'Todos' ||
-          startup.stage.toLowerCase().trim() ==
-              _selectedStageFilter.toLowerCase().trim();
+      final stageMatch =
+          _selectedStageFilter == 'Todos' ||
+              startup.stage.toLowerCase().trim() ==
+                  _selectedStageFilter.toLowerCase().trim();
 
       return areaMatch && stageMatch;
     }).toList();
   }
 
   void _abrirDetalhes(StartupData startup) {
-    Navigator.pushNamed(
-      context,
-      '/detalhes',
-      arguments: startup,
-    );
+    Navigator.pushNamed(context, '/detalhes', arguments: startup);
   }
 
   String _mensagemFiltroVazio() {
@@ -129,10 +128,9 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Alterado para false para a navbar não ficar transparente por cima do conteúdo.
       extendBody: false,
       backgroundColor: AppColors.fundo,
-      appBar: const _CatalogAppBar(),
+      appBar: const AppBarPadrao(titulo: 'Catálogo de Startups'),
       bottomNavigationBar: const BottomNavBar(selectedIndex: 0),
       body: Stack(
         children: [
@@ -148,10 +146,11 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                     children: [
                       Text(
                         'Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.',
+                        textAlign: TextAlign.left,
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.5,
-                          color: AppColors.textoFraco,
+                          color: Colors.white70,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -179,9 +178,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                   ),
                 ),
               ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 22),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 22)),
               SliverToBoxAdapter(
                 child: StreamBuilder<List<StartupData>>(
                   stream: _startupService.getStartups(),
@@ -237,28 +234,27 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
-                        children: List.generate(
-                          filteredStartups.length,
-                              (index) {
-                            final startup = filteredStartups[index];
+                        children: List.generate(filteredStartups.length, (
+                            index,
+                            ) {
+                          final startup = filteredStartups[index];
 
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom: index == filteredStartups.length - 1
-                                    ? 32
-                                    : 28,
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: index == filteredStartups.length - 1
+                                  ? 32
+                                  : 28,
+                            ),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _abrirDetalhes(startup),
+                              child: StartupCard(
+                                data: startup,
+                                onDetailsTap: () => _abrirDetalhes(startup),
                               ),
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => _abrirDetalhes(startup),
-                                child: StartupCard(
-                                  data: startup,
-                                  onDetailsTap: () => _abrirDetalhes(startup),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        }),
                       ),
                     );
                   },
@@ -267,34 +263,6 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ===================== APP BAR DO CATÁLOGO =====================
-
-class _CatalogAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _CatalogAppBar();
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: AppColors.fundo,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: true,
-      title: const Text(
-        'Catálogo de Startups',
-        style: TextStyle(
-          color: AppColors.textoPrincipal,
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
-        ),
       ),
     );
   }
@@ -344,11 +312,7 @@ class _ModernFilterPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
-                child: PremiumSectionLabel(
-                  text: 'Filtros',
-                ),
-              ),
+              const Expanded(child: PremiumSectionLabel(text: 'Filtros')),
               if (hasActiveFilter)
                 GestureDetector(
                   onTap: onClear,
@@ -360,16 +324,14 @@ class _ModernFilterPanel extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.campo,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: AppColors.bordaClara,
-                      ),
+                      border: Border.all(color: AppColors.bordaClara),
                     ),
                     child: const Text(
                       'Limpar',
                       style: TextStyle(
                         color: AppColors.destaque,
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -426,9 +388,7 @@ class _ModernFilterPanel extends StatelessWidget {
                 onSelected: onStageSelected,
               ),
             )
-                : const SizedBox.shrink(
-              key: ValueKey('closed-list'),
-            ),
+                : const SizedBox.shrink(key: ValueKey('closed-list')),
           ),
         ],
       ),
@@ -470,7 +430,6 @@ class _FilterSelectorButton extends StatelessWidget {
               color: opened ? AppColors.bordaDestaque : AppColors.bordaClara,
               width: opened ? 1.1 : 0.8,
             ),
-            // Sombra removida conforme solicitado.
             boxShadow: const [],
           ),
           child: Row(
@@ -479,17 +438,13 @@ class _FilterSelectorButton extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: AppColors.destaque.withOpacity(0.10),
+                  color: AppColors.destaque.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.destaque.withOpacity(0.22),
+                    color: AppColors.destaque.withValues(alpha: 0.22),
                   ),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppColors.destaque,
-                  size: 18,
-                ),
+                child: Icon(icon, color: AppColors.destaque, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -497,12 +452,11 @@ class _FilterSelectorButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title.toUpperCase(),
+                      title,
                       style: const TextStyle(
                         color: AppColors.textoMuitoFraco,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -513,7 +467,7 @@ class _FilterSelectorButton extends StatelessWidget {
                       style: const TextStyle(
                         color: AppColors.textoPrincipal,
                         fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -553,20 +507,17 @@ class _FilterOptionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: premiumFieldDecoration(
-        radius: 18,
-      ),
+      decoration: premiumFieldDecoration(radius: 18),
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title.toUpperCase(),
+            title,
             style: const TextStyle(
               color: AppColors.textoMuitoFraco,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 12),
@@ -611,10 +562,7 @@ class _FilterOptionChip extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: active ? AppColors.destaque : AppColors.card,
             borderRadius: BorderRadius.circular(16),
@@ -638,7 +586,7 @@ class _FilterOptionChip extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: active ? AppColors.fundo : AppColors.textoSecundario,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
               ),
@@ -670,7 +618,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.22),
+                    AppColors.azul.withValues(alpha: 0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -687,7 +635,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.07),
+                    AppColors.destaque.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -704,7 +652,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.18),
+                    AppColors.roxo.withValues(alpha: 0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -738,11 +686,7 @@ class _EmptyStateCard extends StatelessWidget {
       decoration: premiumCardDecoration(),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: AppColors.destaque,
-            size: 34,
-          ),
+          Icon(icon, color: AppColors.destaque, size: 34),
           const SizedBox(height: 14),
           Text(
             title,
@@ -750,7 +694,7 @@ class _EmptyStateCard extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textoPrincipal,
               fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),

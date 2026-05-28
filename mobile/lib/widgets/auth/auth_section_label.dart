@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class AuthSectionLabel extends StatelessWidget {
   final String label;
 
-  const AuthSectionLabel({
-    super.key,
-    required this.label,
-  });
+  const AuthSectionLabel({super.key, required this.label});
 
   @override
   Widget build(BuildContext context) {

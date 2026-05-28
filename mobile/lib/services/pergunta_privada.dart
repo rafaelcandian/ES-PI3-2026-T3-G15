@@ -31,16 +31,16 @@ class PerguntaPrivadaService {
         .doc(startupId)
         .collection('perguntasPrivadas')
         .add({
-      'startupId': startupId,
-      'startupNome': startupNome,
-      'pergunta': textoPergunta,
-      'resposta': '',
-      'respondida': false,
-      'userId': user.uid,
-      'userEmail': user.email ?? '',
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+          'startupId': startupId,
+          'startupNome': startupNome,
+          'pergunta': textoPergunta,
+          'resposta': '',
+          'respondida': false,
+          'userId': user.uid,
+          'userEmail': user.email ?? '',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> listarPerguntasPrivadas({

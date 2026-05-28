@@ -20,14 +20,18 @@ class SectionCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: padding,
-      decoration: premiumCardDecoration(
-        radius: radius,
-      ),
+      decoration: premiumCardDecoration(radius: radius),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PremiumHeaderEyebrow(
-            text: title.toUpperCase(),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withOpacity(0.72),
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
           ),
           const SizedBox(height: 15),
           child,

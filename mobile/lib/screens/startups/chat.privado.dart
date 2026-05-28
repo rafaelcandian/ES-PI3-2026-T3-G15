@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 
 class ChatPrivadoPage extends StatefulWidget {
   const ChatPrivadoPage({super.key});
@@ -150,13 +151,12 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
       SnackBar(
         backgroundColor: AppColors.card,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         content: Text(
           message,
           style: const TextStyle(
             color: AppColors.textoPrincipal,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -174,16 +174,15 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
         appBar: AppBar(
           backgroundColor: AppColors.fundo,
           elevation: 0,
+          surfaceTintColor: Colors.transparent,
           title: const Text(
             'Chat privado',
             style: TextStyle(
-              color: AppColors.destaque,
-              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          iconTheme: const IconThemeData(
-            color: AppColors.destaque,
-          ),
+          iconTheme: const IconThemeData(color: AppColors.destaque),
         ),
         body: const Center(
           child: Text(
@@ -211,9 +210,8 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
       appBar: AppBar(
         backgroundColor: AppColors.fundo,
         elevation: 0,
-        iconTheme: const IconThemeData(
-          color: AppColors.destaque,
-        ),
+        surfaceTintColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: AppColors.destaque),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -222,8 +220,8 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: AppColors.destaque,
-                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
                 fontSize: 17,
               ),
             ),
@@ -231,7 +229,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
             const Text(
               'Canal privado do investidor',
               style: TextStyle(
-                color: AppColors.textoMuitoFraco,
+                color: Colors.white70,
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -242,12 +240,9 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
       body: Stack(
         children: [
           const _AtmosphericBackground(),
-
           if (_verificandoAcesso)
             const Center(
-              child: CircularProgressIndicator(
-                color: AppColors.destaque,
-              ),
+              child: CircularProgressIndicator(color: AppColors.destaque),
             )
           else if (!_temAcesso)
             _BlockedAccess(startup: startup)
@@ -255,12 +250,11 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
             Column(
               children: [
                 const _PrivateChannelBanner(),
-
                 Expanded(
                   child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: _messagesRef(startup)
-                        .orderBy('createdAt', descending: false)
-                        .snapshots(),
+                    stream: _messagesRef(
+                      startup,
+                    ).orderBy('createdAt', descending: false).snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
@@ -274,9 +268,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
                         return const Center(
                           child: Text(
                             'Erro ao carregar mensagens.',
-                            style: TextStyle(
-                              color: AppColors.textoFraco,
-                            ),
+                            style: TextStyle(color: Colors.white70),
                           ),
                         );
                       }
@@ -297,7 +289,9 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
                         padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
-                          final message = _ChatMessage.fromFirestore(docs[index]);
+                          final message = _ChatMessage.fromFirestore(
+                            docs[index],
+                          );
 
                           return _MessageBubble(message: message);
                         },
@@ -305,7 +299,6 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
                     },
                   ),
                 ),
-
                 _MessageInputBar(
                   controller: _messageController,
                   loading: _enviando,
@@ -339,7 +332,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.22),
+                    AppColors.azul.withValues(alpha: 0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -356,7 +349,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.07),
+                    AppColors.destaque.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -373,7 +366,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.18),
+                    AppColors.roxo.withValues(alpha: 0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -396,19 +389,17 @@ class _PrivateChannelBanner extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 12, 20, 10),
       padding: const EdgeInsets.all(14),
-      decoration: premiumCardDecoration(
-        radius: 20,
-      ),
+      decoration: premiumCardDecoration(radius: 20),
       child: Row(
         children: [
           Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.12),
+              color: AppColors.destaque.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.destaque.withOpacity(0.28),
+                color: AppColors.destaque.withValues(alpha: 0.22),
               ),
             ),
             child: const Icon(
@@ -422,7 +413,7 @@ class _PrivateChannelBanner extends StatelessWidget {
             child: Text(
               'Este canal é exclusivo para investidores com tokens desta startup.',
               style: TextStyle(
-                color: AppColors.textoFraco,
+                color: Colors.white70,
                 fontSize: 12,
                 height: 1.4,
                 fontWeight: FontWeight.w500,
@@ -440,9 +431,7 @@ class _PrivateChannelBanner extends StatelessWidget {
 class _BlockedAccess extends StatelessWidget {
   final StartupData startup;
 
-  const _BlockedAccess({
-    required this.startup,
-  });
+  const _BlockedAccess({required this.startup});
 
   @override
   Widget build(BuildContext context) {
@@ -452,9 +441,7 @@ class _BlockedAccess extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(22),
-          decoration: premiumCardDecoration(
-            radius: 24,
-          ),
+          decoration: premiumCardDecoration(radius: 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -462,10 +449,10 @@ class _BlockedAccess extends StatelessWidget {
                 width: 62,
                 height: 62,
                 decoration: BoxDecoration(
-                  color: AppColors.destaque.withOpacity(0.12),
+                  color: AppColors.destaque.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.destaque.withOpacity(0.28),
+                    color: AppColors.destaque.withValues(alpha: 0.22),
                   ),
                 ),
                 child: const Icon(
@@ -481,7 +468,7 @@ class _BlockedAccess extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.textoPrincipal,
                   fontSize: 18,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 8),
@@ -489,33 +476,17 @@ class _BlockedAccess extends StatelessWidget {
                 'Para acessar o chat privado da ${startup.title}, você precisa possuir tokens desta startup.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: AppColors.textoFraco,
+                  color: Colors.white70,
                   fontSize: 13,
                   height: 1.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.destaque,
-                    side: const BorderSide(
-                      color: AppColors.bordaDestaque,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Voltar para detalhes',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
+              AppButton.outline(
+                label: 'Voltar para detalhes',
+                icon: Icons.arrow_back_rounded,
+                onTap: () => Navigator.pop(context),
               ),
             ],
           ),
@@ -538,9 +509,7 @@ class _EmptyChatState extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(22),
-          decoration: premiumCardDecoration(
-            radius: 24,
-          ),
+          decoration: premiumCardDecoration(radius: 24),
           child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -556,7 +525,7 @@ class _EmptyChatState extends StatelessWidget {
                 style: TextStyle(
                   color: AppColors.textoPrincipal,
                   fontSize: 16,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               SizedBox(height: 8),
@@ -564,9 +533,10 @@ class _EmptyChatState extends StatelessWidget {
                 'Envie sua primeira pergunta privada para iniciar a conversa com a startup.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.textoFraco,
+                  color: Colors.white70,
                   fontSize: 13,
                   height: 1.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -599,13 +569,11 @@ class _MessageInputBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card,
           border: const Border(
-            top: BorderSide(
-              color: AppColors.bordaClara,
-            ),
+            top: BorderSide(color: AppColors.bordaClara),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.40),
+              color: Colors.black.withValues(alpha: 0.40),
               blurRadius: 24,
               offset: const Offset(0, -8),
             ),
@@ -618,9 +586,11 @@ class _MessageInputBar extends StatelessWidget {
                 controller: controller,
                 style: const TextStyle(
                   color: AppColors.textoPrincipal,
+                  fontWeight: FontWeight.w500,
                 ),
                 minLines: 1,
                 maxLines: 4,
+                cursorColor: AppColors.destaque,
                 decoration: const InputDecoration(
                   hintText: 'Digite sua pergunta privada...',
                 ),
@@ -629,37 +599,36 @@ class _MessageInputBar extends StatelessWidget {
             const SizedBox(width: 10),
             GestureDetector(
               onTap: loading ? null : onSend,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      AppColors.destaqueClaro,
-                      AppColors.destaqueEscuro,
+              child: AnimatedOpacity(
+                opacity: loading ? 0.72 : 1,
+                duration: const Duration(milliseconds: 180),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.destaque,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.destaque.withValues(alpha: 0.14),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
                     ],
                   ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.destaque.withOpacity(0.22),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                  child: loading
+                      ? const Padding(
+                    padding: EdgeInsets.all(13),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.3,
+                      color: AppColors.fundo,
                     ),
-                  ],
-                ),
-                child: loading
-                    ? const Padding(
-                  padding: EdgeInsets.all(13),
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.3,
+                  )
+                      : const Icon(
+                    Icons.send_rounded,
                     color: AppColors.fundo,
+                    size: 20,
                   ),
-                )
-                    : const Icon(
-                  Icons.send_rounded,
-                  color: AppColors.fundo,
-                  size: 20,
                 ),
               ),
             ),
@@ -717,9 +686,7 @@ class _ChatMessage {
 class _MessageBubble extends StatelessWidget {
   final _ChatMessage message;
 
-  const _MessageBubble({
-    required this.message,
-  });
+  const _MessageBubble({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -728,9 +695,7 @@ class _MessageBubble extends StatelessWidget {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 290,
-        ),
+        constraints: const BoxConstraints(maxWidth: 290),
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -741,22 +706,19 @@ class _MessageBubble extends StatelessWidget {
             bottomLeft: Radius.circular(isUser ? 18 : 4),
             bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
-          border: isUser
-              ? null
-              : Border.all(
-            color: AppColors.bordaClara,
-          ),
+          border: isUser ? null : Border.all(color: AppColors.bordaClara),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.22),
+              color: Colors.black.withValues(alpha: 0.22),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment:
-          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
               message.text,
@@ -764,7 +726,7 @@ class _MessageBubble extends StatelessWidget {
                 color: isUser ? AppColors.fundo : AppColors.textoPrincipal,
                 fontSize: 13,
                 height: 1.45,
-                fontWeight: isUser ? FontWeight.w800 : FontWeight.w500,
+                fontWeight: isUser ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
             const SizedBox(height: 6),
@@ -772,7 +734,7 @@ class _MessageBubble extends StatelessWidget {
               message.time,
               style: TextStyle(
                 color: isUser
-                    ? AppColors.fundo.withOpacity(0.65)
+                    ? AppColors.fundo.withValues(alpha: 0.65)
                     : AppColors.textoMuitoFraco,
                 fontSize: 10,
                 fontWeight: FontWeight.w600,

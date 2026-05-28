@@ -5,21 +5,13 @@ class AuthHeader extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const AuthHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-  });
+  const AuthHeader({super.key, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Image.asset(
-          'assets/logo01.png',
-          width: 160,
-          fit: BoxFit.contain,
-        ),
+        Image.asset('assets/logo01.png', width: 160, fit: BoxFit.contain),
         const SizedBox(height: 16),
         Text(
           title,

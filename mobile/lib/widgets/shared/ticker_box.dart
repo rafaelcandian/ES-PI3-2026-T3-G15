@@ -21,9 +21,7 @@ class TickerBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(size * 0.30),
-        border: Border.all(
-          color: color.withValues(alpha: 0.32),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
       ),
       child: Center(
         child: Text(

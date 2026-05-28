@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 
-enum AppAppearanceMode {
-  light,
-  dark,
-  auto,
-}
+enum AppAppearanceMode { light, dark, auto }
 
 class ThemeController {
   ThemeController._();
 
   static final ValueNotifier<AppAppearanceMode> appearanceMode =
-  ValueNotifier<AppAppearanceMode>(AppAppearanceMode.dark);
+      ValueNotifier<AppAppearanceMode>(AppAppearanceMode.dark);
 
   static ThemeMode get themeMode {
     switch (appearanceMode.value) {

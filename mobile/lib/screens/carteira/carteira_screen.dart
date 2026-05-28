@@ -9,13 +9,13 @@ import 'package:mescla_invest/models/ativo_carteira.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 import 'package:mescla_invest/widgets/shared/empty_state_card.dart';
-import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 import 'package:mescla_invest/widgets/shared/icon_box.dart';
 import 'package:mescla_invest/widgets/shared/section_label.dart';
 import 'package:mescla_invest/widgets/shared/ticker_box.dart';
@@ -58,9 +58,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
   Future<void> _abrirAdicionarFundos() async {
     final resultado = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const AdicionarFundosScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AdicionarFundosScreen()),
     );
 
     if (resultado == true) {
@@ -128,7 +126,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
               fallback: tokenValue,
             );
 
-            final variacaoInformada = ((data['variacao'] ??
+            final variacaoInformada =
+            ((data['variacao'] ??
                 data['variation'] ??
                 data['variacaoPercentual'] ??
                 0.0)
@@ -143,7 +142,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
                 ? variacaoCalculada
                 : variacaoInformada;
 
-            final volume = (data['volume'] ??
+            final volume =
+            (data['volume'] ??
                 data['volumeNegociado'] ??
                 data['volumeTotal'] ??
                 'Não informado')
@@ -179,17 +179,11 @@ class _CarteiraPageState extends State<CarteiraPage> {
             .limit(20)
             .get();
 
-        movsTemp = transacoesCarteira.docs.map(
-              (doc) {
-            return {
-              ...doc.data(),
-              'id': doc.id,
-              '_origem': 'carteira',
-            };
-          },
-        ).toList();
+        movsTemp = transacoesCarteira.docs.map((doc) {
+          return {...doc.data(), 'id': doc.id, '_origem': 'carteira'};
+        }).toList();
       } catch (e) {
-        print('Erro ao carregar movimentações: $e');
+        debugPrint('Erro ao carregar movimentações: $e');
       }
 
       List<Map<String, dynamic>> chartPoints = [];
@@ -202,10 +196,23 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
         chartData = chartPoints
             .map((point) => (point['value'] as num?)?.toDouble() ?? 0.0)
-            .where((value) => value > 0)
+            .where((value) => value.isFinite)
             .toList();
+
+        final patrimonioAtual = saldo +
+            ativosTemp.fold<double>(
+              0,
+                  (total, ativo) => total + ativo.valorTotal,
+            );
+
+        if (chartData.isEmpty) {
+          chartData = [patrimonioAtual, patrimonioAtual];
+        } else if (chartData.length == 1) {
+          chartData = [chartData.first, chartData.first];
+        }
+
       } catch (e) {
-        print('Erro ao carregar gráfico da carteira: $e');
+        debugPrint('Erro ao carregar gráfico da carteira: $e');
         chartPoints = [];
         chartData = [];
       }
@@ -232,7 +239,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
         });
       }
     } catch (e) {
-      print('Erro ao carregar carteira: $e');
+      debugPrint('Erro ao carregar carteira: $e');
 
       if (mounted) {
         setState(() => _loading = false);
@@ -244,34 +251,42 @@ class _CarteiraPageState extends State<CarteiraPage> {
     required List<Map<String, dynamic>> chartPoints,
     required List<double> chartData,
   }) {
-    if (chartData.isEmpty) {
+    final valoresSeguros = chartData.where((value) => value.isFinite).toList();
+
+    if (valoresSeguros.isEmpty) {
       return {
         'startValue': 0.0,
         'endValue': 0.0,
         'variation': 0.0,
         'variationPercent': 0.0,
-        'startLabel': '',
-        'endLabel': '',
+        'startLabel': 'Início',
+        'endLabel': 'Atual',
       };
     }
 
-    final startValue = chartData.first;
-    final endValue = chartData.last;
-    final variation = endValue - startValue;
-    final variationPercent = startValue > 0 ? (variation / startValue) * 100 : 0.0;
+    final startValue = valoresSeguros.first;
+    final endValue = valoresSeguros.length == 1
+        ? valoresSeguros.first
+        : valoresSeguros.last;
 
-    String startLabel = '';
-    String endLabel = '';
+    final variation = endValue - startValue;
+
+    final variationPercent = startValue.abs() > 0
+        ? (variation / startValue.abs()) * 100
+        : 0.0;
+
+    String startLabel = 'Início';
+    String endLabel = 'Atual';
 
     if (chartPoints.isNotEmpty) {
-      startLabel = (chartPoints.first['label'] ?? '').toString();
-      endLabel = (chartPoints.last['label'] ?? '').toString();
+      startLabel = (chartPoints.first['label'] ?? 'Início').toString();
+      endLabel = (chartPoints.last['label'] ?? 'Atual').toString();
     }
 
     return {
       'startValue': startValue,
       'endValue': endValue,
-      'variation': variation,
+      'variation': variation.isFinite ? variation : 0.0,
       'variationPercent': variationPercent.isFinite ? variationPercent : 0.0,
       'startLabel': startLabel,
       'endLabel': endLabel,
@@ -297,7 +312,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
     for (final doc in historicoCarteira.docs) {
       final data = doc.data();
 
-      final type = (data['type'] ??
+      final type =
+      (data['type'] ??
           data['operationType'] ??
           data['tipo'] ??
           data['method'] ??
@@ -305,10 +321,11 @@ class _CarteiraPageState extends State<CarteiraPage> {
           .toString()
           .toLowerCase();
 
-      final isCompra = type.contains('purchase') ||
-          type.contains('buy') ||
-          type.contains('compra') ||
-          type.contains('startup_investment');
+      final isCompra =
+          type.contains('purchase') ||
+              type.contains('buy') ||
+              type.contains('compra') ||
+              type.contains('startup_investment');
 
       if (!isCompra) continue;
 
@@ -345,7 +362,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
         final data = doc.data();
 
         final quantidade = (data['quantity'] as num?)?.toInt() ?? 0;
-        final precoUnitario = (data['pricePerToken'] as num?)?.toDouble() ?? 0.0;
+        final precoUnitario =
+            (data['pricePerToken'] as num?)?.toDouble() ?? 0.0;
         final totalPrice = (data['totalPrice'] as num?)?.toDouble() ?? 0.0;
 
         if (quantidade > 0 && precoUnitario > 0) {
@@ -373,18 +391,22 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       final ofertas = snapshot.docs.map((doc) {
         final data = doc.data();
-        final tipo = data['type'] == 'buy' ? TipoOferta.compra : TipoOferta.venda;
+        final tipo = data['type'] == 'buy'
+            ? TipoOferta.compra
+            : TipoOferta.venda;
 
         return Oferta(
           tipo: tipo,
           quantidade: (data['quantity'] as num?)?.toInt() ?? 0,
-          preco: (data['pricePerToken'] as num?)?.toDouble() ?? ativo.valorToken,
+          preco:
+          (data['pricePerToken'] as num?)?.toDouble() ?? ativo.valorToken,
           empresa: ativo.nome,
           simbolo: ativo.simbolo,
           variacao: ativo.variacao,
           volume: ativo.volume,
           spread: ativo.spread,
           startupId: ativo.startupId,
+          isStartup: false,
           minBuyPrice: ativo.valorToken,
         );
       }).toList();
@@ -393,7 +415,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       return ofertas;
     } catch (e) {
-      print('Erro ao buscar ofertas do ativo: $e');
+      debugPrint('Erro ao buscar ofertas do ativo: $e');
       return [];
     }
   }
@@ -407,10 +429,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AtivoDetalheScreen(
-            ativo: ativo,
-            ofertasDisponiveis: ofertas,
-          ),
+          builder: (_) =>
+              AtivoDetalheScreen(ativo: ativo, ofertasDisponiveis: ofertas),
         ),
       );
     } catch (_) {
@@ -452,10 +472,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   int get tokensTotais {
-    return _ativos.fold<int>(
-      0,
-          (total, ativo) => total + ativo.tokens,
-    );
+    return _ativos.fold<int>(0, (total, ativo) => total + ativo.tokens);
   }
 
   double get variacaoMedia {
@@ -472,7 +489,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
   double get saldoDisponivel => _saldo;
 
   String _normalizarTipoMovimentacao(Map<String, dynamic> mov) {
-    final type = (mov['type'] ??
+    final type =
+    (mov['type'] ??
         mov['operationType'] ??
         mov['tipo'] ??
         mov['method'] ??
@@ -487,7 +505,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
       return 'deposit';
     }
 
-    if (type.contains('sale') || type.contains('sell') || type.contains('venda')) {
+    if (type.contains('sale') ||
+        type.contains('sell') ||
+        type.contains('venda')) {
       return 'sale';
     }
 
@@ -502,10 +522,11 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   Timestamp? _timestampMovimentacao(Map<String, dynamic> mov) {
-    final valor = mov['createdAt'] ??
-        mov['createAt'] ??
-        mov['created_at'] ??
-        mov['criado_em'];
+    final valor =
+        mov['createdAt'] ??
+            mov['createAt'] ??
+            mov['created_at'] ??
+            mov['criado_em'];
 
     return valor is Timestamp ? valor : null;
   }
@@ -521,9 +542,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
     final hora = data.hour.toString().padLeft(2, '0');
     final minuto = data.minute.toString().padLeft(2, '0');
 
-    final mesmoDia = data.year == agora.year &&
-        data.month == agora.month &&
-        data.day == agora.day;
+    final mesmoDia =
+        data.year == agora.year &&
+            data.month == agora.month &&
+            data.day == agora.day;
 
     if (mesmoDia) return 'Hoje às $hora:$minuto';
 
@@ -552,7 +574,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
     final tipo = _normalizarTipoMovimentacao(mov);
     final ticker = (mov['ticker'] ?? mov['simbolo'] ?? '').toString();
 
-    final startupName = (mov['startupName'] ??
+    final startupName =
+    (mov['startupName'] ??
         mov['startupNome'] ??
         mov['empresa'] ??
         mov['startup'] ??
@@ -593,13 +616,15 @@ class _CarteiraPageState extends State<CarteiraPage> {
     if (amount != null && amount != 0) {
       valor = amount.abs();
     } else {
-      valor = ((mov['totalPrice'] ??
-          mov['total'] ??
-          mov['totalFinal'] ??
-          mov['valor'] ??
-          0.0) as num)
-          .toDouble()
-          .abs();
+      valor =
+          ((mov['totalPrice'] ??
+              mov['total'] ??
+              mov['totalFinal'] ??
+              mov['valor'] ??
+              0.0)
+          as num)
+              .toDouble()
+              .abs();
     }
 
     final entrada = tipo == 'deposit' || tipo == 'sale';
@@ -643,7 +668,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.fundo,
-        extendBody: true,
+        extendBody: false,
         appBar: const AppBarPadrao(titulo: 'Minha Carteira'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 2),
         body: Stack(
@@ -651,9 +676,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
             const AtmosphericBackground(),
             if (_loading)
               const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.destaque,
-                ),
+                child: CircularProgressIndicator(color: AppColors.destaque),
               )
             else
               SafeArea(
@@ -668,11 +691,18 @@ class _CarteiraPageState extends State<CarteiraPage> {
                     ),
                     slivers: [
                       const SliverToBoxAdapter(
-                        child: Column(
-                          children: [
-                            _Header(),
-                            SizedBox(height: 20),
-                          ],
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(22, 16, 22, 16),
+                          child: Text(
+                            'Acompanhe seus ativos, saldo disponível e movimentações.',
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              height: 1.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                       SliverToBoxAdapter(
@@ -690,9 +720,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           },
                         ),
                       ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 18),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 18)),
                       SliverToBoxAdapter(
                         child: WalletChartCard(
                           data: _chartData,
@@ -707,19 +735,15 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           onPeriodChanged: _trocarPeriodoGrafico,
                         ),
                       ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 24),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
                       const SliverToBoxAdapter(
                         child: SectionLabel(
-                          label: 'SEUS ATIVOS',
+                          label: 'Seus ativos',
                           hint:
                           'Acompanhe seus tokens e a valorização por startup.',
                         ),
                       ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 12),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 12)),
                       if (_ativos.isEmpty)
                         const SliverPadding(
                           padding: EdgeInsets.symmetric(horizontal: 22),
@@ -749,18 +773,14 @@ class _CarteiraPageState extends State<CarteiraPage> {
                             },
                           ),
                         ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 24),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
                       const SliverToBoxAdapter(
                         child: SectionLabel(
-                          label: 'ÚLTIMAS MOVIMENTAÇÕES',
+                          label: 'Últimas movimentações',
                           hint: 'Histórico recente das operações e aportes.',
                         ),
                       ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 12),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 12)),
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 22),
                         sliver: _movimentacoes.isEmpty
@@ -789,9 +809,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                           },
                         ),
                       ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: 120),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 120)),
                     ],
                   ),
                 ),
@@ -808,24 +826,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 14),
-          Text(
-            'Acompanhe seus ativos, saldo disponível e movimentações.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textoFraco,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 
@@ -871,7 +872,15 @@ class _PatrimonioCard extends StatelessWidget {
             Row(
               children: [
                 const Expanded(
-                  child: PremiumSectionLabel(text: 'Patrimônio total'),
+                  child: Text(
+                    'Patrimônio total',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
+                  ),
                 ),
                 Material(
                   color: Colors.transparent,
@@ -882,9 +891,7 @@ class _PatrimonioCard extends StatelessWidget {
                     child: Container(
                       width: 38,
                       height: 38,
-                      decoration: premiumFieldDecoration(
-                        radius: 18,
-                      ),
+                      decoration: premiumFieldDecoration(),
                       child: Icon(
                         ocultarValores
                             ? Icons.visibility_off_rounded
@@ -902,8 +909,9 @@ class _PatrimonioCard extends StatelessWidget {
               patrimonioTexto,
               style: const TextStyle(
                 color: AppColors.destaque,
-                fontSize: 31,
-                fontWeight: FontWeight.w900,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                height: 1.1,
               ),
             ),
             const SizedBox(height: 18),
@@ -931,12 +939,10 @@ class _PatrimonioCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            GradientButton(
+            AppButton.primary(
               label: 'Adicionar fundos',
               icon: Icons.add_card_rounded,
               onTap: onAdicionarFundos,
-              height: 54,
-              radius: 18,
             ),
           ],
         ),
@@ -959,9 +965,7 @@ class _ResumoItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.all(12),
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -970,9 +974,8 @@ class _ResumoItem extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+              color: Colors.white60,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 5),
@@ -982,8 +985,7 @@ class _ResumoItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textoPrincipal,
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -1011,15 +1013,10 @@ class _AtivoCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(15),
-          decoration: premiumCardDecoration(
-            radius: 22,
-          ),
+          decoration: premiumCardDecoration(),
           child: Row(
             children: [
-              TickerBox(
-                simbolo: ativo.simbolo,
-                color: AppColors.destaque,
-              ),
+              TickerBox(simbolo: ativo.simbolo, color: AppColors.destaque),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1031,16 +1028,15 @@ class _AtivoCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textoPrincipal,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       '${ativo.tokens} tokens • médio R\$ ${ativo.precoMedio.toStringAsFixed(2)}/token',
                       style: const TextStyle(
-                        color: AppColors.textoMuitoFraco,
-                        fontSize: 12,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -1054,8 +1050,7 @@ class _AtivoCard extends StatelessWidget {
                     'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: AppColors.textoPrincipal,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -1063,10 +1058,10 @@ class _AtivoCard extends StatelessWidget {
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: AppColors.destaque.withOpacity(0.10),
+                      color: AppColors.destaque.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(13),
                       border: Border.all(
-                        color: AppColors.destaque.withOpacity(0.22),
+                        color: AppColors.destaque.withValues(alpha: 0.22),
                       ),
                     ),
                     child: const Icon(
@@ -1104,18 +1099,10 @@ class _MovimentacaoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: premiumCardDecoration(
-        radius: 18,
-      ),
+      decoration: premiumCardDecoration(),
       child: Row(
         children: [
-          IconBox(
-            icon: icon,
-            size: 36,
-            iconSize: 18,
-            radius: 12,
-            color: cor,
-          ),
+          IconBox(icon: icon, size: 36, iconSize: 18, color: cor),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1125,8 +1112,7 @@ class _MovimentacaoTile extends StatelessWidget {
                   titulo,
                   style: const TextStyle(
                     color: AppColors.textoPrincipal,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -1135,8 +1121,8 @@ class _MovimentacaoTile extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 11,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -1147,8 +1133,7 @@ class _MovimentacaoTile extends StatelessWidget {
             valor,
             style: TextStyle(
               color: cor,
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],

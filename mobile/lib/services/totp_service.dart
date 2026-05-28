@@ -21,13 +21,15 @@ class TotpService {
     required String secret,
   }) {
     final label = Uri.encodeComponent('$issuer:$account');
-    final query = Uri(queryParameters: {
-      'secret': secret,
-      'issuer': issuer,
-      'algorithm': 'SHA1',
-      'digits': _digits.toString(),
-      'period': _periodSeconds.toString(),
-    }).query;
+    final query = Uri(
+      queryParameters: {
+        'secret': secret,
+        'issuer': issuer,
+        'algorithm': 'SHA1',
+        'digits': _digits.toString(),
+        'period': _periodSeconds.toString(),
+      },
+    ).query;
 
     return 'otpauth://totp/$label?$query';
   }
@@ -54,7 +56,8 @@ class TotpService {
   String generateCode(String secret, {int? counter}) {
     final key = _base32Decode(secret);
     final timeCounter =
-        counter ?? DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ _periodSeconds;
+        counter ??
+        DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ _periodSeconds;
     final counterBytes = Uint8List(8);
     var value = timeCounter;
 
@@ -65,7 +68,8 @@ class TotpService {
 
     final hash = _hmacSha1(key, counterBytes);
     final offset = hash.last & 0x0f;
-    final binary = ((hash[offset] & 0x7f) << 24) |
+    final binary =
+        ((hash[offset] & 0x7f) << 24) |
         ((hash[offset + 1] & 0xff) << 16) |
         ((hash[offset + 2] & 0xff) << 8) |
         (hash[offset + 3] & 0xff);
@@ -163,7 +167,8 @@ class TotpService {
 
       for (var i = 0; i < 16; i++) {
         final j = chunkStart + i * 4;
-        words[i] = ((bytes[j] << 24) |
+        words[i] =
+            ((bytes[j] << 24) |
                 (bytes[j + 1] << 16) |
                 (bytes[j + 2] << 8) |
                 bytes[j + 3]) &

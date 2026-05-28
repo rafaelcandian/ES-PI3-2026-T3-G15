@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 
 import '../../themes/app_theme.dart';
 
@@ -36,9 +37,11 @@ class _PerfilPageState extends State<PerfilPage> {
 
       if (user == null) {
         if (!mounted) return;
+
         setState(() {
           _loading = false;
         });
+
         return;
       }
 
@@ -55,18 +58,10 @@ class _PerfilPageState extends State<PerfilPage> {
       final data = doc.data();
 
       if (data != null) {
-        nome = data['nome'] ??
-            data['name'] ??
-            data['displayName'] ??
-            nome;
-
+        nome = data['nome'] ?? data['name'] ?? data['displayName'] ?? nome;
         email = data['email'] ?? email;
-
-        telefone = data['telefone'] ??
-            data['phone'] ??
-            data['celular'] ??
-            telefone;
-
+        telefone =
+            data['telefone'] ?? data['phone'] ?? data['celular'] ?? telefone;
         cpf = data['cpf'] ?? '';
       }
 
@@ -123,7 +118,7 @@ class _PerfilPageState extends State<PerfilPage> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: AppColors.fundo,
-        extendBody: true,
+        extendBody: false,
         appBar: const AppBarPadrao(titulo: 'Perfil'),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 3),
         body: Stack(
@@ -131,9 +126,7 @@ class _PerfilPageState extends State<PerfilPage> {
             const _AtmosphericBackground(),
             if (_loading)
               const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.destaque,
-                ),
+                child: CircularProgressIndicator(color: AppColors.destaque),
               )
             else
               SafeArea(
@@ -152,30 +145,25 @@ class _PerfilPageState extends State<PerfilPage> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 22),
                       sliver: SliverList(
-                        delegate: SliverChildListDelegate(
-                          [
-                            _ProfileCard(
-                              nome: _nome,
-                              email: _email.isEmpty
-                                  ? 'E-mail não informado'
-                                  : _email,
-                              telefone: _mascararTelefone(_telefone),
-                              cpf: _mascararCpf(_cpf),
-                              onEditTap: _showEditProfileModal,
-                            ),
-                            const SizedBox(height: 18),
-                            _SecuritySection(
-                              onResetPassword: _sendPasswordReset,
-                            ),
-
-                            const SizedBox(height: 22),
-                            _AccountActions(
-                              onLogout: _logout,
-                              onDeleteAccount: _showDeleteAccountModal,
-                            ),
-                            const SizedBox(height: 120),
-                          ],
-                        ),
+                        delegate: SliverChildListDelegate([
+                          _ProfileCard(
+                            nome: _nome,
+                            email: _email.isEmpty
+                                ? 'E-mail não informado'
+                                : _email,
+                            telefone: _mascararTelefone(_telefone),
+                            cpf: _mascararCpf(_cpf),
+                            onEditTap: _showEditProfileModal,
+                          ),
+                          const SizedBox(height: 18),
+                          _SecuritySection(onResetPassword: _sendPasswordReset),
+                          const SizedBox(height: 22),
+                          _AccountActions(
+                            onLogout: _logout,
+                            onDeleteAccount: _showDeleteAccountModal,
+                          ),
+                          const SizedBox(height: 120),
+                        ]),
                       ),
                     ),
                   ],
@@ -225,17 +213,14 @@ class _PerfilPageState extends State<PerfilPage> {
 
     await user.updateDisplayName(nome);
 
-    await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set(
-      {
-        'nome': nome,
-        'displayName': nome,
-        'email': user.email ?? _email,
-        'telefone': telefoneLimpo,
-        'cpf': cpfLimpo,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set({
+      'nome': nome,
+      'displayName': nome,
+      'email': user.email ?? _email,
+      'telefone': telefoneLimpo,
+      'cpf': cpfLimpo,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     if (!mounted) return;
 
@@ -252,7 +237,8 @@ class _PerfilPageState extends State<PerfilPage> {
     if (email.isEmpty) {
       _showPasswordResetDialog(
         title: 'E-mail não encontrado',
-        message: 'Não encontramos um e-mail vinculado à sua conta para enviar a redefinição de senha.',
+        message:
+        'Não encontramos um e-mail vinculado à sua conta para enviar a redefinição de senha.',
         success: false,
       );
       return;
@@ -265,7 +251,8 @@ class _PerfilPageState extends State<PerfilPage> {
 
       _showPasswordResetDialog(
         title: 'E-mail enviado',
-        message: 'Enviamos um link de redefinição de senha para $email. Verifique sua caixa de entrada e o spam.',
+        message:
+        'Enviamos um link de redefinição de senha para $email. Verifique sua caixa de entrada e o spam.',
         success: true,
       );
     } catch (_) {
@@ -273,7 +260,8 @@ class _PerfilPageState extends State<PerfilPage> {
 
       _showPasswordResetDialog(
         title: 'Não foi possível enviar',
-        message: 'Tente novamente em alguns instantes. Se o problema continuar, confirme se seu e-mail está correto.',
+        message:
+        'Tente novamente em alguns instantes. Se o problema continuar, confirme se seu e-mail está correto.',
         success: false,
       );
     }
@@ -295,7 +283,9 @@ class _PerfilPageState extends State<PerfilPage> {
           title: Row(
             children: [
               Icon(
-                success ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                success
+                    ? Icons.check_circle_rounded
+                    : Icons.error_outline_rounded,
                 color: success ? AppColors.destaque : Colors.redAccent,
                 size: 24,
               ),
@@ -305,7 +295,7 @@ class _PerfilPageState extends State<PerfilPage> {
                   title,
                   style: const TextStyle(
                     color: AppColors.destaque,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -313,26 +303,16 @@ class _PerfilPageState extends State<PerfilPage> {
           ),
           content: Text(
             message,
-            style: const TextStyle(
-              color: AppColors.textoFraco,
-              height: 1.5,
-            ),
+            style: const TextStyle(color: AppColors.textoFraco, height: 1.5),
           ),
           actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.destaque,
-                foregroundColor: AppColors.fundo,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
+            TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text(
                 'OK',
                 style: TextStyle(
-                  fontWeight: FontWeight.w900,
+                  color: AppColors.destaque,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -355,15 +335,12 @@ class _PerfilPageState extends State<PerfilPage> {
             'Excluir conta',
             style: TextStyle(
               color: AppColors.destaque,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           content: const Text(
             'Essa ação exige uma confirmação segura antes de remover a conta. Para a entrega atual, o fluxo está sinalizado, mas não executa exclusão automática.',
-            style: TextStyle(
-              color: AppColors.textoFraco,
-              height: 1.5,
-            ),
+            style: TextStyle(color: AppColors.textoFraco, height: 1.5),
           ),
           actions: [
             TextButton(
@@ -382,31 +359,6 @@ class _PerfilPageState extends State<PerfilPage> {
     );
   }
 
-  void _showInfoModal({
-    required String title,
-    required IconData icon,
-    required String message,
-  }) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return _PremiumBottomSheet(
-          title: title,
-          icon: icon,
-          child: Text(
-            message,
-            style: const TextStyle(
-              color: AppColors.textoFraco,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _logout() async {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -420,15 +372,12 @@ class _PerfilPageState extends State<PerfilPage> {
             'Sair da conta',
             style: TextStyle(
               color: AppColors.destaque,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           content: const Text(
             'Tem certeza que deseja sair da sua conta?',
-            style: TextStyle(
-              color: AppColors.textoFraco,
-              height: 1.5,
-            ),
+            style: TextStyle(color: AppColors.textoFraco, height: 1.5),
           ),
           actions: [
             TextButton(
@@ -443,22 +392,15 @@ class _PerfilPageState extends State<PerfilPage> {
                 ),
               ),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.destaque,
-                foregroundColor: AppColors.fundo,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
+            TextButton(
               onPressed: () {
                 Navigator.pop(context, true);
               },
               child: const Text(
                 'Sair',
                 style: TextStyle(
-                  fontWeight: FontWeight.w900,
+                  color: AppColors.destaque,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -473,11 +415,7 @@ class _PerfilPageState extends State<PerfilPage> {
 
     if (!mounted) return;
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/login',
-          (route) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 }
 
@@ -501,7 +439,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.22),
+                    AppColors.azul.withValues(alpha: 0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -518,7 +456,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.07),
+                    AppColors.destaque.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -535,7 +473,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.18),
+                    AppColors.roxo.withValues(alpha: 0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -556,21 +494,19 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 14),
-          Text(
-            'Gerencie sua conta, privacidade e segurança.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textoFraco,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
-            ),
+      padding: EdgeInsets.fromLTRB(22, 16, 22, 0),
+      child: SizedBox(
+        width: double.infinity,
+        child: Text(
+          'Gerencie sua conta, privacidade e segurança.',
+          textAlign: TextAlign.left,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -605,14 +541,11 @@ class _ProfileCard extends StatelessWidget {
                 height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.destaque,
-                    width: 1.2,
-                  ),
+                  border: Border.all(color: AppColors.destaque, width: 1.2),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.destaque.withOpacity(0.16),
-                      blurRadius: 26,
+                      color: AppColors.destaque.withValues(alpha: 0.12),
+                      blurRadius: 22,
                     ),
                   ],
                 ),
@@ -655,7 +588,7 @@ class _ProfileCard extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textoPrincipal,
               fontSize: 22,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 14),
@@ -671,33 +604,12 @@ class _ProfileCard extends StatelessWidget {
             value: telefone,
           ),
           const SizedBox(height: 10),
-          _ProfileInfoRow(
-            icon: Icons.badge_outlined,
-            label: 'CPF',
-            value: cpf,
-          ),
+          _ProfileInfoRow(icon: Icons.badge_outlined, label: 'CPF', value: cpf),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: onEditTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.destaque,
-                foregroundColor: AppColors.fundo,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-              child: const Text(
-                'Editar perfil',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                ),
-              ),
-            ),
+          AppButton.primary(
+            label: 'Editar perfil',
+            icon: Icons.edit_rounded,
+            onTap: onEditTap,
           ),
         ],
       ),
@@ -719,17 +631,11 @@ class _ProfileInfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       padding: const EdgeInsets.all(13),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: AppColors.destaque,
-            size: 18,
-          ),
+          Icon(icon, color: AppColors.destaque, size: 18),
           const SizedBox(width: 10),
           Text(
             label,
@@ -748,7 +654,7 @@ class _ProfileInfoRow extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textoPrincipal,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -763,9 +669,7 @@ class _ProfileInfoRow extends StatelessWidget {
 class _SecuritySection extends StatelessWidget {
   final VoidCallback onResetPassword;
 
-  const _SecuritySection({
-    required this.onResetPassword,
-  });
+  const _SecuritySection({required this.onResetPassword});
 
   @override
   Widget build(BuildContext context) {
@@ -812,42 +716,17 @@ class _AccountActions extends StatelessWidget {
     return _SectionCard(
       child: Column(
         children: [
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton.icon(
-              onPressed: onLogout,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: AppColors.bordaClara,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              icon: const Icon(
-                Icons.logout_rounded,
-                color: AppColors.textoSecundario,
-                size: 18,
-              ),
-              label: const Text(
-                'Sair da conta',
-                style: TextStyle(
-                  color: AppColors.textoPrincipal,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
+          AppButton.outline(
+            label: 'Sair da conta',
+            icon: Icons.logout_rounded,
+            onTap: onLogout,
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: onDeleteAccount,
             child: const Text(
               'Excluir conta',
-              style: TextStyle(
-                color: AppColors.textoFraco,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppColors.textoFraco, fontSize: 12),
             ),
           ),
           const SizedBox(height: 4),
@@ -856,7 +735,7 @@ class _AccountActions extends StatelessWidget {
             style: TextStyle(
               color: AppColors.destaque,
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -872,38 +751,30 @@ class _SectionCard extends StatelessWidget {
   final IconData? icon;
   final Widget child;
 
-  const _SectionCard({
-    this.title,
-    this.icon,
-    required this.child,
-  });
+  const _SectionCard({this.title, this.icon, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
+      decoration: premiumCardDecoration(radius: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (title != null) ...[
             Row(
               children: [
-                Icon(
-                  icon,
-                  color: AppColors.destaque,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
+                if (icon != null) ...[
+                  Icon(icon, color: AppColors.destaque, size: 18),
+                  const SizedBox(width: 8),
+                ],
                 Text(
                   title!,
                   style: const TextStyle(
-                    color: AppColors.destaque,
+                    color: Colors.white,
                     fontSize: 15,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -946,18 +817,12 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.bordaClara,
-              ),
+              border: Border.all(color: AppColors.bordaClara),
             ),
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(
-                    icon,
-                    color: AppColors.destaque,
-                    size: 19,
-                  ),
+                  Icon(icon, color: AppColors.destaque, size: 19),
                   const SizedBox(width: 10),
                 ],
                 Expanded(
@@ -971,7 +836,7 @@ class _ActionRow extends StatelessWidget {
                               ? AppColors.destaque
                               : AppColors.textoSecundario,
                           fontSize: 12,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       if (subtitle != null) ...[
@@ -1002,82 +867,6 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
-class _ToggleRow extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _ToggleRow({
-    required this.title,
-    required this.subtitle,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
-      padding: const EdgeInsets.all(14),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppColors.textoPrincipal,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textoMuitoFraco,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 42,
-              height: 24,
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: active ? AppColors.destaque : AppColors.bordaMedia,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Align(
-                alignment: active ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: active ? AppColors.fundo : AppColors.textoFraco,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _StatusRow extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1092,9 +881,7 @@ class _StatusRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ),
+      decoration: premiumFieldDecoration(radius: 16),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
@@ -1105,10 +892,7 @@ class _StatusRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _StatusText(
-              title: title,
-              subtitle: subtitle,
-            ),
+            child: _StatusText(title: title, subtitle: subtitle),
           ),
         ],
       ),
@@ -1120,10 +904,7 @@ class _StatusText extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _StatusText({
-    required this.title,
-    required this.subtitle,
-  });
+  const _StatusText({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -1135,7 +916,7 @@ class _StatusText extends StatelessWidget {
           style: const TextStyle(
             color: AppColors.textoPrincipal,
             fontSize: 13,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 3),
@@ -1189,19 +970,15 @@ class _ProfileEditField extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.textoPrincipal,
           fontSize: 13,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
         ),
         decoration: InputDecoration(
-          icon: Icon(
-            icon,
-            color: AppColors.destaque,
-            size: 19,
-          ),
+          icon: Icon(icon, color: AppColors.destaque, size: 19),
           labelText: label,
           labelStyle: const TextStyle(
             color: AppColors.textoMuitoFraco,
             fontSize: 12,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
           errorStyle: const TextStyle(
             color: Colors.redAccent,
@@ -1240,9 +1017,7 @@ class CpfInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(
-        offset: formatted.length,
-      ),
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
@@ -1273,9 +1048,7 @@ class TelefoneInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(
-        offset: formatted.length,
-      ),
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
@@ -1289,7 +1062,8 @@ class _EditProfileSheet extends StatefulWidget {
   required String nome,
   required String telefone,
   required String cpf,
-  }) onSave;
+  })
+  onSave;
 
   const _EditProfileSheet({
     required this.nomeInicial,
@@ -1380,7 +1154,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     final nome = value?.trim() ?? '';
 
     if (nome.isEmpty) return 'Campo obrigatório';
-    if (nome.split(RegExp(r'\s+')).length < 2) return 'Informe nome e sobrenome';
+
+    if (nome.split(RegExp(r'\s+')).length < 2) {
+      return 'Informe nome e sobrenome';
+    }
 
     return null;
   }
@@ -1509,37 +1286,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                 ),
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _salvar,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.destaque,
-                    foregroundColor: AppColors.fundo,
-                    disabledBackgroundColor: AppColors.destaque.withOpacity(0.45),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: _saving
-                      ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      color: AppColors.fundo,
-                      strokeWidth: 2,
-                    ),
-                  )
-                      : const Text(
-                    'Salvar alterações',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
+              AppButton.primary(
+                label: 'Salvar alterações',
+                loading: _saving,
+                onTap: _saving ? null : _salvar,
               ),
             ],
           ),
@@ -1571,9 +1321,7 @@ class _PremiumBottomSheet extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1593,17 +1341,13 @@ class _PremiumBottomSheet extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppColors.destaque.withOpacity(0.12),
+                  color: AppColors.destaque.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.destaque.withOpacity(0.28),
+                    color: AppColors.destaque.withValues(alpha: 0.28),
                   ),
                 ),
-                child: Icon(
-                  icon,
-                  color: AppColors.destaque,
-                  size: 22,
-                ),
+                child: Icon(icon, color: AppColors.destaque, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1612,7 +1356,7 @@ class _PremiumBottomSheet extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.textoPrincipal,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),

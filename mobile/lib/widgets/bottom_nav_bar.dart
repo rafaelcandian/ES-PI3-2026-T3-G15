@@ -6,10 +6,7 @@ import 'package:mescla_invest/themes/app_theme.dart';
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;
 
-  const BottomNavBar({
-    super.key,
-    this.selectedIndex = 0,
-  });
+  const BottomNavBar({super.key, this.selectedIndex = 0});
 
   @override
   State<BottomNavBar> createState() => _BottomNavBarState();
@@ -67,24 +64,14 @@ class _BottomNavBarState extends State<BottomNavBar>
       return Tween<double>(
         begin: 1.0,
         end: 1.15,
-      ).animate(
-        CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeOutBack,
-        ),
-      );
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOutBack));
     }).toList();
 
     _glowAnims = _controllers.map((controller) {
       return Tween<double>(
         begin: 0.0,
         end: 1.0,
-      ).animate(
-        CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeOut,
-        ),
-      );
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
     }).toList();
 
     _controllers[_selectedIndex].forward();
@@ -125,44 +112,41 @@ class _BottomNavBarState extends State<BottomNavBar>
 
     _controllers[index].forward();
 
-    Navigator.pushReplacementNamed(
-      context,
-      _items[index].route,
-    );
+    Navigator.pushReplacementNamed(context, _items[index].route);
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Container(
-          height: 80,
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: AppColors.bordaClara,
-              width: 1,
+    return Container(
+      color: AppColors.fundo,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(color: AppColors.bordaClara, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+                BoxShadow(
+                  color: AppColors.destaque.withValues(alpha: 0.06),
+                  blurRadius: 20,
+                  spreadRadius: -4,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.55),
-                blurRadius: 30,
-                offset: const Offset(0, 12),
-              ),
-              BoxShadow(
-                color: AppColors.destaque.withValues(alpha: 0.06),
-                blurRadius: 20,
-                spreadRadius: -4,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(_items.length, _buildItem),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(_items.length, _buildItem),
+            ),
           ),
         ),
       ),
@@ -270,4 +254,3 @@ class _NavItem {
     required this.route,
   });
 }
-

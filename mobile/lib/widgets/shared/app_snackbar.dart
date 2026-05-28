@@ -3,12 +3,12 @@ import 'package:mescla_invest/themes/app_theme.dart';
 
 class AppSnackBar {
   static void show(
-      BuildContext context, {
-        required String message,
-        bool success = false,
-        bool error = false,
-        Duration duration = const Duration(seconds: 3),
-      }) {
+    BuildContext context, {
+    required String message,
+    bool success = false,
+    bool error = false,
+    Duration duration = const Duration(seconds: 3),
+  }) {
     ScaffoldMessenger.of(context).clearSnackBars();
 
     final IconData icon = success
@@ -20,8 +20,8 @@ class AppSnackBar {
     final Color iconColor = success
         ? AppColors.destaque
         : error
-            ? AppColors.erro
-            : AppColors.textoFraco;
+        ? AppColors.erro
+        : AppColors.textoFraco;
 
     final Color backgroundColor = error
         ? const Color(0xFF1A0A0A) // Vermelho muito escuro para erro
@@ -52,11 +52,7 @@ class AppSnackBar {
                 color: iconColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: 22,
-              ),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(

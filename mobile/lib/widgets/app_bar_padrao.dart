@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   final String titulo;
 
-  const AppBarPadrao({
-    super.key,
-    required this.titulo,
-  });
+  const AppBarPadrao({super.key, required this.titulo});
 
   @override
   Widget build(BuildContext context) {

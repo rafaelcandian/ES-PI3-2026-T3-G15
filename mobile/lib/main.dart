@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+
 import 'package:mescla_invest/screens/main_screens/balcao_negociacoes_screen.dart';
 import 'package:mescla_invest/screens/main_screens/catalogo_screen.dart';
 import 'package:mescla_invest/screens/main_screens/perfil_screen.dart';
@@ -14,8 +15,6 @@ import 'package:mescla_invest/screens/auth/cadastro_screen.dart';
 import 'package:mescla_invest/screens/auth/recuperacao_senha_screen.dart';
 import 'package:mescla_invest/screens/auth/verificacao_login_screen.dart';
 import 'package:mescla_invest/screens/startups/detalhes_screen.dart';
-
-import 'package:mescla_invest/screens/testes/balcao_teste_screen.dart';
 import 'package:mescla_invest/screens/carteira/carteira_screen.dart';
 
 void main() async {
@@ -40,28 +39,28 @@ class MesclaInvestApp extends StatelessWidget {
           themeMode: ThemeController.themeMode,
           theme: AppTheme.temaPrincipal,
           darkTheme: AppTheme.temaPrincipal,
-          initialRoute: "/",
+          initialRoute: '/',
           routes: {
-            "/": (context) => const SplashScreen(),
-            "/login": (context) => const LoginTela(),
-            "/cadastro": (context) => const CadastroPage(),
-            "/recuperacao_senha": (context) => const RecuperacaoSenhaTela(),
-            "/verificacao_login": (context) {
+            '/': (context) => const SplashScreen(),
+            '/login': (context) => const LoginTela(),
+            '/cadastro': (context) => const CadastroPage(),
+            '/recuperacao_senha': (context) => const RecuperacaoSenhaTela(),
+            '/verificacao_login': (context) {
               final args =
-                  ModalRoute.of(context)?.settings.arguments
-                      as Map<String, String>?;
+              ModalRoute.of(context)?.settings.arguments
+              as Map<String, dynamic>?;
 
               return VerificacaoLoginTela(
-                email: args?['email'] ?? '',
-                senha: args?['senha'] ?? '',
-                setupRequired: args?['setupRequired'] == 'true',
-                secret: args?['secret'],
-                otpAuthUri: args?['otpAuthUri'],
+                email: args?['email']?.toString() ?? '',
+                senha: args?['senha']?.toString() ?? '',
+                setupRequired: args?['setupRequired'] == true ||
+                    args?['setupRequired']?.toString() == 'true',
+                secret: args?['secret']?.toString(),
+                otpAuthUri: args?['otpAuthUri']?.toString(),
               );
             },
-            "/catalogo": (context) => const CatalogoStartupsPage(),
-            "/detalhes": (context) => const DetalhesStartupPage(),
-            '/balcao-teste': (context) => const BalcaoTesteScreen(),
+            '/catalogo': (context) => const CatalogoStartupsPage(),
+            '/detalhes': (context) => const DetalhesStartupPage(),
             '/balcao': (context) => const BalcaoDeNegociacoesScreen(),
             '/home': (context) => const CatalogoStartupsPage(),
             '/carteira': (context) => const CarteiraPage(),

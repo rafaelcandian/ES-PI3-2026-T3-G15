@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
@@ -25,12 +26,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   static const double _valorMinimo = 10.0;
   static const double _valorMaximo = 100000000.0;
 
-  final List<double> _valoresRapidos = [
-    50,
-    100,
-    250,
-    500,
-  ];
+  final List<double> _valoresRapidos = [50, 100, 250, 500];
 
   double get _taxa => 0.0;
 
@@ -58,10 +54,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   }
 
   double _parseValorDigitado(String value) {
-    var texto = value
-        .replaceAll('R\$', '')
-        .replaceAll(' ', '')
-        .trim();
+    var texto = value.replaceAll('R\$', '').replaceAll(' ', '').trim();
 
     if (texto.contains(',')) {
       texto = texto.replaceAll('.', '').replaceAll(',', '.');
@@ -232,7 +225,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
   Widget _buildTopBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
       child: Row(
         children: [
           IconButton(
@@ -240,20 +233,12 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
             icon: Icon(
               Icons.arrow_back_ios_new_rounded,
               color: _loading
-                  ? AppColors.textoMuitoFraco.withOpacity(0.45)
+                  ? AppColors.textoMuitoFraco.withValues(alpha: 0.45)
                   : AppColors.destaque,
               size: 20,
             ),
           ),
-          const SizedBox(width: 4),
-          const Text(
-            'Adicionar fundos',
-            style: TextStyle(
-              color: AppColors.destaque,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          const Expanded(child: SizedBox()),
         ],
       ),
     );
@@ -263,12 +248,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PremiumHeaderEyebrow(
-          text: 'PIX',
-        ),
-        SizedBox(height: 14),
         Text(
           'Adicionar saldo à carteira',
+          textAlign: TextAlign.left,
           style: TextStyle(
             color: AppColors.textoPrincipal,
             fontSize: 28,
@@ -276,13 +258,14 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
             height: 1.15,
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 10),
         Text(
           'Insira um valor para realizar o aporte na sua carteira de investimentos.',
+          textAlign: TextAlign.left,
           style: TextStyle(
-            color: AppColors.textoFraco,
-            fontSize: 13,
-            height: 1.5,
+            color: Colors.white70,
+            fontSize: 15,
+            height: 1.45,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -293,19 +276,17 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   Widget _buildResumoCarteira() {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
+      decoration: premiumCardDecoration(radius: 24),
       child: Row(
         children: [
           Container(
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.13),
+              color: AppColors.destaque.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.destaque.withOpacity(0.35),
+                color: AppColors.destaque.withValues(alpha: 0.24),
               ),
             ),
             child: const Icon(
@@ -326,16 +307,17 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                   style: TextStyle(
                     color: AppColors.textoPrincipal,
                     fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 SizedBox(height: 5),
                 Text(
-                  'Aporte',
+                  'Aporte via Pix simulado',
                   style: TextStyle(
-                    color: AppColors.textoMuitoFraco,
+                    color: Colors.white70,
                     fontSize: 12,
                     height: 1.4,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -349,29 +331,32 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   Widget _buildValorCard() {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
+      decoration: premiumCardDecoration(radius: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const PremiumHeaderEyebrow(text: 'VALOR DO APORTE'),
+          const Text(
+            'Valor do aporte',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
           const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-            decoration: premiumFieldDecoration(
-              radius: 18,
-            ),
+            decoration: premiumFieldDecoration(radius: 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'QUANTO DESEJA ADICIONAR?',
+                  'Quanto deseja adicionar?',
                   style: TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -382,29 +367,27 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                     decimal: true,
                   ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'[0-9,.]'),
-                    ),
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
                   ],
                   onChanged: _atualizarValor,
                   cursorColor: AppColors.destaque,
                   style: const TextStyle(
                     color: AppColors.textoPrincipal,
                     fontSize: 28,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                   decoration: InputDecoration(
                     prefixText: 'R\$ ',
                     prefixStyle: const TextStyle(
                       color: AppColors.destaque,
                       fontSize: 28,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                     hintText: '0,00',
                     hintStyle: const TextStyle(
                       color: AppColors.textoMuitoFraco,
                       fontSize: 28,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                     border: InputBorder.none,
                     isDense: true,
@@ -413,9 +396,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                     helperText:
                     'Mínimo R\$ ${_valorMinimo.toStringAsFixed(2)} • Máximo R\$ 100 milhões',
                     helperStyle: const TextStyle(
-                      color: AppColors.textoMuitoFraco,
+                      color: Colors.white60,
                       fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -448,10 +431,10 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.destaque.withOpacity(0.08),
+            color: AppColors.destaque.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: AppColors.bordaDestaque,
+              color: AppColors.destaque.withValues(alpha: 0.18),
             ),
           ),
           child: Row(
@@ -460,7 +443,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppColors.destaque.withOpacity(0.12),
+                  color: AppColors.destaque.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
@@ -479,14 +462,14 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                       style: TextStyle(
                         color: AppColors.textoPrincipal,
                         fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Crédito para uso no ambiente de testes.',
                       style: TextStyle(
-                        color: AppColors.textoMuitoFraco,
+                        color: Colors.white70,
                         fontSize: 11,
                         height: 1.35,
                         fontWeight: FontWeight.w500,
@@ -516,15 +499,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
           value: 'R\$ ${_valor.toStringAsFixed(2)}',
         ),
         const SizedBox(height: 10),
-        _InfoRow(
-          label: 'Taxa',
-          value: 'R\$ ${_taxa.toStringAsFixed(2)}',
-        ),
+        _InfoRow(label: 'Taxa', value: 'R\$ ${_taxa.toStringAsFixed(2)}'),
         const SizedBox(height: 14),
-        const Divider(
-          color: AppColors.bordaClara,
-          height: 1,
-        ),
+        const Divider(color: AppColors.bordaClara, height: 1),
         const SizedBox(height: 14),
         _InfoRow(
           label: 'Total creditado',
@@ -538,48 +515,10 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   Widget _buildConfirmButton() {
     final disabled = _loading || !_valorValido;
 
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: Opacity(
-        opacity: disabled ? 0.58 : 1,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                AppColors.destaqueClaro,
-                AppColors.destaqueEscuro,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.destaque.withOpacity(0.24),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: disabled ? null : _confirmarAporte,
-              child: Center(
-                child: Text(
-                  _loading ? 'PROCESSANDO...' : 'CONFIRMAR APORTE',
-                  style: const TextStyle(
-                    color: AppColors.fundo,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AppButton.primary(
+      label: _loading ? 'Processando...' : 'Confirmar aporte',
+      loading: _loading,
+      onTap: disabled ? null : _confirmarAporte,
     );
   }
 }
@@ -604,7 +543,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.22),
+                    AppColors.azul.withValues(alpha: 0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -621,7 +560,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.07),
+                    AppColors.destaque.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -638,7 +577,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.18),
+                    AppColors.roxo.withValues(alpha: 0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -657,22 +596,25 @@ class _InfoCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _InfoCard({
-    required this.title,
-    required this.children,
-  });
+  const _InfoCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: premiumCardDecoration(
-        radius: 24,
-      ),
+      decoration: premiumCardDecoration(radius: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PremiumHeaderEyebrow(text: title.toUpperCase()),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
           const SizedBox(height: 16),
           ...children,
         ],
@@ -697,15 +639,13 @@ class _InfoRow extends StatelessWidget {
     return Container(
       decoration: destaque
           ? BoxDecoration(
-        color: AppColors.destaque.withOpacity(0.08),
+        color: AppColors.destaque.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.bordaDestaque,
+          color: AppColors.destaque.withValues(alpha: 0.18),
         ),
       )
-          : premiumFieldDecoration(
-        radius: 16,
-      ),
+          : premiumFieldDecoration(radius: 16),
       padding: const EdgeInsets.all(13),
       child: Row(
         children: [
@@ -713,10 +653,9 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                color:
-                destaque ? AppColors.textoPrincipal : AppColors.textoFraco,
+                color: destaque ? Colors.white : Colors.white70,
                 fontSize: destaque ? 14 : 13,
-                fontWeight: destaque ? FontWeight.w900 : FontWeight.w600,
+                fontWeight: destaque ? FontWeight.w800 : FontWeight.w600,
               ),
             ),
           ),
@@ -727,10 +666,9 @@ class _InfoRow extends StatelessWidget {
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color:
-                destaque ? AppColors.destaque : AppColors.textoPrincipal,
+                color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
                 fontSize: destaque ? 16 : 13,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -763,10 +701,7 @@ class _QuickValueChip extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: ativo ? AppColors.destaque : AppColors.campo,
             borderRadius: BorderRadius.circular(18),
@@ -777,8 +712,8 @@ class _QuickValueChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: ativo ? AppColors.fundo : AppColors.textoFraco,
-              fontWeight: FontWeight.w900,
+              color: ativo ? AppColors.fundo : Colors.white70,
+              fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
           ),
@@ -796,13 +731,11 @@ class _LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.fundo.withOpacity(0.72),
+      color: AppColors.fundo.withValues(alpha: 0.72),
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(22),
-          decoration: premiumCardDecoration(
-            radius: 24,
-          ),
+          decoration: premiumCardDecoration(radius: 24),
           child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
