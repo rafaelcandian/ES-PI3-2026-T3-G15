@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/models/ativo_carteira.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
-import 'package:mescla_invest/screens/carteira/wallet_chart_card.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
@@ -14,6 +13,7 @@ import 'package:mescla_invest/widgets/shared/info_row.dart';
 import 'package:mescla_invest/widgets/shared/outline_button.dart' as shared;
 import 'package:mescla_invest/widgets/shared/section_card.dart';
 import 'package:mescla_invest/widgets/shared/ticker_box.dart';
+import 'package:mescla_invest/widgets/shared/wallet_chart_card.dart';
 
 import '../ordens/ordem_exe_screen.dart';
 
@@ -226,7 +226,8 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       }
 
       final variation = endValue - startValue;
-      final variationPercent = startValue > 0 ? (variation / startValue) * 100 : 0.0;
+      final variationPercent =
+      startValue > 0 ? (variation / startValue) * 100 : 0.0;
 
       if (!mounted) return;
 
@@ -245,7 +246,8 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       final startValue = widget.ativo.precoMedio * widget.ativo.tokens;
       final endValue = widget.ativo.valorTotal;
       final variation = endValue - startValue;
-      final variationPercent = startValue > 0 ? (variation / startValue) * 100 : 0.0;
+      final variationPercent =
+      startValue > 0 ? (variation / startValue) * 100 : 0.0;
 
       if (!mounted) return;
 

@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:mescla_invest/models/ativo_carteira.dart';
+import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
@@ -15,15 +17,12 @@ import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 import 'package:mescla_invest/widgets/shared/empty_state_card.dart';
 import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 import 'package:mescla_invest/widgets/shared/icon_box.dart';
-import 'package:mescla_invest/widgets/shared/info_row.dart';
-import 'package:mescla_invest/widgets/shared/outline_button.dart' as shared;
-import 'package:mescla_invest/widgets/shared/section_card.dart';
 import 'package:mescla_invest/widgets/shared/section_label.dart';
 import 'package:mescla_invest/widgets/shared/ticker_box.dart';
+import 'package:mescla_invest/widgets/shared/wallet_chart_card.dart';
 
-import '../../models/balcao_model.dart';
-import '../ordens/ordem_exe_screen.dart';
 import 'adicionar_fundos_screen.dart';
+import 'ativo_detalhe_screen.dart';
 
 class CarteiraPage extends StatefulWidget {
   const CarteiraPage({super.key});
@@ -89,14 +88,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
         if (mounted) {
           setState(() => _loading = false);
         }
+
         return;
       }
 
       final saldo = await carteiraService.getBalance();
 
-      // Atualiza o saldo assim que ele é lido do Firestore.
-      // Assim, mesmo que gráfico, transações ou ativos deem erro,
-      // o saldo da carteira aparece corretamente na tela.
       if (mounted) {
         setState(() {
           _saldo = saldo;
@@ -121,8 +118,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
             final title = data['title'] ?? data['nome'] ?? 'Startup';
 
             final tokenValue =
-                ((data['tokenValue'] ?? data['valorToken'] ?? 0.0) as num)
-                    .toDouble();
+            ((data['tokenValue'] ?? data['valorToken'] ?? 0.0) as num)
+                .toDouble();
 
             final precoMedio = await _calcularPrecoMedio(
               firestore: firestore,
@@ -132,10 +129,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
             );
 
             final variacaoInformada = ((data['variacao'] ??
-                        data['variation'] ??
-                        data['variacaoPercentual'] ??
-                        0.0)
-                    as num)
+                data['variation'] ??
+                data['variacaoPercentual'] ??
+                0.0)
+            as num)
                 .toDouble();
 
             final variacaoCalculada = precoMedio > 0
@@ -147,9 +144,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
                 : variacaoInformada;
 
             final volume = (data['volume'] ??
-                    data['volumeNegociado'] ??
-                    data['volumeTotal'] ??
-                    'Não informado')
+                data['volumeNegociado'] ??
+                data['volumeTotal'] ??
+                'Não informado')
                 .toString();
 
             final spread = ((data['spread'] ?? 0.0) as num).toDouble();
@@ -174,9 +171,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
       List<Map<String, dynamic>> movsTemp = [];
 
       try {
-        // Lê apenas o histórico próprio da carteira.
-        // Isso evita duplicidade entre `transactions` e `transacoesCarteira`,
-        // porque algumas compras também geram documento em `transactions`.
         final transacoesCarteira = await firestore
             .collection('usuarios')
             .doc(uid)
@@ -186,10 +180,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
             .get();
 
         movsTemp = transacoesCarteira.docs.map(
-          (doc) => {
-            ...doc.data(),
-            'id': doc.id,
-            '_origem': 'carteira',
+              (doc) {
+            return {
+              ...doc.data(),
+              'id': doc.id,
+              '_origem': 'carteira',
+            };
           },
         ).toList();
       } catch (e) {
@@ -291,8 +287,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
     double totalInvestido = 0;
     int totalTokens = 0;
 
-    // Fonte principal: histórico próprio da carteira.
-    // Aqui entram compras diretas, compras via balcão e registros antigos.
     final historicoCarteira = await firestore
         .collection('usuarios')
         .doc(uid)
@@ -304,10 +298,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
       final data = doc.data();
 
       final type = (data['type'] ??
-              data['operationType'] ??
-              data['tipo'] ??
-              data['method'] ??
-              '')
+          data['operationType'] ??
+          data['tipo'] ??
+          data['method'] ??
+          '')
           .toString()
           .toLowerCase();
 
@@ -323,12 +317,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       final precoUnitario =
           ((data['pricePerToken'] ?? data['precoUnitario']) as num?)
-                  ?.toDouble() ??
+              ?.toDouble() ??
               0.0;
 
       final totalPrice =
           ((data['totalPrice'] ?? data['total'] ?? data['valor']) as num?)
-                  ?.toDouble() ??
+              ?.toDouble() ??
               0.0;
 
       if (quantidade > 0 && precoUnitario > 0) {
@@ -340,8 +334,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
       }
     }
 
-    // Fallback: coleção global transactions, usada por algumas Functions.
-    // Mantém compatibilidade com registros antigos.
     if (totalTokens == 0) {
       final compras = await firestore
           .collection('transactions')
@@ -381,15 +373,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       final ofertas = snapshot.docs.map((doc) {
         final data = doc.data();
-        final tipo = data['type'] == 'buy'
-            ? TipoOferta.compra
-            : TipoOferta.venda;
+        final tipo = data['type'] == 'buy' ? TipoOferta.compra : TipoOferta.venda;
 
         return Oferta(
           tipo: tipo,
           quantidade: (data['quantity'] as num?)?.toInt() ?? 0,
-          preco: (data['pricePerToken'] as num?)?.toDouble()
-              ?? ativo.valorToken,
+          preco: (data['pricePerToken'] as num?)?.toDouble() ?? ativo.valorToken,
           empresa: ativo.nome,
           simbolo: ativo.simbolo,
           variacao: ativo.variacao,
@@ -401,6 +390,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
       }).toList();
 
       ofertas.sort((a, b) => a.preco.compareTo(b.preco));
+
       return ofertas;
     } catch (e) {
       print('Erro ao buscar ofertas do ativo: $e');
@@ -419,7 +409,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
         MaterialPageRoute(
           builder: (_) => AtivoDetalheScreen(
             ativo: ativo,
-            historico: _chartData,
             ofertasDisponiveis: ofertas,
           ),
         ),
@@ -484,10 +473,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
   String _normalizarTipoMovimentacao(Map<String, dynamic> mov) {
     final type = (mov['type'] ??
-            mov['operationType'] ??
-            mov['tipo'] ??
-            mov['method'] ??
-            '')
+        mov['operationType'] ??
+        mov['tipo'] ??
+        mov['method'] ??
+        '')
         .toString()
         .toLowerCase();
 
@@ -562,18 +551,20 @@ class _CarteiraPageState extends State<CarteiraPage> {
   String _descricaoMovimentacao(Map<String, dynamic> mov) {
     final tipo = _normalizarTipoMovimentacao(mov);
     final ticker = (mov['ticker'] ?? mov['simbolo'] ?? '').toString();
+
     final startupName = (mov['startupName'] ??
-            mov['startupNome'] ??
-            mov['empresa'] ??
-            mov['startup'] ??
-            '')
+        mov['startupNome'] ??
+        mov['empresa'] ??
+        mov['startup'] ??
+        '')
         .toString();
+
     final quantityValue = mov['quantity'] ?? mov['quantidade'];
     final quantity = (quantityValue as num?)?.toInt() ?? 0;
     final data = _dataMovimentacao(mov);
 
     if (tipo == 'deposit') {
-      return 'Pix simulado • $data';
+      return 'Pix • $data';
     }
 
     final partes = <String>[];
@@ -603,12 +594,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
       valor = amount.abs();
     } else {
       valor = ((mov['totalPrice'] ??
-                  mov['total'] ??
-                  mov['totalFinal'] ??
-                  mov['valor'] ??
-                  0.0) as num)
-              .toDouble()
-              .abs();
+          mov['total'] ??
+          mov['totalFinal'] ??
+          mov['valor'] ??
+          0.0) as num)
+          .toDouble()
+          .abs();
     }
 
     final entrada = tipo == 'deposit' || tipo == 'sale';
@@ -632,24 +623,19 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   Color _corMovimentacao(Map<String, dynamic> mov) {
-  final tipo = _normalizarTipoMovimentacao(mov);
+    final tipo = _normalizarTipoMovimentacao(mov);
 
-  switch (tipo) {
-    case 'deposit':
-      return AppColors.destaque;
-
-    // VENDA = vermelho
-    case 'sale':
-      return const Color(0xFFF87171);
-
-    // COMPRA = azul/dourado do app
-    case 'purchase':
-      return AppColors.azul;
-
-    default:
-      return AppColors.textoMuitoFraco;
+    switch (tipo) {
+      case 'deposit':
+        return AppColors.destaque;
+      case 'sale':
+        return const Color(0xFFF87171);
+      case 'purchase':
+        return AppColors.azul;
+      default:
+        return AppColors.textoMuitoFraco;
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -708,7 +694,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                         child: SizedBox(height: 18),
                       ),
                       SliverToBoxAdapter(
-                        child: _GraficoCard(
+                        child: WalletChartCard(
                           data: _chartData,
                           points: _chartPoints,
                           selectedTimePeriod: selectedTimePeriod,
@@ -817,488 +803,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 }
 
-// ─── Modelo interno da carteira ─────────────────────────────────────────────
-
-class AtivoCarteira {
-  final String startupId;
-  final String nome;
-  final String simbolo;
-  final int tokens;
-  final double valorToken;
-  final double precoMedio;
-  final double variacao;
-  final String volume;
-  final double spread;
-
-  const AtivoCarteira({
-    required this.startupId,
-    required this.nome,
-    required this.simbolo,
-    required this.tokens,
-    required this.valorToken,
-    required this.precoMedio,
-    required this.variacao,
-    required this.volume,
-    required this.spread,
-  });
-
-  double get valorTotal => tokens * valorToken;
-
-  double get lucroPrejuizo => (valorToken - precoMedio) * tokens;
-}
-
-// ─── Tela de detalhe do ativo ───────────────────────────────────────────────
-
-class AtivoDetalheScreen extends StatefulWidget {
-  final AtivoCarteira ativo;
-  final List<double> historico;
-  final List<Oferta> ofertasDisponiveis;
-
-  const AtivoDetalheScreen({
-    super.key,
-    required this.ativo,
-    required this.historico,
-    required this.ofertasDisponiveis,
-  });
-
-  @override
-  State<AtivoDetalheScreen> createState() => _AtivoDetalheScreenState();
-}
-
-class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
-  String selectedTimePeriod = '1 mês';
-
-  List<double> _assetChartData = [];
-  double _assetStartValue = 0.0;
-  double _assetEndValue = 0.0;
-  double _assetVariation = 0.0;
-  double _assetVariationPercent = 0.0;
-  String _assetStartLabel = '';
-  String _assetEndLabel = '';
-  bool _loadingAssetChart = true;
-
-  bool get _positivo => _assetVariation >= 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAssetChart();
-  }
-
-  DateTime _periodStartDate(String period) {
-    final now = DateTime.now();
-
-    switch (period) {
-      case '1h':
-        return now.subtract(const Duration(hours: 1));
-      case '24h':
-        return now.subtract(const Duration(hours: 24));
-      case '1 sem':
-        return now.subtract(const Duration(days: 7));
-      case '1 mês':
-        return DateTime(now.year, now.month - 1, now.day, now.hour, now.minute);
-      case '6 meses':
-        return DateTime(now.year, now.month - 6, now.day, now.hour, now.minute);
-      case '1 ano':
-        return DateTime(now.year - 1, now.month, now.day, now.hour, now.minute);
-      default:
-        return DateTime(now.year, now.month - 1, now.day, now.hour, now.minute);
-    }
-  }
-
-  String _formatDateLabel(DateTime date, String period) {
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-
-    if (period == '1h' || period == '24h') {
-      return '$hour:$minute';
-    }
-
-    return '$day/$month';
-  }
-
-  bool _isCompraAtivo(Map<String, dynamic> data) {
-    final type = (data['type'] ??
-            data['operationType'] ??
-            data['tipo'] ??
-            data['method'] ??
-            '')
-        .toString()
-        .toLowerCase();
-
-    return type.contains('purchase') ||
-        type.contains('buy') ||
-        type.contains('compra') ||
-        type.contains('startup_investment');
-  }
-
-  bool _isVendaAtivo(Map<String, dynamic> data) {
-    final type = (data['type'] ??
-            data['operationType'] ??
-            data['tipo'] ??
-            data['method'] ??
-            '')
-        .toString()
-        .toLowerCase();
-
-    return type.contains('sale') ||
-        type.contains('sell') ||
-        type.contains('venda');
-  }
-
-  DateTime? _dataTransacao(Map<String, dynamic> data) {
-    final raw = data['createdAt'] ?? data['createAt'] ?? data['created_at'];
-
-    if (raw is Timestamp) return raw.toDate();
-    if (raw is DateTime) return raw;
-    if (raw is String) return DateTime.tryParse(raw);
-
-    return null;
-  }
-
-  Future<void> _loadAssetChart() async {
-    if (!mounted) return;
-
-    setState(() {
-      _loadingAssetChart = true;
-    });
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      final now = DateTime.now();
-      final startDate = _periodStartDate(selectedTimePeriod);
-
-      final startLabel = _formatDateLabel(startDate, selectedTimePeriod);
-      final endLabel = _formatDateLabel(now, selectedTimePeriod);
-
-      double startValue;
-      double endValue = widget.ativo.valorTotal;
-      final points = <double>[];
-
-      if (user == null) {
-        startValue = widget.ativo.precoMedio * widget.ativo.tokens;
-        points.addAll([startValue, endValue]);
-      } else {
-        final snapshot = await FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(user.uid)
-            .collection('transacoesCarteira')
-            .where('startupId', isEqualTo: widget.ativo.startupId)
-            .get();
-
-        final docs = snapshot.docs.toList()
-          ..sort((a, b) {
-            final dataA = _dataTransacao(a.data()) ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final dataB = _dataTransacao(b.data()) ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return dataA.compareTo(dataB);
-          });
-
-        int movimentacaoPeriodo = 0;
-        final periodoDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
-
-        for (final doc in docs) {
-          final data = doc.data();
-          final createdAt = _dataTransacao(data);
-          if (createdAt == null || createdAt.isBefore(startDate)) continue;
-
-          final quantity = ((data['quantity'] ?? data['quantidade']) as num?)?.toInt() ?? 0;
-          if (quantity <= 0) continue;
-
-          if (_isCompraAtivo(data)) {
-            movimentacaoPeriodo += quantity;
-            periodoDocs.add(doc);
-          } else if (_isVendaAtivo(data)) {
-            movimentacaoPeriodo -= quantity;
-            periodoDocs.add(doc);
-          }
-        }
-
-        int quantidadeInicial = widget.ativo.tokens - movimentacaoPeriodo;
-        if (quantidadeInicial < 0) quantidadeInicial = 0;
-
-        // Se não houve compra/venda no período, usamos o preço médio como referência.
-        // Assim o detalhe mostra lucro/prejuízo real do ativo: preço médio pago x preço atual.
-        if (periodoDocs.isEmpty) {
-          startValue = widget.ativo.precoMedio * widget.ativo.tokens;
-          points.addAll([startValue, endValue]);
-        } else {
-          startValue = quantidadeInicial * widget.ativo.valorToken;
-          var quantidadeCorrente = quantidadeInicial;
-
-          points.add(startValue);
-
-          for (final doc in periodoDocs) {
-            final data = doc.data();
-            final quantity = ((data['quantity'] ?? data['quantidade']) as num?)?.toInt() ?? 0;
-            if (quantity <= 0) continue;
-
-            if (_isCompraAtivo(data)) {
-              quantidadeCorrente += quantity;
-            } else if (_isVendaAtivo(data)) {
-              quantidadeCorrente -= quantity;
-            }
-
-            if (quantidadeCorrente < 0) quantidadeCorrente = 0;
-            points.add(quantidadeCorrente * widget.ativo.valorToken);
-          }
-
-          if (points.last != endValue) {
-            points.add(endValue);
-          }
-        }
-      }
-
-      if (points.length < 2) {
-        points.add(endValue);
-      }
-
-      final variation = endValue - startValue;
-      final variationPercent = startValue > 0 ? (variation / startValue) * 100 : 0.0;
-
-      if (!mounted) return;
-
-      setState(() {
-        _assetChartData = points;
-        _assetStartValue = startValue;
-        _assetEndValue = endValue;
-        _assetVariation = variation;
-        _assetVariationPercent = variationPercent.isFinite ? variationPercent : 0.0;
-        _assetStartLabel = startLabel;
-        _assetEndLabel = endLabel;
-        _loadingAssetChart = false;
-      });
-    } catch (e) {
-      final startValue = widget.ativo.precoMedio * widget.ativo.tokens;
-      final endValue = widget.ativo.valorTotal;
-      final variation = endValue - startValue;
-      final variationPercent = startValue > 0 ? (variation / startValue) * 100 : 0.0;
-
-      if (!mounted) return;
-
-      setState(() {
-        _assetChartData = [startValue, endValue];
-        _assetStartValue = startValue;
-        _assetEndValue = endValue;
-        _assetVariation = variation;
-        _assetVariationPercent = variationPercent.isFinite ? variationPercent : 0.0;
-        _assetStartLabel = 'Compra';
-        _assetEndLabel = 'Atual';
-        _loadingAssetChart = false;
-      });
-    }
-  }
-
-  void _trocarPeriodoAtivo(String period) {
-    if (period == selectedTimePeriod) return;
-
-    setState(() {
-      selectedTimePeriod = period;
-    });
-
-    _loadAssetChart();
-  }
-
-  Oferta? _selecionarOfertaParaModo(ModoNegociacao modo) {
-    final tipoNecessario =
-    modo == ModoNegociacao.compra ? TipoOferta.venda : TipoOferta.compra;
-
-    final ofertasValidas = widget.ofertasDisponiveis
-        .where(
-          (oferta) => oferta.tipo == tipoNecessario && oferta.quantidade > 0,
-    )
-        .toList();
-
-    if (ofertasValidas.isEmpty) return null;
-
-    ofertasValidas.sort((a, b) {
-      if (modo == ModoNegociacao.compra) {
-        return a.preco.compareTo(b.preco);
-      }
-
-      return b.preco.compareTo(a.preco);
-    });
-
-    return ofertasValidas.first;
-  }
-
-  void _abrirOrdem(BuildContext context, ModoNegociacao modo) {
-    final oferta = _selecionarOfertaParaModo(modo);
-
-    if (oferta == null) {
-      final mensagem = modo == ModoNegociacao.compra
-          ? 'Nenhuma oferta de venda disponível para compra.'
-          : 'Nenhuma oferta de compra disponível para venda.';
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(mensagem),
-        ),
-      );
-
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OrdemExeScreen(
-          oferta: oferta,
-          modo: modo,
-          ofertasDisponiveis: widget.ofertasDisponiveis,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.fundo,
-      body: Stack(
-        children: [
-          const AtmosphericBackground(),
-          SafeArea(
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.textoPrincipal,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          'Detalhe do ativo',
-                          style: TextStyle(
-                            color: AppColors.destaque,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        _AtivoHeroCard(ativo: widget.ativo),
-                        const SizedBox(height: 18),
-                        _loadingAssetChart
-                            ? Container(
-                                height: 260,
-                                decoration: premiumCardDecoration(),
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.destaque,
-                                  ),
-                                ),
-                              )
-                            : _GraficoCard(
-                                data: _assetChartData,
-                                selectedTimePeriod: selectedTimePeriod,
-                                startValue: _assetStartValue,
-                                endValue: _assetEndValue,
-                                variation: _assetVariation,
-                                variationPercent: _assetVariationPercent,
-                                startLabel: _assetStartLabel,
-                                endLabel: _assetEndLabel,
-                                onPeriodChanged: _trocarPeriodoAtivo,
-                              ),
-                        const SizedBox(height: 18),
-                        _DetalheMetricasCard(
-                          ativo: widget.ativo,
-                          variacaoPeriodo: _assetVariationPercent,
-                          resultadoPeriodo: _assetVariation,
-                        ),
-                        const SizedBox(height: 18),
-                        SectionCard(
-                          title: 'Acompanhamento do ativo',
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: premiumFieldDecoration(
-                              radius: 18,
-                            ),
-                            child: Column(
-                              children: [
-                                InfoRow(
-                                  label: 'Preço médio de compra',
-                                  value:
-                                  'R\$ ${widget.ativo.precoMedio.toStringAsFixed(2)}',
-                                ),
-                                InfoRow(
-                                  label: 'Preço atual',
-                                  value:
-                                  'R\$ ${widget.ativo.valorToken.toStringAsFixed(2)}',
-                                  destaque: true,
-                                ),
-                                InfoRow(
-                                  label: 'Resultado no período',
-                                  value:
-                                  '${_assetVariation >= 0 ? '+' : '-'} R\$ ${_assetVariation.abs().toStringAsFixed(2)}',
-                                ),
-                                InfoRow(
-                                  label: 'Variação no período',
-                                  value:
-                                  '${_assetVariation >= 0 ? '+' : ''}${_assetVariationPercent.toStringAsFixed(1)}%',
-                                  destaque: true,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 26),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: shared.OutlineButton(
-                                label: 'Vender',
-                                onTap: () => _abrirOrdem(
-                                  context,
-                                  ModoNegociacao.venda,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: GradientButton(
-                                label: 'Comprar mais',
-                                onTap: () => _abrirOrdem(
-                                  context,
-                                  ModoNegociacao.compra,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Componentes específicos da carteira ────────────────────────────────────
-
 class _Header extends StatelessWidget {
   const _Header();
 
@@ -1347,9 +851,11 @@ class _PatrimonioCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positiva = variacaoMedia >= 0;
+
     final patrimonioTexto = ocultarValores
         ? 'R\$ ••••••'
         : 'R\$ ${patrimonioTotal.toStringAsFixed(2)}';
+
     final saldoTexto = ocultarValores
         ? 'R\$ ••••••'
         : 'R\$ ${saldoDisponivel.toStringAsFixed(2)}';
@@ -1486,289 +992,6 @@ class _ResumoItem extends StatelessWidget {
   }
 }
 
-class _GraficoCard extends StatelessWidget {
-  final List<double> data;
-  final List<Map<String, dynamic>> points;
-  final String selectedTimePeriod;
-  final double startValue;
-  final double endValue;
-  final double variation;
-  final double variationPercent;
-  final String startLabel;
-  final String endLabel;
-  final ValueChanged<String> onPeriodChanged;
-
-  const _GraficoCard({
-    required this.data,
-    this.points = const [],
-    required this.selectedTimePeriod,
-    this.startValue = 0.0,
-    this.endValue = 0.0,
-    this.variation = 0.0,
-    this.variationPercent = 0.0,
-    this.startLabel = '',
-    this.endLabel = '',
-    required this.onPeriodChanged,
-  });
-
-  String _formatMoney(double value) {
-    return 'R\$ ${value.toStringAsFixed(2)}';
-  }
-
-  String _middleLabel() {
-    if (points.length < 3) return '';
-    return (points[points.length ~/ 2]['label'] ?? '').toString();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final periods = ['1h', '24h', '1 sem', '1 mês', '6 meses', '1 ano'];
-    final temHistorico = data.length >= 2;
-    final positivo = variation >= 0;
-    final variacaoTexto =
-        '${positivo ? '+' : '-'} ${_formatMoney(variation.abs())} (${positivo ? '+' : '-'}${variationPercent.abs().toStringAsFixed(1)}%)';
-    final middleLabel = _middleLabel();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: premiumCardDecoration(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: PremiumHeaderEyebrow(text: 'EVOLUÇÃO DO PATRIMÔNIO'),
-                ),
-                if (temHistorico)
-                  Text(
-                    selectedTimePeriod,
-                    style: const TextStyle(
-                      color: AppColors.destaque,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            if (temHistorico) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _ChartMetricBox(
-                      label: 'Início',
-                      value: _formatMoney(startValue),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _ChartMetricBox(
-                      label: 'Atual',
-                      value: _formatMoney(endValue),
-                      destaque: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: premiumFieldDecoration(radius: 14),
-                child: Row(
-                  children: [
-                    Icon(
-                      positivo
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      color: positivo ? AppColors.destaque : const Color(0xFFF87171),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Variação no período',
-                        style: const TextStyle(
-                          color: AppColors.textoMuitoFraco,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      variacaoTexto,
-                      style: TextStyle(
-                        color: positivo ? AppColors.destaque : const Color(0xFFF87171),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: temHistorico
-                  ? CustomPaint(
-                      painter: LineChartPainter(data: data),
-                    )
-                  : Center(
-                      child: Text(
-                        'Ainda não há pontos suficientes para este período. Faça um aporte, compra ou venda para gerar histórico.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textoMuitoFraco.withOpacity(0.95),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-            ),
-            if (temHistorico) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      startLabel,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        color: AppColors.textoMuitoFraco,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  if (middleLabel.isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        middleLabel,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppColors.textoMuitoFraco,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: Text(
-                      endLabel,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: AppColors.textoMuitoFraco,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: periods.map((period) {
-                  final active = selectedTimePeriod == period;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(18),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: () => onPeriodChanged(period),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 9,
-                          ),
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.destaque : AppColors.campo,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: active
-                                  ? AppColors.destaque
-                                  : AppColors.bordaClara,
-                            ),
-                          ),
-                          child: Text(
-                            period,
-                            style: TextStyle(
-                              color: active
-                                  ? AppColors.fundo
-                                  : AppColors.textoFraco,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChartMetricBox extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool destaque;
-
-  const _ChartMetricBox({
-    required this.label,
-    required this.value,
-    this.destaque = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: premiumFieldDecoration(radius: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AtivoCard extends StatelessWidget {
   final AtivoCarteira ativo;
   final VoidCallback onTap;
@@ -1862,141 +1085,6 @@ class _AtivoCard extends StatelessWidget {
   }
 }
 
-class _AtivoHeroCard extends StatelessWidget {
-  final AtivoCarteira ativo;
-
-  const _AtivoHeroCard({
-    required this.ativo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final negative = ativo.variacao < 0;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: premiumCardDecoration(),
-      child: Row(
-        children: [
-          TickerBox(
-            simbolo: ativo.simbolo,
-            color: negative ? AppColors.azul : AppColors.destaque,
-            size: 62,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  ativo.nome,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textoPrincipal,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  '${ativo.tokens} tokens em carteira',
-                  style: const TextStyle(
-                    color: AppColors.textoMuitoFraco,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    color: AppColors.destaque,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetalheMetricasCard extends StatelessWidget {
-  final AtivoCarteira ativo;
-  final double variacaoPeriodo;
-  final double resultadoPeriodo;
-
-  const _DetalheMetricasCard({
-    required this.ativo,
-    required this.variacaoPeriodo,
-    required this.resultadoPeriodo,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final resultadoPositivo = resultadoPeriodo >= 0;
-
-    return Container(
-      decoration: premiumCardDecoration(),
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _ResumoItem(
-                  label: 'Tokens',
-                  value: '${ativo.tokens}',
-                ),
-              ),
-              Expanded(
-                child: _ResumoItem(
-                  label: 'Preço atual',
-                  value: 'R\$ ${ativo.valorToken.toStringAsFixed(2)}',
-                ),
-              ),
-              Expanded(
-                child: _ResumoItem(
-                  label: 'Preço médio',
-                  value: 'R\$ ${ativo.precoMedio.toStringAsFixed(2)}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ResumoItem(
-                  label: 'Resultado',
-                  value:
-                      '${resultadoPositivo ? '+' : '-'} R\$ ${resultadoPeriodo.abs().toStringAsFixed(2)}',
-                ),
-              ),
-              Expanded(
-                child: _ResumoItem(
-                  label: 'Variação',
-                  value:
-                      '${resultadoPositivo ? '+' : ''}${variacaoPeriodo.toStringAsFixed(1)}%',
-                ),
-              ),
-              Expanded(
-                child: _ResumoItem(
-                  label: 'Valor total',
-                  value: 'R\$ ${ativo.valorTotal.toStringAsFixed(2)}',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _MovimentacaoTile extends StatelessWidget {
   final String titulo;
   final String descricao;
@@ -2066,124 +1154,5 @@ class _MovimentacaoTile extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-// ─── Gráfico ────────────────────────────────────────────────────────────────
-
-class LineChartPainter extends CustomPainter {
-  final List<double> data;
-
-  LineChartPainter({
-    required this.data,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (data.length < 2) return;
-
-    final gridPaint = Paint()
-      ..color = AppColors.bordaClara
-      ..strokeWidth = 1;
-
-    for (int i = 1; i < 4; i++) {
-      final y = size.height * (i / 4);
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
-    }
-
-    final minValue = data.reduce(math.min);
-    final maxValue = data.reduce(math.max);
-    final rawRange = maxValue - minValue;
-    final isFlat = rawRange.abs() < 0.01;
-    final range = isFlat ? 1.0 : rawRange;
-
-    final points = <Offset>[];
-    final horizontalPadding = 8.0;
-    final usableWidth = size.width - (horizontalPadding * 2);
-    final space = usableWidth / (data.length - 1);
-
-    for (int i = 0; i < data.length; i++) {
-      final normalized = isFlat ? 0.5 : (data[i] - minValue) / range;
-      final x = horizontalPadding + (i * space);
-      final y = size.height - (normalized * size.height * 0.72) - 22;
-
-      points.add(Offset(x, y));
-    }
-
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-
-    for (int i = 1; i < points.length; i++) {
-      final previous = points[i - 1];
-      final current = points[i];
-
-      final controlPointX = (previous.dx + current.dx) / 2;
-
-      path.cubicTo(
-        controlPointX,
-        previous.dy,
-        controlPointX,
-        current.dy,
-        current.dx,
-        current.dy,
-      );
-    }
-
-    final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          AppColors.destaque.withOpacity(0.20),
-          AppColors.destaque.withOpacity(0.00),
-        ],
-      ).createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(fillPath, fillPaint);
-
-    final linePaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [
-          AppColors.destaqueClaro,
-          AppColors.destaqueEscuro,
-        ],
-      ).createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(path, linePaint);
-
-    final dotPaint = Paint()
-      ..color = AppColors.destaque
-      ..style = PaintingStyle.fill;
-
-    final lastPoint = points.last;
-    canvas.drawCircle(lastPoint, 5, dotPaint);
-
-    final dotBorderPaint = Paint()
-      ..color = AppColors.card
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    canvas.drawCircle(lastPoint, 5, dotBorderPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant LineChartPainter oldDelegate) {
-    return oldDelegate.data != data;
   }
 }
