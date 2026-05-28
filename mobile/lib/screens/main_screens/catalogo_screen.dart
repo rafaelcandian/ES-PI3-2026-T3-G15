@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
-import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
 import 'package:mescla_invest/screens/startups/startup_card.dart';
@@ -66,15 +65,15 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
 
   String _mensagemFiltroVazio() {
     if (_selectedAreaFilter != 'Todas' && _selectedStageFilter != 'Todos') {
-      return 'Não encontramos main_screens da área "$_selectedAreaFilter" no estágio "$_selectedStageFilter".';
+      return 'Não encontramos startups da área "$_selectedAreaFilter" no estágio "$_selectedStageFilter".';
     }
 
     if (_selectedAreaFilter != 'Todas') {
-      return 'Não encontramos main_screens na categoria "$_selectedAreaFilter".';
+      return 'Não encontramos startups na categoria "$_selectedAreaFilter".';
     }
 
     if (_selectedStageFilter != 'Todos') {
-      return 'Não encontramos main_screens no estágio "$_selectedStageFilter".';
+      return 'Não encontramos startups no estágio "$_selectedStageFilter".';
     }
 
     return 'Nenhuma startup encontrada com os filtros selecionados.';
@@ -83,6 +82,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   void _toggleAreaFilter() {
     setState(() {
       _areaFilterOpen = !_areaFilterOpen;
+
       if (_areaFilterOpen) {
         _stageFilterOpen = false;
       }
@@ -92,6 +92,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   void _toggleStageFilter() {
     setState(() {
       _stageFilterOpen = !_stageFilterOpen;
+
       if (_stageFilterOpen) {
         _areaFilterOpen = false;
       }
@@ -128,28 +129,23 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      // Alterado para false para a navbar não ficar transparente por cima do conteúdo.
+      extendBody: false,
       backgroundColor: AppColors.fundo,
-      appBar: const AppBarPadrao(
-        titulo: 'Catálogo de Startups',
-      ),
-      bottomNavigationBar: const BottomNavBar(),
+      appBar: const _CatalogAppBar(),
+      bottomNavigationBar: const BottomNavBar(selectedIndex: 0),
       body: Stack(
         children: [
           const _AtmosphericBackground(),
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              SliverToBoxAdapter(
+              const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+                  padding: EdgeInsets.fromLTRB(20, 18, 20, 0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      PremiumHeaderEyebrow(
-                        text: 'STARTUPS DISPONÍVEIS',
-                      ),
-                      SizedBox(height: 14),
+                    children: [
                       Text(
                         'Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.',
                         style: TextStyle(
@@ -164,7 +160,6 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                   ),
                 ),
               ),
-
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -184,11 +179,9 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                   ),
                 ),
               ),
-
               const SliverToBoxAdapter(
                 child: SizedBox(height: 22),
               ),
-
               SliverToBoxAdapter(
                 child: StreamBuilder<List<StartupData>>(
                   stream: _startupService.getStartups(),
@@ -209,7 +202,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                         padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
                         child: _EmptyStateCard(
                           icon: Icons.error_outline_rounded,
-                          title: 'Erro ao carregar main_screens',
+                          title: 'Erro ao carregar startups',
                           message: snapshot.error.toString(),
                         ),
                       );
@@ -225,7 +218,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                           icon: Icons.apartment_rounded,
                           title: 'Nenhuma startup encontrada',
                           message:
-                          'Ainda não existem main_screens cadastradas no Firebase.',
+                          'Ainda não existem startups cadastradas no Firebase.',
                         ),
                       );
                     }
@@ -252,7 +245,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                             return Padding(
                               padding: EdgeInsets.only(
                                 bottom: index == filteredStartups.length - 1
-                                    ? 110
+                                    ? 32
                                     : 28,
                               ),
                               child: GestureDetector(
@@ -274,6 +267,34 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ===================== APP BAR DO CATÁLOGO =====================
+
+class _CatalogAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _CatalogAppBar();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor: AppColors.fundo,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: true,
+      title: const Text(
+        'Catálogo de Startups',
+        style: TextStyle(
+          color: AppColors.textoPrincipal,
+          fontSize: 16,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
@@ -355,9 +376,7 @@ class _ModernFilterPanel extends StatelessWidget {
                 ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           Row(
             children: [
               Expanded(
@@ -381,7 +400,6 @@ class _ModernFilterPanel extends StatelessWidget {
               ),
             ],
           ),
-
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 240),
             switchInCurve: Curves.easeOutCubic,
@@ -452,15 +470,8 @@ class _FilterSelectorButton extends StatelessWidget {
               color: opened ? AppColors.bordaDestaque : AppColors.bordaClara,
               width: opened ? 1.1 : 0.8,
             ),
-            boxShadow: opened
-                ? [
-              BoxShadow(
-                color: AppColors.destaque.withOpacity(0.13),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ]
-                : [],
+            // Sombra removida conforme solicitado.
+            boxShadow: const [],
           ),
           child: Row(
             children: [

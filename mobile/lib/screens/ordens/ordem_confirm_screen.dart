@@ -13,8 +13,8 @@ import 'package:mescla_invest/widgets/shared/section_card.dart';
 
 /// Tela de processamento e conclusão da ordem.
 ///
-/// Simula a validação da operação e, após alguns segundos,
-/// exibe as ações finais para voltar ao Balcão ou abrir a Carteira.
+/// Usa os componentes globais do projeto para manter o padrão visual:
+/// AtmosphericBackground, SectionCard, InfoRow, GradientButton e OutlineButton.
 class OrdemConfirmScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -39,26 +39,16 @@ class OrdemConfirmScreen extends StatefulWidget {
 
 class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
   bool _concluida = false;
-  // mensagem de erro retornada pelo BalcaoService (null = sem erro)
   String? _erro;
-  bool _loading = true;
 
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
 
   @override
   void initState() {
     super.initState();
-
-    // Chama o BalcaoService real assim que a tela monta
     _executarOrdem();
   }
 
-  /// Executa a ordem usando o backend.
-  ///
-  /// Fluxos cobertos:
-  /// - compra direta da startup;
-  /// - criação de oferta de compra no balcão;
-  /// - criação de oferta de venda no balcão.
   Future<void> _executarOrdem() async {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -70,7 +60,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       String? erro;
 
       if (_isCompra) {
-        if (widget.atingiuMinimo == true && widget.compraDireto == true) {
+        if (widget.atingiuMinimo && widget.compraDireto) {
           erro = await BalcaoService().comprarDiretoDaStartup(
             startupId: widget.oferta.startupId,
             quantity: widget.oferta.quantidade,
@@ -97,21 +87,14 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
 
       setState(() {
         _concluida = true;
-        _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
         _erro = e.toString().replaceFirst('Exception: ', '');
-        _loading = false;
       });
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   String _tituloConclusao() {
@@ -119,7 +102,9 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       return 'Investimento realizado!';
     }
 
-    return _isCompra ? 'Ordem de compra registrada!' : 'Ordem de venda registrada!';
+    return _isCompra
+        ? 'Ordem de compra registrada!'
+        : 'Ordem de venda registrada!';
   }
 
   String _subtituloConclusao() {
@@ -134,20 +119,24 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     return 'Sua ordem de venda foi registrada no balcão. Ela só aparecerá no histórico da carteira quando for executada.';
   }
 
+  String get _tituloTela {
+    if (_concluida) return _tituloConclusao();
+    if (_erro != null) return 'Ordem não processada';
+    return 'Organizando sua ordem...';
+  }
+
+  String get _subtituloTela {
+    if (_concluida) return _subtituloConclusao();
+
+    if (_erro != null) {
+      return 'Não foi possível registrar a ordem. Verifique o erro abaixo.';
+    }
+
+    return 'Estamos validando os dados, calculando taxas e registrando sua ordem.';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final titulo = _concluida
-        ? _tituloConclusao()
-        : _erro != null
-            ? 'Ordem não processada'
-            : 'Organizando sua ordem...';
-
-    final subtitulo = _concluida
-        ? _subtituloConclusao()
-        : _erro != null
-            ? 'Não foi possível registrar a ordem. Verifique o erro abaixo.'
-            : 'Estamos validando os dados, calculando taxas e registrando sua ordem.';
-
     return Scaffold(
       backgroundColor: AppColors.fundo,
       body: Stack(
@@ -164,13 +153,18 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 12),
-                        _StatusIcon(concluida: _concluida),
+                        _StatusIcon(
+                          concluida: _concluida,
+                          erro: _erro != null,
+                        ),
                         const SizedBox(height: 24),
                         Text(
-                          titulo,
+                          _tituloTela,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppColors.destaque,
+                          style: TextStyle(
+                            color: _erro != null
+                                ? Colors.redAccent
+                                : AppColors.destaque,
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
                           ),
@@ -179,10 +173,10 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
-                            subtitulo,
+                            _subtituloTela,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: AppColors.textoFraco,
+                              color: Colors.white,
                               fontSize: 14,
                               height: 1.5,
                               fontWeight: FontWeight.w500,
@@ -192,15 +186,18 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                         const SizedBox(height: 28),
                         _buildResumoCard(),
                         const SizedBox(height: 18),
-                        _StepsCard(concluida: _concluida),
+                        _StepsCard(
+                          concluida: _concluida,
+                          erro: _erro != null,
+                        ),
                         const SizedBox(height: 28),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 250),
                           child: _concluida
                               ? _buildActions()
                               : _erro != null
-                                  ? _buildErroMessage()
-                                  : const _WaitingMessage(),
+                              ? _buildErroMessage()
+                              : const _WaitingMessage(),
                         ),
                       ],
                     ),
@@ -214,7 +211,6 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     );
   }
 
-  /// Card com os principais dados da ordem executada.
   Widget _buildResumoCard() {
     return SectionCard(
       title: 'Resumo da ordem',
@@ -266,7 +262,6 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     );
   }
 
-  /// Widget exibido quando o backend retorna um erro.
   Widget _buildErroMessage() {
     return Container(
       key: const ValueKey('erro'),
@@ -308,10 +303,12 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       key: const ValueKey('actions'),
       children: [
         GradientButton(
-          label: 'Voltar às startups',
+          label: 'VOLTAR ÀS STARTUPS',
           icon: Icons.storefront_rounded,
           height: 54,
           radius: 18,
+          fontSize: 14.5,
+          letterSpacing: 0.4,
           onTap: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -346,8 +343,6 @@ class _ConfirmTopBar extends StatelessWidget {
     required this.concluida,
   });
 
-
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -373,30 +368,34 @@ class _ConfirmTopBar extends StatelessWidget {
 
 class _StatusIcon extends StatelessWidget {
   final bool concluida;
+  final bool erro;
 
   const _StatusIcon({
     required this.concluida,
+    required this.erro,
   });
-
-
 
   @override
   Widget build(BuildContext context) {
+    Widget child = const _LoadingIcon();
+
+    if (concluida) {
+      child = const _CheckIcon();
+    } else if (erro) {
+      child = const _ErrorIcon();
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 350),
       switchInCurve: Curves.easeOutCubic,
       switchOutCurve: Curves.easeInCubic,
-      child: concluida ? const _CheckIcon() : const _LoadingIcon(),
+      child: child,
     );
   }
 }
 
 class _LoadingIcon extends StatelessWidget {
-  const _LoadingIcon({
-    super.key,
-  });
-
-
+  const _LoadingIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -428,11 +427,7 @@ class _LoadingIcon extends StatelessWidget {
 }
 
 class _CheckIcon extends StatelessWidget {
-  const _CheckIcon({
-    super.key,
-  });
-
-
+  const _CheckIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -465,13 +460,40 @@ class _CheckIcon extends StatelessWidget {
   }
 }
 
-/// Mensagem exibida durante a simulação de processamento.
+class _ErrorIcon extends StatelessWidget {
+  const _ErrorIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('error'),
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.red.withValues(alpha: 0.10),
+        border: Border.all(
+          color: Colors.redAccent.withValues(alpha: 0.45),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.redAccent.withValues(alpha: 0.12),
+            blurRadius: 26,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Icon(
+        Icons.close_rounded,
+        color: Colors.redAccent,
+        size: 46,
+      ),
+    );
+  }
+}
+
 class _WaitingMessage extends StatelessWidget {
-  const _WaitingMessage({
-    super.key,
-  });
-
-
+  const _WaitingMessage();
 
   @override
   Widget build(BuildContext context) {
@@ -498,7 +520,7 @@ class _WaitingMessage extends StatelessWidget {
           Text(
             'Aguarde alguns instantes...',
             style: TextStyle(
-              color: AppColors.textoMuitoFraco,
+              color: Colors.white70,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -509,15 +531,14 @@ class _WaitingMessage extends StatelessWidget {
   }
 }
 
-/// Etapas visuais do processamento da ordem.
 class _StepsCard extends StatelessWidget {
   final bool concluida;
+  final bool erro;
 
   const _StepsCard({
     required this.concluida,
+    required this.erro,
   });
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -528,16 +549,19 @@ class _StepsCard extends StatelessWidget {
           _StepRow(
             label: 'Validando saldo ou ativos disponíveis',
             done: concluida,
+            error: erro,
           ),
           const SizedBox(height: 10),
           _StepRow(
             label: 'Calculando taxa simulada',
             done: concluida,
+            error: erro,
           ),
           const SizedBox(height: 10),
           _StepRow(
             label: 'Registrando movimentação na carteira',
             done: concluida,
+            error: erro,
           ),
         ],
       ),
@@ -548,16 +572,22 @@ class _StepsCard extends StatelessWidget {
 class _StepRow extends StatelessWidget {
   final String label;
   final bool done;
+  final bool error;
 
   const _StepRow({
     required this.label,
     required this.done,
+    required this.error,
   });
-
-
 
   @override
   Widget build(BuildContext context) {
+    final color = error
+        ? Colors.redAccent
+        : done
+        ? AppColors.destaque
+        : AppColors.bordaClara;
+
     return Container(
       decoration: premiumFieldDecoration(radius: 16),
       padding: const EdgeInsets.all(12),
@@ -570,15 +600,19 @@ class _StepRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: done ? AppColors.destaque : AppColors.campo,
-              border: Border.all(
-                color: done ? AppColors.destaque : AppColors.bordaClara,
-              ),
+              border: Border.all(color: color),
             ),
             child: done
                 ? const Icon(
               Icons.check_rounded,
               size: 16,
               color: AppColors.fundo,
+            )
+                : error
+                ? const Icon(
+              Icons.close_rounded,
+              size: 15,
+              color: Colors.redAccent,
             )
                 : const SizedBox.shrink(),
           ),
@@ -587,7 +621,7 @@ class _StepRow extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                color: AppColors.textoFraco,
+                color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),

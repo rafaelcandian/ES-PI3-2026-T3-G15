@@ -55,13 +55,13 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
         final title = (data['title'] ?? data['nome'] ?? 'Startup').toString();
 
         final tokenValue =
-            ((data['tokenValue'] ?? data['valorToken'] ?? 1.0) as num)
-                .toDouble();
+        ((data['tokenValue'] ?? data['valorToken'] ?? 1.0) as num)
+            .toDouble();
 
         final minBuyPrice =
-            ((data['minBuyPrice'] ?? data['tokenValue'] ?? data['valorToken'] ?? 1.0)
-                    as num)
-                .toDouble();
+        ((data['minBuyPrice'] ?? data['tokenValue'] ?? data['valorToken'] ?? 1.0)
+        as num)
+            .toDouble();
 
         final simbolo = (data['ticker'] ?? data['simbolo'] ?? '')
             .toString()
@@ -70,11 +70,11 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
             .isNotEmpty
             ? (data['ticker'] ?? data['simbolo']).toString().trim().toUpperCase()
             : title.length >= 3
-                ? title.substring(0, 3).toUpperCase()
-                : title.toUpperCase();
+            ? title.substring(0, 3).toUpperCase()
+            : title.toUpperCase();
 
         final ordens = await BalcaoService().getOpenedOrders(startupId);
-        
+
         final buyOrders = ordens['buy'] ?? [];
         for (var order in buyOrders) {
           tempOfertasCompra.add(Oferta(
@@ -231,8 +231,8 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
         bottomNavigationBar: const BottomNavBar(selectedIndex: 1),
         body: _loading
             ? const Center(
-                child: CircularProgressIndicator(color: AppColors.destaque),
-              )
+          child: CircularProgressIndicator(color: AppColors.destaque),
+        )
             : Stack(
           children: [
             const _AtmosphericBackground(),
@@ -397,8 +397,6 @@ class _PageHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 14),
-          PremiumHeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
           SizedBox(height: 14),
           Text(
             'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
@@ -593,25 +591,14 @@ class _ModeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeGradient = isPrimary
-        ? const LinearGradient(
+    const activeGradient = LinearGradient(
       colors: [
         AppColors.destaqueClaro,
         AppColors.destaqueEscuro,
       ],
-    )
-        : const LinearGradient(
-      colors: [
-        AppColors.azul,
-        AppColors.roxo,
-      ],
     );
 
-    final textColor = active
-        ? isPrimary
-        ? AppColors.fundo
-        : AppColors.textoPrincipal
-        : AppColors.textoSecundario;
+    final textColor = active ? AppColors.fundo : AppColors.textoSecundario;
 
     return Expanded(
       child: Material(
@@ -634,9 +621,7 @@ class _ModeButton extends StatelessWidget {
               boxShadow: active
                   ? [
                 BoxShadow(
-                  color: isPrimary
-                      ? AppColors.destaque.withOpacity(0.22)
-                      : AppColors.azul.withOpacity(0.24),
+                  color: AppColors.destaque.withOpacity(0.22),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -714,7 +699,7 @@ class _AtivosUsuarioCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             ...ativos.map(
-              (ativo) => Padding(
+                  (ativo) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: _AtivoVendaTile(
                   ativo: ativo,
@@ -792,7 +777,7 @@ class _AtivoVendaTile extends StatelessWidget {
             children: [
               _TickerBox(
                 simbolo: ativo.simbolo,
-                color: AppColors.azul,
+                color: AppColors.destaque,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -822,7 +807,7 @@ class _AtivoVendaTile extends StatelessWidget {
                     const Text(
                       'Criar ordem de venda',
                       style: TextStyle(
-                        color: AppColors.azul,
+                        color: AppColors.destaque,
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                       ),
@@ -982,7 +967,7 @@ class _OfertaCardState extends State<_OfertaCard> {
   @override
   Widget build(BuildContext context) {
     final isCompra = widget.modo == ModoNegociacao.compra;
-    final accent = isCompra ? AppColors.destaque : AppColors.azul;
+    const accent = AppColors.destaque;
 
     final variationColor = widget.oferta.variacao >= 0
         ? AppColors.destaque
@@ -1122,17 +1107,10 @@ class _OfertaCardState extends State<_OfertaCard> {
                         width: 86,
                         height: 32,
                         decoration: BoxDecoration(
-                          gradient: isCompra
-                              ? const LinearGradient(
+                          gradient: const LinearGradient(
                             colors: [
                               AppColors.destaqueClaro,
                               AppColors.destaqueEscuro,
-                            ],
-                          )
-                              : const LinearGradient(
-                            colors: [
-                              AppColors.azul,
-                              AppColors.roxo,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(12),
@@ -1148,9 +1126,7 @@ class _OfertaCardState extends State<_OfertaCard> {
                           child: Text(
                             isCompra ? 'COMPRAR' : 'VENDER',
                             style: TextStyle(
-                              color: isCompra
-                                  ? AppColors.fundo
-                                  : AppColors.textoPrincipal,
+                              color: AppColors.fundo,
                               fontWeight: FontWeight.w900,
                               fontSize: 10,
                               letterSpacing: 0.7,

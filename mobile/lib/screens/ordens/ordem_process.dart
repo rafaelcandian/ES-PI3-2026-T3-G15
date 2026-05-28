@@ -9,8 +9,8 @@ import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 
 /// Bottom sheet de processamento da ordem.
 ///
-/// Simula a etapa final da compra/venda no balcão:
-/// valida dados, confere saldo/ativos e registra a negociação simulada.
+/// Usa o botão global GradientButton e mantém locais apenas os componentes
+/// específicos do bottom sheet.
 class OrderProcessingSheet extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -47,10 +47,22 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  String get _titulo {
+    return _completed ? 'Ordem concluída!' : 'Organizando sua ordem...';
+  }
+
+  String get _descricao {
     final actionLabel = _isCompra ? 'compra' : 'venda';
 
+    if (_completed) {
+      return 'Sua ordem de $actionLabel de ${widget.oferta.quantidade} tokens ${widget.oferta.simbolo} foi registrada com sucesso.';
+    }
+
+    return 'Estamos validando os tokens, calculando a taxa simulada e registrando a ordem no balcão.';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(
         top: Radius.circular(30),
@@ -89,47 +101,38 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
             children: [
               const _SheetHandle(),
               const SizedBox(height: 28),
-
               _StatusIcon(completed: _completed),
-
               const SizedBox(height: 24),
-
               Text(
-                _completed ? 'Ordem concluída!' : 'Organizando sua ordem...',
+                _titulo,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: const TextStyle(
                   color: AppColors.destaque,
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               Text(
-                _completed
-                    ? 'Sua ordem de $actionLabel de ${widget.oferta.quantidade} tokens ${widget.oferta.simbolo} foi registrada com sucesso.'
-                    : 'Estamos validando os tokens, calculando a taxa simulada e registrando a ordem no balcão.',
+                _descricao,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textoFraco,
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 13,
                   height: 1.5,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 26),
-
               _StepsList(completed: _completed),
-
               const SizedBox(height: 28),
-
               GradientButton(
-                label: _completed ? 'Voltar ao balcão' : 'Aguarde...',
+                label: _completed ? 'VOLTAR AO BALCÃO' : 'AGUARDE...',
                 loading: !_completed,
                 radius: 16,
                 height: 54,
+                fontSize: 14.5,
+                letterSpacing: 0.4,
                 onTap: _completed ? () => Navigator.pop(context) : null,
               ),
             ],
@@ -156,7 +159,6 @@ class _SheetHandle extends StatelessWidget {
   }
 }
 
-/// Ícone central que alterna entre carregamento e sucesso.
 class _StatusIcon extends StatelessWidget {
   final bool completed;
 
@@ -176,9 +178,7 @@ class _StatusIcon extends StatelessWidget {
 }
 
 class _CheckIcon extends StatelessWidget {
-  const _CheckIcon({
-    super.key,
-  });
+  const _CheckIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -212,9 +212,7 @@ class _CheckIcon extends StatelessWidget {
 }
 
 class _LoadingIcon extends StatelessWidget {
-  const _LoadingIcon({
-    super.key,
-  });
+  const _LoadingIcon();
 
   @override
   Widget build(BuildContext context) {
@@ -245,7 +243,6 @@ class _LoadingIcon extends StatelessWidget {
   }
 }
 
-/// Lista compacta das etapas do processamento simulado.
 class _StepsList extends StatelessWidget {
   final bool completed;
 
@@ -255,26 +252,27 @@ class _StepsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final steps = [
+      'Validando dados da ordem',
+      'Conferindo saldo ou ativos disponíveis',
+      'Registrando negociação simulada',
+    ];
+
     return Container(
       decoration: premiumFieldDecoration(radius: 18),
       padding: const EdgeInsets.all(14),
       child: Column(
-        children: [
-          _StepRow(
-            label: 'Validando dados da ordem',
-            completed: completed,
-          ),
-          const SizedBox(height: 10),
-          _StepRow(
-            label: 'Conferindo saldo ou ativos disponíveis',
-            completed: completed,
-          ),
-          const SizedBox(height: 10),
-          _StepRow(
-            label: 'Registrando negociação simulada',
-            completed: completed,
-          ),
-        ],
+        children: List.generate(steps.length, (index) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == steps.length - 1 ? 0 : 10,
+            ),
+            child: _StepRow(
+              label: steps[index],
+              completed: completed,
+            ),
+          );
+        }),
       ),
     );
   }
@@ -317,7 +315,7 @@ class _StepRow extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: AppColors.textoFraco,
+              color: Colors.white,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),

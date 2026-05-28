@@ -8,7 +8,6 @@ import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
 import '../../themes/app_theme.dart';
-import '../../themes/theme_controller.dart';
 
 class PerfilPage extends StatefulWidget {
   const PerfilPage({super.key});
@@ -18,25 +17,12 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
-  AppAppearanceMode _appearanceMode = ThemeController.appearanceMode.value;
-
   bool _loading = true;
 
   String _nome = 'Usuário';
   String _email = '';
   String _telefone = '';
   String _cpf = '';
-
-  String get _appearanceLabel {
-    switch (_appearanceMode) {
-      case AppAppearanceMode.light:
-        return 'Claro';
-      case AppAppearanceMode.dark:
-        return 'Escuro';
-      case AppAppearanceMode.auto:
-        return 'Automático';
-    }
-  }
 
   @override
   void initState() {
@@ -131,36 +117,6 @@ class _PerfilPageState extends State<PerfilPage> {
     return '($ddd) *****-$fim';
   }
 
-  void _alterarAparencia(AppAppearanceMode mode) {
-    ThemeController.setAppearanceMode(mode);
-
-    setState(() {
-      _appearanceMode = mode;
-    });
-
-    _showSnackBar(
-      'Aparência alterada para $_appearanceLabel.',
-    );
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(
-            color: AppColors.textoPrincipal,
-          ),
-        ),
-        backgroundColor: AppColors.card,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -206,11 +162,6 @@ class _PerfilPageState extends State<PerfilPage> {
                               telefone: _mascararTelefone(_telefone),
                               cpf: _mascararCpf(_cpf),
                               onEditTap: _showEditProfileModal,
-                            ),
-                            const SizedBox(height: 18),
-                            _AppearanceSection(
-                              selectedMode: _appearanceMode,
-                              onChanged: _alterarAparencia,
                             ),
                             const SizedBox(height: 18),
                             _SecuritySection(
@@ -525,7 +476,7 @@ class _PerfilPageState extends State<PerfilPage> {
     Navigator.pushNamedAndRemoveUntil(
       context,
       '/login',
-      (route) => false,
+          (route) => false,
     );
   }
 }
@@ -610,10 +561,8 @@ class _Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 14),
-          PremiumHeaderEyebrow(text: 'CONFIGURAÇÕES DA CONTA'),
-          SizedBox(height: 14),
           Text(
-            'Gerencie sua conta, aparência, privacidade e segurança.',
+            'Gerencie sua conta, privacidade e segurança.',
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textoFraco,
@@ -811,74 +760,6 @@ class _ProfileInfoRow extends StatelessWidget {
 
 // ─── Sections ───────────────────────────────────────────────────────────────
 
-class _AppearanceSection extends StatelessWidget {
-  final AppAppearanceMode selectedMode;
-  final ValueChanged<AppAppearanceMode> onChanged;
-
-  const _AppearanceSection({
-    required this.selectedMode,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      title: 'Aparência',
-      icon: Icons.palette_outlined,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _ThemePill(
-                label: 'Claro',
-                active: selectedMode == AppAppearanceMode.light,
-                onTap: () => onChanged(AppAppearanceMode.light),
-              ),
-              const SizedBox(width: 8),
-              _ThemePill(
-                label: 'Escuro',
-                active: selectedMode == AppAppearanceMode.dark,
-                onTap: () => onChanged(AppAppearanceMode.dark),
-              ),
-              const SizedBox(width: 8),
-              _ThemePill(
-                label: 'Auto',
-                active: selectedMode == AppAppearanceMode.auto,
-                onTap: () => onChanged(AppAppearanceMode.auto),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _AppearancePreview(
-                  icon: Icons.light_mode_outlined,
-                  active: selectedMode == AppAppearanceMode.light,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _AppearancePreview(
-                  icon: Icons.dark_mode_outlined,
-                  active: selectedMode == AppAppearanceMode.dark,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _AppearancePreview(
-                  icon: Icons.brightness_auto_outlined,
-                  active: selectedMode == AppAppearanceMode.auto,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SecuritySection extends StatelessWidget {
   final VoidCallback onResetPassword;
 
@@ -1031,84 +912,6 @@ class _SectionCard extends StatelessWidget {
           ],
           child,
         ],
-      ),
-    );
-  }
-}
-
-class _ThemePill extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  const _ThemePill({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            height: 36,
-            decoration: BoxDecoration(
-              color: active ? AppColors.destaque : AppColors.campo,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: active ? AppColors.destaque : AppColors.bordaClara,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: active ? AppColors.fundo : AppColors.textoFraco,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppearancePreview extends StatelessWidget {
-  final IconData icon;
-  final bool active;
-
-  const _AppearancePreview({
-    required this.icon,
-    required this.active,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 74,
-      decoration: premiumFieldDecoration(
-        radius: 16,
-      ).copyWith(
-        color: active ? AppColors.cardElevado : AppColors.campo,
-        border: Border.all(
-          color: active
-              ? AppColors.destaque.withOpacity(0.35)
-              : AppColors.bordaClara,
-        ),
-      ),
-      child: Icon(
-        active ? Icons.check_circle_rounded : icon,
-        color: active ? AppColors.destaque : AppColors.textoMuitoFraco,
       ),
     );
   }
@@ -1415,9 +1218,9 @@ class _ProfileEditField extends StatelessWidget {
 class CpfInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
     String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (text.length > 11) {
@@ -1447,9 +1250,9 @@ class CpfInputFormatter extends TextInputFormatter {
 class TelefoneInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
     String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (text.length > 11) {
@@ -1483,9 +1286,9 @@ class _EditProfileSheet extends StatefulWidget {
   final String cpfInicial;
   final String email;
   final Future<void> Function({
-    required String nome,
-    required String telefone,
-    required String cpf,
+  required String nome,
+  required String telefone,
+  required String cpf,
   }) onSave;
 
   const _EditProfileSheet({
@@ -1722,20 +1525,20 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                   ),
                   child: _saving
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            color: AppColors.fundo,
-                            strokeWidth: 2,
-                          ),
-                        )
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: AppColors.fundo,
+                      strokeWidth: 2,
+                    ),
+                  )
                       : const Text(
-                          'Salvar alterações',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13,
-                          ),
-                        ),
+                    'Salvar alterações',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
             ],

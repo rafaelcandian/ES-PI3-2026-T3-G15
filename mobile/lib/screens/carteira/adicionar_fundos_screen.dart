@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 
@@ -37,6 +38,38 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
   bool get _valorValido => _valor >= _valorMinimo && _valor <= _valorMaximo;
 
+  String _formatarMoeda(double valor) {
+    final valorAbsoluto = valor.abs().toStringAsFixed(2);
+    final partes = valorAbsoluto.split('.');
+
+    final reais = partes[0].replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]}.',
+    );
+
+    final centavos = partes[1];
+    final sinal = valor < 0 ? '-' : '';
+
+    return 'R\$ $sinal$reais,$centavos';
+  }
+
+  String _formatarValorInput(double valor) {
+    return _formatarMoeda(valor).replaceFirst('R\$ ', '');
+  }
+
+  double _parseValorDigitado(String value) {
+    var texto = value
+        .replaceAll('R\$', '')
+        .replaceAll(' ', '')
+        .trim();
+
+    if (texto.contains(',')) {
+      texto = texto.replaceAll('.', '').replaceAll(',', '.');
+    }
+
+    return double.tryParse(texto) ?? 0.0;
+  }
+
   @override
   void dispose() {
     _valorController.dispose();
@@ -44,8 +77,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   }
 
   void _atualizarValor(String value) {
-    final valorNormalizado = value.replaceAll(',', '.');
-    final valorDigitado = double.tryParse(valorNormalizado) ?? 0.0;
+    final valorDigitado = _parseValorDigitado(value);
 
     setState(() {
       _valor = valorDigitado;
@@ -57,7 +89,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
     setState(() {
       _valor = valor;
-      _valorController.text = valor.toStringAsFixed(2).replaceAll('.', ',');
+      _valorController.text = _formatarValorInput(valor);
       _valorController.selection = TextSelection.fromPosition(
         TextPosition(offset: _valorController.text.length),
       );
@@ -78,8 +110,8 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
         .add({
       'type': 'deposit',
       'operationType': 'aporte',
-      'description': 'Aporte via Pix simulado',
-      'method': 'pix_simulado',
+      'description': 'Aporte via Pix',
+      'method': 'pix',
       'amount': _totalCreditado,
       'totalPrice': _totalCreditado,
       'fee': _taxa,
@@ -92,20 +124,20 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     FocusScope.of(context).unfocus();
 
     if (_valor <= 0) {
-      _showSnackBar('Informe um valor para adicionar à carteira.');
+      _showErrorSnackBar('Informe um valor para adicionar à carteira.');
       return;
     }
 
     if (_valor < _valorMinimo) {
-      _showSnackBar(
-        'O valor mínimo para aporte simulado é R\$ ${_valorMinimo.toStringAsFixed(2)}.',
+      _showErrorSnackBar(
+        'O valor mínimo para aporte é R\$ ${_valorMinimo.toStringAsFixed(2)}.',
       );
       return;
     }
 
     if (_valor > _valorMaximo) {
-      _showSnackBar(
-        'O valor máximo por aporte simulado é R\$ ${_valorMaximo.toStringAsFixed(2)}.',
+      _showErrorSnackBar(
+        'O valor máximo por aporte é R\$ ${_valorMaximo.toStringAsFixed(2)}.',
       );
       return;
     }
@@ -120,7 +152,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
       if (!mounted) return;
 
-      _showSnackBar('Fundos adicionados com sucesso!');
+      _showSuccessSnackBar('Fundos adicionados com sucesso!');
 
       await Future.delayed(const Duration(milliseconds: 450));
 
@@ -134,17 +166,25 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
         _loading = false;
       });
 
-      _showSnackBar('Erro ao adicionar fundos: $e');
+      _showErrorSnackBar('Erro ao adicionar fundos: $e');
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.card,
-        behavior: SnackBarBehavior.floating,
-      ),
+  void _showSuccessSnackBar(String message) {
+    AppSnackBar.show(
+      context,
+      message: message,
+      success: true,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    AppSnackBar.show(
+      context,
+      message: message,
+      error: true,
+      duration: const Duration(seconds: 4),
     );
   }
 
@@ -224,7 +264,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PremiumHeaderEyebrow(
-          text: 'PIX SIMULADO',
+          text: 'PIX',
         ),
         SizedBox(height: 14),
         Text(
@@ -238,7 +278,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
         ),
         SizedBox(height: 8),
         Text(
-          'Insira um valor fictício para simular um aporte na sua carteira de investimentos.',
+          'Insira um valor para realizar o aporte na sua carteira de investimentos.',
           style: TextStyle(
             color: AppColors.textoFraco,
             fontSize: 13,
@@ -291,7 +331,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  'Aporte fictício • Sem cobrança real',
+                  'Aporte',
                   style: TextStyle(
                     color: AppColors.textoMuitoFraco,
                     fontSize: 12,
@@ -435,7 +475,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pix simulado',
+                      'Pix',
                       style: TextStyle(
                         color: AppColors.textoPrincipal,
                         fontSize: 14,
@@ -444,7 +484,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Crédito fictício para uso no ambiente de testes.',
+                      'Crédito para uso no ambiente de testes.',
                       style: TextStyle(
                         color: AppColors.textoMuitoFraco,
                         fontSize: 11,
@@ -477,7 +517,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
         ),
         const SizedBox(height: 10),
         _InfoRow(
-          label: 'Taxa simulada',
+          label: 'Taxa',
           value: 'R\$ ${_taxa.toStringAsFixed(2)}',
         ),
         const SizedBox(height: 14),
@@ -776,7 +816,7 @@ class _LoadingOverlay extends StatelessWidget {
               ),
               SizedBox(height: 16),
               Text(
-                'Processando Pix simulado...',
+                'Processando Pix...',
                 style: TextStyle(
                   color: AppColors.textoPrincipal,
                   fontSize: 13,

@@ -9,7 +9,6 @@ import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 import 'package:mescla_invest/widgets/shared/gradient_button.dart';
-import 'package:mescla_invest/widgets/shared/icon_box.dart';
 import 'package:mescla_invest/widgets/shared/info_row.dart';
 import 'package:mescla_invest/widgets/shared/section_card.dart';
 import 'package:mescla_invest/widgets/shared/ticker_box.dart';
@@ -18,8 +17,8 @@ import 'ordem_confirm_screen.dart';
 
 /// Tela responsável por configurar uma ordem de compra ou venda.
 ///
-/// Aqui o usuário ajusta quantidade, preço por token, vê comparação de mercado
-/// e revisa o resumo financeiro antes de seguir para a confirmação.
+/// Usa componentes globais do projeto para manter o padrão visual:
+/// AtmosphericBackground, GradientButton, SectionCard, InfoRow e TickerBox.
 class OrdemExeScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -56,10 +55,51 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   double get _totalFinal => _isCompra ? _subtotal + _taxa : _subtotal - _taxa;
 
+  double get _precoReferencia {
+    return _precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco;
+  }
+
   double get _diferenca {
-    final media = _precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco;
-    if (media == 0) return 0;
-    return ((_preco - media) / media) * 100;
+    if (_precoReferencia == 0) return 0;
+    return ((_preco - _precoReferencia) / _precoReferencia) * 100;
+  }
+
+  double get _precoMinimoPermitido {
+    if (_isCompra) return widget.oferta.minBuyPrice;
+    return 0.10;
+  }
+
+  bool get _precoAbaixoDoMinimo {
+    return _isCompra && _preco < widget.oferta.minBuyPrice;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _quantidade = 0;
+    _preco = widget.oferta.preco;
+
+    _quantidadeController = TextEditingController(text: '0');
+    _precoController = TextEditingController(
+      text: _preco.toStringAsFixed(2),
+    );
+
+    _precoController.addListener(_atualizarPrecoDigitado);
+
+    _calcularPrecoMedioReal().then((preco) {
+      if (!mounted) return;
+      setState(() => _precoMedioReal = preco);
+    });
+  }
+
+  @override
+  void dispose() {
+    _quantidadeController.dispose();
+    _precoController
+      ..removeListener(_atualizarPrecoDigitado)
+      ..dispose();
+    super.dispose();
   }
 
   Future<double> _calcularPrecoMedioReal() async {
@@ -73,57 +113,33 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           .orderBy('createdAt', descending: true)
           .get();
 
-      final transacoesDaStartup = snapshot.docs
-          .where((doc) => 
-              doc.data()['startupId'] == widget.oferta.startupId)
-          .toList();
+      final transacoesDaStartup = snapshot.docs.where((doc) {
+        return doc.data()['startupId'] == widget.oferta.startupId;
+      }).toList();
 
       if (transacoesDaStartup.isEmpty) return widget.oferta.preco;
 
       final soma = transacoesDaStartup.fold<double>(
         0,
-        (total, doc) =>
-            total + ((doc.data()['pricePerToken'] as num?)
-                ?.toDouble() ?? 0),
+            (total, doc) {
+          final price = (doc.data()['pricePerToken'] as num?)?.toDouble() ?? 0;
+          return total + price;
+        },
       );
 
       return soma / transacoesDaStartup.length;
-    } catch (e) {
+    } catch (_) {
       return widget.oferta.preco;
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _atualizarPrecoDigitado() {
+    final texto = _precoController.text.replaceAll(',', '.');
+    final valor = double.tryParse(texto);
 
-    _quantidade = 0;
-    _preco = widget.oferta.preco;
+    if (valor == null || valor <= 0 || valor == _preco) return;
 
-    _quantidadeController = TextEditingController(text: '0');
-
-    _precoController = TextEditingController(
-      text: _preco.toStringAsFixed(2));
-
-    _precoController.addListener(() {
-      final texto = _precoController.text
-          .replaceAll(',', '.');
-      final valor = double.tryParse(texto) ?? _preco;
-      if (valor > 0 && valor != _preco) {
-        setState(() => _preco = valor);
-      }
-    });
-
-    _calcularPrecoMedioReal().then((preco) {
-      if (mounted) setState(() => _precoMedioReal = preco);
-    });
-  }
-
-  @override
-  void dispose() {
-    _quantidadeController.dispose();
-    _precoController.dispose();
-    super.dispose();
+    setState(() => _preco = valor);
   }
 
   void _atualizarQuantidade(String value) {
@@ -158,8 +174,17 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   void _selecionarPercentual(double percentual) {
     final maximo = widget.oferta.quantidade;
-    final novaQuantidade = (maximo * percentual).round().clamp(1, maximo);
 
+    if (maximo <= 0) {
+      AppSnackBar.show(
+        context,
+        message: 'Esta oferta não possui tokens disponíveis.',
+        error: true,
+      );
+      return;
+    }
+
+    final novaQuantidade = (maximo * percentual).round().clamp(1, maximo);
     _alterarQuantidade(novaQuantidade.toInt());
   }
 
@@ -168,17 +193,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     _quantidadeController.selection = TextSelection.fromPosition(
       TextPosition(offset: _quantidadeController.text.length),
     );
-  }
-
-  double get _precoMinimoPermitido {
-    // Compra não pode ficar abaixo do preço mínimo definido na startup.
-    // Venda continua livre para o usuário definir preço abaixo ou acima.
-    if (_isCompra) return widget.oferta.minBuyPrice;
-    return 0.10;
-  }
-
-  bool get _precoAbaixoDoMinimo {
-    return _isCompra && _preco < widget.oferta.minBuyPrice;
   }
 
   void _alterarPreco(double delta) {
@@ -232,12 +246,13 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       variacao: widget.oferta.variacao,
       volume: widget.oferta.volume,
       spread: widget.oferta.spread,
-      startupId: widget.oferta.startupId, // propaga o startupId para a tela de confirmação
+      startupId: widget.oferta.startupId,
       minBuyPrice: widget.oferta.minBuyPrice,
     );
 
     final totalOrdem = _quantidade * _preco;
-    final atingiuMinimo = !widget.compraDireto || totalOrdem >= widget.investimentoMinimo;
+    final atingiuMinimo =
+        !widget.compraDireto || totalOrdem >= widget.investimentoMinimo;
 
     Navigator.pushReplacement(
       context,
@@ -256,7 +271,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final actionLabel = _isCompra ? 'compra' : 'venda';
+    final actionLabel = _isCompra ? 'COMPRA' : 'VENDA';
 
     return Scaffold(
       backgroundColor: AppColors.fundo,
@@ -291,12 +306,13 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
                         _buildFinancialSummary(),
                         const SizedBox(height: 28),
                         GradientButton(
-                          label: 'Confirmar $actionLabel',
+                          label: 'CONFIRMAR $actionLabel',
                           icon: _isCompra
                               ? Icons.shopping_bag_rounded
                               : Icons.sell_rounded,
                           height: 56,
                           radius: 18,
+                          fontSize: 14.5,
                           onTap: _confirmarOrdem,
                         ),
                       ],
@@ -311,7 +327,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     );
   }
 
-  /// Cards de comparação de preço da ordem versus preço médio do mercado.
   Widget _buildMarketComparison() {
     return SectionCard(
       title: 'Comparação de mercado',
@@ -330,7 +345,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
               Expanded(
                 child: _MarketMetricTile(
                   label: 'Preço médio',
-                  value: 'R\$ ${(_precoMedioReal > 0 ? _precoMedioReal : widget.oferta.preco).toStringAsFixed(2)}',
+                  value: 'R\$ ${_precoReferencia.toStringAsFixed(2)}',
                 ),
               ),
             ],
@@ -355,9 +370,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     );
   }
 
-  /// Área de ajuste de quantidade e preço por token.
-  ///
-  /// Inclui botões rápidos de percentual para dar cara de app financeiro.
   Widget _buildOrderConfiguration() {
     return SectionCard(
       title: 'Configuração da ordem',
@@ -385,7 +397,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           const SizedBox(height: 14),
           _PriceControlBox(
             controller: _precoController,
-            value: 'R\$ ${_preco.toStringAsFixed(2)}',
             isCompra: _isCompra,
             minBuyPrice: widget.oferta.minBuyPrice,
             precoAbaixoDoMinimo: _precoAbaixoDoMinimo,
@@ -397,7 +408,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     );
   }
 
-  /// Resumo final antes da confirmação.
   Widget _buildFinancialSummary() {
     return SectionCard(
       title: 'Resumo financeiro',
@@ -438,7 +448,6 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   }
 }
 
-/// Barra superior comum da execução da ordem.
 class _OrderTopBar extends StatelessWidget {
   final String title;
 
@@ -475,7 +484,6 @@ class _OrderTopBar extends StatelessWidget {
   }
 }
 
-/// Cabeçalho textual da ordem.
 class _OrderHeader extends StatelessWidget {
   final bool isCompra;
 
@@ -495,17 +503,17 @@ class _OrderHeader extends StatelessWidget {
         Text(
           isCompra ? 'Comprar tokens' : 'Vender tokens',
           style: const TextStyle(
-            color: AppColors.textoPrincipal,
+            color: Colors.white,
             fontSize: 30,
             fontWeight: FontWeight.w900,
             height: 1.12,
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        const Text(
           'Revise os detalhes da operação antes de confirmar.',
-          style: const TextStyle(
-            color: AppColors.textoFraco,
+          style: TextStyle(
+            color: Colors.white70,
             fontSize: 13,
             height: 1.5,
             fontWeight: FontWeight.w500,
@@ -516,7 +524,6 @@ class _OrderHeader extends StatelessWidget {
   }
 }
 
-/// Hero da startup negociada.
 class _StartupOrderHero extends StatelessWidget {
   final Oferta oferta;
   final bool isCompra;
@@ -549,7 +556,7 @@ class _StartupOrderHero extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: AppColors.textoPrincipal,
+                    color: Colors.white,
                     fontSize: 19,
                     fontWeight: FontWeight.w900,
                   ),
@@ -558,7 +565,7 @@ class _StartupOrderHero extends StatelessWidget {
                 Text(
                   '${oferta.quantidade} tokens disponíveis • Spread ${oferta.spread.toStringAsFixed(1)}%',
                   style: const TextStyle(
-                    color: AppColors.textoMuitoFraco,
+                    color: Colors.white70,
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -665,7 +672,7 @@ class _MarketMetricTile extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: AppColors.textoFraco,
+              color: Colors.white70,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -674,7 +681,7 @@ class _MarketMetricTile extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color: destaque ? AppColors.destaque : AppColors.textoPrincipal,
+              color: destaque ? AppColors.destaque : Colors.white,
               fontSize: destaque ? 18 : 15,
               fontWeight: FontWeight.w900,
             ),
@@ -726,7 +733,7 @@ class _QuantityControlBox extends StatelessWidget {
           Text(
             'Você possui até $maximo tokens disponíveis para esta ordem.',
             style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
+              color: Colors.white70,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -752,7 +759,7 @@ class _QuantityControlBox extends StatelessWidget {
                     onChanged: onChanged,
                     cursorColor: AppColors.destaque,
                     style: const TextStyle(
-                      color: AppColors.textoPrincipal,
+                      color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
                     ),
@@ -870,7 +877,6 @@ class _QuickAmountButtons extends StatelessWidget {
 
 class _PriceControlBox extends StatelessWidget {
   final TextEditingController controller;
-  final String value;
   final bool isCompra;
   final double minBuyPrice;
   final bool precoAbaixoDoMinimo;
@@ -879,7 +885,6 @@ class _PriceControlBox extends StatelessWidget {
 
   const _PriceControlBox({
     required this.controller,
-    required this.value,
     required this.isCompra,
     required this.minBuyPrice,
     required this.precoAbaixoDoMinimo,
@@ -915,12 +920,15 @@ class _PriceControlBox extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   textAlign: TextAlign.center,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                   ],
+                  cursorColor: AppColors.destaque,
                   style: const TextStyle(
-                    color: AppColors.textoPrincipal,
+                    color: Colors.white,
                     fontSize: 23,
                     fontWeight: FontWeight.w900,
                   ),
@@ -946,7 +954,7 @@ class _PriceControlBox extends StatelessWidget {
               style: TextStyle(
                 color: precoAbaixoDoMinimo
                     ? Colors.redAccent
-                    : AppColors.textoMuitoFraco,
+                    : Colors.white70,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),

@@ -6,6 +6,7 @@ import 'package:mescla_invest/screens/startups/startup_data.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/services/pergunta_service.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
+import 'package:mescla_invest/widgets/shared/gradient_button.dart';
 import 'package:mescla_invest/screens/startups/startup_video_screen.dart';
 
 import '../../models/balcao_model.dart';
@@ -21,12 +22,14 @@ class DetalhesStartupPage extends StatefulWidget {
 class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   final PerguntaService _perguntaService = PerguntaService();
 
-  final TextEditingController _perguntaPrivadaController = TextEditingController();
-  final TextEditingController _perguntaPublicaController = TextEditingController();
+  final TextEditingController _perguntaPrivadaController =
+  TextEditingController();
+  final TextEditingController _perguntaPublicaController =
+  TextEditingController();
 
   List<Map<String, dynamic>> _perguntas = [];
-  bool _carregandoPerguntas = true;
 
+  bool _carregandoPerguntas = true;
   bool _carregandoVerificacao = true;
   bool _temTokenDaStartup = false;
   bool _verificacaoIniciada = false;
@@ -61,7 +64,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           .get();
 
       final data = doc.data();
-      final Map<String, dynamic> tokens = data?['tokens'] as Map<String, dynamic>? ?? {};
+
+      final Map<String, dynamic> tokens =
+          data?['tokens'] as Map<String, dynamic>? ?? {};
+
       final int quantidadeTokens = (tokens[startupId] as num?)?.toInt() ?? 0;
 
       if (!mounted) return;
@@ -82,6 +88,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
   Future<void> _carregarPerguntas(String startupId) async {
     if (!mounted) return;
+
     setState(() {
       _carregandoPerguntas = true;
     });
@@ -174,6 +181,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           mensagem,
           style: const TextStyle(
             color: AppColors.textoPrincipal,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -185,9 +193,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     final dynamic arguments = ModalRoute.of(context)!.settings.arguments;
 
     if (arguments == null || arguments is! StartupData) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.fundo,
-        body: const Center(
+        body: Center(
           child: Text(
             'Startup não encontrada',
             style: TextStyle(
@@ -211,33 +219,21 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
     return Scaffold(
       backgroundColor: AppColors.fundo,
-      extendBody: true,
+      extendBody: false,
       appBar: AppBar(
         backgroundColor: AppColors.fundo,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: const Text(
           'Sobre a Startup',
           style: TextStyle(
-            color: AppColors.destaque,
+            color: Colors.white,
             fontWeight: FontWeight.w900,
           ),
         ),
         iconTheme: const IconThemeData(
-          color: AppColors.destaque,
+          color: Colors.white,
         ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              _mostrarSnackBar(
-                'Compartilhamento disponível em breve.',
-              );
-            },
-            icon: const Icon(
-              Icons.share_outlined,
-              color: AppColors.destaque,
-            ),
-          ),
-        ],
       ),
       bottomNavigationBar: _InvestBottomBar(
         onInvestir: () => _abrirOrdemCompra(context, startup),
@@ -247,24 +243,17 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           const _AtmosphericBackground(),
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 140),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _HeroImage(startup: startup),
-
                 const SizedBox(height: 24),
-
-                const PremiumHeaderEyebrow(
-                  text: 'DETALHES DA STARTUP',
-                ),
-
-                const SizedBox(height: 14),
 
                 Text(
                   startup.title,
                   style: const TextStyle(
-                    color: AppColors.destaque,
+                    color: Colors.white,
                     fontSize: 30,
                     fontWeight: FontWeight.w900,
                     height: 1.1,
@@ -276,10 +265,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                 Text(
                   startup.subtitle,
                   style: const TextStyle(
-                    color: AppColors.textoFraco,
+                    color: Colors.white,
                     fontSize: 15,
                     height: 1.5,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
@@ -313,9 +302,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                         ? startup.description
                         : 'Startup sem descrição cadastrada.',
                     style: const TextStyle(
-                      color: AppColors.textoFraco,
+                      color: Colors.white,
                       height: 1.7,
                       fontSize: 14,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -326,20 +316,11 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   title: 'Informações da Oferta',
                   child: Column(
                     children: [
-                      _buildInfoRow(
-                        'Mercado',
-                        startup.market,
-                      ),
+                      _buildInfoRow('Mercado', startup.market),
                       const SizedBox(height: 12),
-                      _buildInfoRow(
-                        'Categoria',
-                        startup.tag,
-                      ),
+                      _buildInfoRow('Categoria', startup.tag),
                       const SizedBox(height: 12),
-                      _buildInfoRow(
-                        'Estágio',
-                        startup.stage,
-                      ),
+                      _buildInfoRow('Estágio', startup.stage),
                       const SizedBox(height: 12),
                       _buildInfoRow(
                         'Tokens disponíveis',
@@ -392,33 +373,36 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   title: 'Sócios',
                   child: startup.partners.isEmpty
                       ? const Text(
-                          'Nenhum sócio cadastrado para esta startup.',
-                          style: TextStyle(
-                            color: AppColors.textoFraco,
-                            height: 1.5,
-                            fontSize: 14,
-                          ),
-                        )
+                    'Nenhum sócio cadastrado para esta startup.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      height: 1.5,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
                       : Column(
-                          children: List.generate(
-                            startup.partners.length,
-                            (index) {
-                              final partner = startup.partners[index];
+                    children: List.generate(
+                      startup.partners.length,
+                          (index) {
+                        final partner = startup.partners[index];
 
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: index == startup.partners.length - 1
-                                      ? 0
-                                      : 12,
-                                ),
-                                child: _buildInfoRow(
-                                  '${partner.name} • ${partner.role}',
-                                  '${partner.equityPercent.toStringAsFixed(1)}%',
-                                ),
-                              );
-                            },
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom:
+                            index == startup.partners.length - 1
+                                ? 0
+                                : 12,
                           ),
-                        ),
+                          child: _buildPartnerCard(
+                            name: partner.name,
+                            role: partner.role,
+                            equityPercent: partner.equityPercent,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 18),
@@ -438,7 +422,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 20),
                           child: Center(
-                            child: CircularProgressIndicator(color: AppColors.destaque),
+                            child: CircularProgressIndicator(
+                              color: AppColors.destaque,
+                            ),
                           ),
                         )
                       else if (_perguntas.isEmpty)
@@ -446,7 +432,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                           padding: EdgeInsets.symmetric(vertical: 10),
                           child: Text(
                             'Nenhuma pergunta ainda.',
-                            style: TextStyle(color: AppColors.textoFraco),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         )
                       else
@@ -493,37 +482,38 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   }
 
   void _abrirOrdemCompra(
-  BuildContext context,
-  StartupData startup,
-) {
-  final simbolo = _gerarSimbolo(startup.title);
+      BuildContext context,
+      StartupData startup,
+      ) {
+    final simbolo = _gerarSimbolo(startup.title);
 
     final ofertaPrincipal = Oferta(
-    tipo: TipoOferta.venda,
-    quantidade: startup.tokens,
-    preco: startup.minBuyPrice,
-    empresa: startup.title,
-    simbolo: simbolo,
-    variacao: 0,
-    volume: '${startup.tokens}',
-    spread: 0.4,
-    startupId: startup.id,
-    minBuyPrice: startup.minBuyPrice,
-  );
-  
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => OrdemExeScreen(
-        oferta: ofertaPrincipal,
-        modo: ModoNegociacao.compra,
-        ofertasDisponiveis: [ofertaPrincipal],
-        investimentoMinimo: startup.investimentoMinimo,
-        compraDireto: true,
+      tipo: TipoOferta.venda,
+      quantidade: startup.tokens,
+      preco: startup.minBuyPrice,
+      empresa: startup.title,
+      simbolo: simbolo,
+      variacao: 0,
+      volume: '${startup.tokens}',
+      spread: 0.4,
+      startupId: startup.id,
+      minBuyPrice: startup.minBuyPrice,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrdemExeScreen(
+          oferta: ofertaPrincipal,
+          modo: ModoNegociacao.compra,
+          ofertasDisponiveis: [ofertaPrincipal],
+          investimentoMinimo: startup.investimentoMinimo,
+          compraDireto: true,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   String _gerarSimbolo(String nome) {
     final palavras = nome
         .replaceAll(RegExp(r'[^a-zA-ZÀ-ÿ0-9 ]'), '')
@@ -536,10 +526,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
     if (palavras.length == 1) {
       final palavra = palavras.first;
+      final tamanho = palavra.length < 3 ? palavra.length : 3;
 
-      return palavra
-          .substring(0, palavra.length.clamp(1, 3))
-          .toUpperCase();
+      return palavra.substring(0, tamanho).toUpperCase();
     }
 
     return palavras.take(3).map((p) => p[0]).join().toUpperCase();
@@ -547,9 +536,12 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
   static String _formatarTempo(dynamic createdAt) {
     if (createdAt == null) return '';
+
     DateTime? data;
 
-    if (createdAt is int) {
+    if (createdAt is Timestamp) {
+      data = createdAt.toDate();
+    } else if (createdAt is int) {
       data = DateTime.fromMillisecondsSinceEpoch(createdAt);
     } else if (createdAt is String) {
       data = DateTime.tryParse(createdAt);
@@ -561,16 +553,18 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     if (data == null) return '';
 
     final diferenca = DateTime.now().difference(data);
+
     if (diferenca.inDays > 0) return 'há ${diferenca.inDays} d';
     if (diferenca.inHours > 0) return 'há ${diferenca.inHours} h';
     if (diferenca.inMinutes > 0) return 'há ${diferenca.inMinutes} min';
+
     return 'agora';
   }
 
   Widget _buildCanalInvestidorContent(
-    BuildContext context,
-    StartupData startup,
-  ) {
+      BuildContext context,
+      StartupData startup,
+      ) {
     if (_carregandoVerificacao) {
       return const Center(
         child: Padding(
@@ -589,26 +583,34 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           const Text(
             'Você possui tokens desta startup. O canal privado está liberado.',
             style: TextStyle(
-              color: AppColors.textoFraco,
+              color: Colors.white,
               height: 1.5,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 18),
           TextField(
             controller: _perguntaPrivadaController,
             style: const TextStyle(
-              color: AppColors.textoPrincipal,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
             ),
             maxLines: 4,
-            decoration: const InputDecoration(
-              hintText:
-                  'Envie uma pergunta privada para a startup...',
+            cursorColor: AppColors.destaque,
+            decoration: InputDecoration(
+              hintText: 'Envie uma pergunta privada para a startup...',
+              hintStyle: TextStyle(
+                color: Colors.white.withOpacity(0.45),
+              ),
             ),
           ),
           const SizedBox(height: 14),
-          _PrimaryGradientButton(
-            label: 'Enviar pergunta privada',
+          GradientButton(
+            label: 'ENVIAR PERGUNTA PRIVADA',
             loading: _enviandoPerguntaPrivada,
+            height: 54,
+            radius: 18,
+            fontSize: 13.5,
             onTap: _enviandoPerguntaPrivada
                 ? null
                 : () => _enviarPerguntaPrivada(startup),
@@ -626,8 +628,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       child: const Text(
         'O canal privado é exclusivo para investidores.',
         style: TextStyle(
-          color: AppColors.textoFraco,
+          color: Colors.white,
           height: 1.5,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -645,9 +648,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       child: Text(
         text,
         style: const TextStyle(
-          color: AppColors.textoPrincipal,
+          color: Colors.white,
           fontSize: 12,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -676,10 +679,149 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
+  static String _iniciaisSocio(String nome) {
+    final partes = nome
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((parte) => parte.isNotEmpty)
+        .toList();
+
+    if (partes.isEmpty) return 'S';
+
+    if (partes.length == 1) {
+      return partes.first.substring(0, 1).toUpperCase();
+    }
+
+    return '${partes.first[0]}${partes.last[0]}'.toUpperCase();
+  }
+
+  static Widget _buildPartnerCard({
+    required String name,
+    required String role,
+    required double equityPercent,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardElevado.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.destaque.withOpacity(0.34),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.destaque.withOpacity(0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [
+                  AppColors.destaqueClaro,
+                  AppColors.destaqueEscuro,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.destaque.withOpacity(0.22),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                _iniciaisSocio(name),
+                style: const TextStyle(
+                  color: AppColors.fundo,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  role.isEmpty ? 'Sócio da startup' : role,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.destaque.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.destaque.withOpacity(0.38),
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '${equityPercent.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    color: AppColors.destaque,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'equity',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget _buildInfoRow(
-    String label,
-    String value,
-  ) {
+      String label,
+      String value,
+      ) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: premiumFieldDecoration(
@@ -691,8 +833,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             child: Text(
               label,
               style: const TextStyle(
-                color: AppColors.textoFraco,
+                color: Colors.white,
                 fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -703,7 +846,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: AppColors.textoPrincipal,
+                color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w900,
               ),
@@ -748,8 +891,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
               Text(
                 tempo,
                 style: const TextStyle(
-                  color: AppColors.textoMuitoFraco,
+                  color: Colors.white70,
                   fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -758,7 +902,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           Text(
             pergunta,
             style: const TextStyle(
-              color: AppColors.textoPrincipal,
+              color: Colors.white,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -772,8 +916,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             child: Text(
               resposta,
               style: const TextStyle(
-                color: AppColors.textoFraco,
+                color: Colors.white,
                 height: 1.5,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -859,7 +1004,7 @@ class _HeroImage extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.black.withOpacity(0.10),
-                    Colors.black.withOpacity(0.68),
+                    Colors.black.withOpacity(0.72),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -908,7 +1053,7 @@ class _HeroImage extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppColors.textoPrincipal,
+                        color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
@@ -951,16 +1096,14 @@ class _MetricCard extends StatelessWidget {
               Expanded(
                 child: _MetricColumn(
                   label: 'Valor do Token',
-                  value:
-                      'R\$ ${startup.minBuyPrice.toStringAsFixed(2)}',
+                  value: 'R\$ ${startup.minBuyPrice.toStringAsFixed(2)}',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _MetricColumn(
                   label: 'Captação',
-                  value:
-                      '${(startup.progress * 100).toStringAsFixed(0)}%',
+                  value: '${(startup.progress * 100).toStringAsFixed(0)}%',
                 ),
               ),
             ],
@@ -1016,14 +1159,17 @@ class _MetricColumn extends StatelessWidget {
         children: [
           Text(
             label,
+            textAlign: TextAlign.center,
             style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
+              color: Colors.white70,
               fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             value,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.destaque,
               fontSize: 20,
@@ -1057,7 +1203,7 @@ class _PitchDeckTile extends StatelessWidget {
             child: Text(
               'Pitch Deck disponível em breve',
               style: TextStyle(
-                color: AppColors.textoPrincipal,
+                color: Colors.white,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -1087,45 +1233,27 @@ class _PublicQuestionInput extends StatelessWidget {
           controller: controller,
           maxLines: 3,
           style: const TextStyle(
-            color: AppColors.textoPrincipal,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
-          decoration: const InputDecoration(
+          cursorColor: AppColors.destaque,
+          decoration: InputDecoration(
             hintText: 'Envie uma pergunta pública...',
+            hintStyle: TextStyle(
+              color: Colors.white.withOpacity(0.45),
+            ),
           ),
         ),
         const SizedBox(height: 14),
-        _PrimaryGradientButton(
-          label: 'Enviar pergunta',
+        GradientButton(
+          label: 'ENVIAR PERGUNTA',
           loading: loading,
-          onTap: onTap,
+          height: 54,
+          radius: 18,
+          fontSize: 14.5,
+          onTap: loading ? null : onTap,
         ),
       ],
-    );
-  }
-}
-
-class _PrimaryGradientButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onTap;
-  final bool loading;
-
-  const _PrimaryGradientButton({
-    required this.label,
-    required this.onTap,
-    this.loading = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: onTap,
-        child: loading
-            ? const CircularProgressIndicator()
-            : Text(label),
-      ),
     );
   }
 }
@@ -1140,10 +1268,23 @@ class _InvestBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: _PrimaryGradientButton(
-          label: 'Investir na startup',
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        decoration: BoxDecoration(
+          color: AppColors.fundo.withOpacity(0.98),
+          border: Border(
+            top: BorderSide(
+              color: AppColors.bordaClara.withOpacity(0.8),
+            ),
+          ),
+        ),
+        child: GradientButton(
+          label: 'INVESTIR NA STARTUP',
+          icon: Icons.trending_up_rounded,
+          height: 56,
+          radius: 18,
+          fontSize: 15.5,
           onTap: onInvestir,
         ),
       ),

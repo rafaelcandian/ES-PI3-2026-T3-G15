@@ -1310,8 +1310,6 @@ class _Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(height: 14),
-          PremiumHeaderEyebrow(text: 'VISÃO GERAL DA CARTEIRA'),
-          SizedBox(height: 14),
           Text(
             'Acompanhe seus ativos, saldo disponível e movimentações.',
             style: TextStyle(

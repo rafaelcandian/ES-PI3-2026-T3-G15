@@ -150,7 +150,7 @@ class _LoginTelaState extends State<LoginTela> {
 
   Widget _buildForgotPasswordLink() {
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: Alignment.centerLeft,
       child: Material(
         color: Colors.transparent,
         child: InkWell(

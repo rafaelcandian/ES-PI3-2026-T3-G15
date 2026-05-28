@@ -77,8 +77,8 @@ class CarteiraService {
         type: WalletTransactionType.deposit,
         status: WalletTransactionStatus.completed,
         amount: valor,
-        description: 'Depósito via Pix simulado',
-        method: 'pix_simulado',
+        description: 'Depósito via Pix',
+        method: 'pix',
         createdAt: DateTime.now(),
       );
     } on FirebaseFunctionsException catch (e) {

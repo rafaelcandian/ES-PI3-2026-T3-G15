@@ -10,6 +10,7 @@ class GradientButton extends StatelessWidget {
   final double radius;
   final double fontSize;
   final EdgeInsetsGeometry? padding;
+  final double letterSpacing;
 
   const GradientButton({
     super.key,
@@ -21,6 +22,7 @@ class GradientButton extends StatelessWidget {
     this.radius = 16,
     this.fontSize = 15,
     this.padding,
+    this.letterSpacing = 0,
   });
 
   @override
@@ -92,6 +94,7 @@ class GradientButton extends StatelessWidget {
                           color: AppColors.fundo,
                           fontSize: fontSize,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: letterSpacing,
                         ),
                       ),
                     ],

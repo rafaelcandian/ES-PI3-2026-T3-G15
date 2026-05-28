@@ -38,7 +38,7 @@ class MesclaInvestApp extends StatelessWidget {
           title: 'MesclaInvest',
           debugShowCheckedModeBanner: false,
           themeMode: ThemeController.themeMode,
-          theme: AppTheme.temaClaro,
+          theme: AppTheme.temaPrincipal,
           darkTheme: AppTheme.temaPrincipal,
           initialRoute: "/",
           routes: {
