@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
+import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/app_button.dart';
 
@@ -24,6 +24,7 @@ class _PerfilPageState extends State<PerfilPage> {
   String _email = '';
   String _telefone = '';
   String _cpf = '';
+  bool _twoFactorEnabled = false;
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _PerfilPageState extends State<PerfilPage> {
       String email = user.email ?? '';
       String telefone = user.phoneNumber ?? '';
       String cpf = '';
+      bool twoFactorEnabled = false;
 
       final doc = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -63,6 +65,12 @@ class _PerfilPageState extends State<PerfilPage> {
         telefone =
             data['telefone'] ?? data['phone'] ?? data['celular'] ?? telefone;
         cpf = data['cpf'] ?? '';
+
+        final twoFactorData = data['twoFactor'];
+
+        if (twoFactorData is Map) {
+          twoFactorEnabled = twoFactorData['enabled'] == true;
+        }
       }
 
       if (!mounted) return;
@@ -72,6 +80,7 @@ class _PerfilPageState extends State<PerfilPage> {
         _email = email.toString();
         _telefone = telefone.toString();
         _cpf = cpf.toString();
+        _twoFactorEnabled = twoFactorEnabled;
         _loading = false;
       });
     } catch (_) {
@@ -84,6 +93,7 @@ class _PerfilPageState extends State<PerfilPage> {
         _email = user?.email ?? '';
         _telefone = user?.phoneNumber ?? '';
         _cpf = '';
+        _twoFactorEnabled = false;
         _loading = false;
       });
     }
@@ -112,6 +122,24 @@ class _PerfilPageState extends State<PerfilPage> {
     return '($ddd) *****-$fim';
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: AppColors.textoPrincipal,
+          ),
+        ),
+        backgroundColor: AppColors.card,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -126,7 +154,9 @@ class _PerfilPageState extends State<PerfilPage> {
             const _AtmosphericBackground(),
             if (_loading)
               const Center(
-                child: CircularProgressIndicator(color: AppColors.destaque),
+                child: CircularProgressIndicator(
+                  color: AppColors.destaque,
+                ),
               )
             else
               SafeArea(
@@ -145,25 +175,35 @@ class _PerfilPageState extends State<PerfilPage> {
                     SliverPadding(
                       padding: const EdgeInsets.symmetric(horizontal: 22),
                       sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          _ProfileCard(
-                            nome: _nome,
-                            email: _email.isEmpty
-                                ? 'E-mail não informado'
-                                : _email,
-                            telefone: _mascararTelefone(_telefone),
-                            cpf: _mascararCpf(_cpf),
-                            onEditTap: _showEditProfileModal,
-                          ),
-                          const SizedBox(height: 18),
-                          _SecuritySection(onResetPassword: _sendPasswordReset),
-                          const SizedBox(height: 22),
-                          _AccountActions(
-                            onLogout: _logout,
-                            onDeleteAccount: _showDeleteAccountModal,
-                          ),
-                          const SizedBox(height: 120),
-                        ]),
+                        delegate: SliverChildListDelegate(
+                          [
+                            _ProfileCard(
+                              nome: _nome,
+                              email: _email.isEmpty
+                                  ? 'E-mail não informado'
+                                  : _email,
+                              telefone: _mascararTelefone(_telefone),
+                              cpf: _mascararCpf(_cpf),
+                              onEditTap: _showEditProfileModal,
+                            ),
+                            const SizedBox(height: 18),
+                            _SecuritySection(
+                              onResetPassword: _sendPasswordReset,
+                              twoFactorEnabled: _twoFactorEnabled,
+                              onToggleTwoFactor: () {
+                                _showSnackBar(
+                                  'Para ativar ou alterar o 2FA, faça logout e login novamente.',
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 22),
+                            _AccountActions(
+                              onLogout: _logout,
+                              onDeleteAccount: _showDeleteAccountModal,
+                            ),
+                            const SizedBox(height: 120),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -213,14 +253,17 @@ class _PerfilPageState extends State<PerfilPage> {
 
     await user.updateDisplayName(nome);
 
-    await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set({
-      'nome': nome,
-      'displayName': nome,
-      'email': user.email ?? _email,
-      'telefone': telefoneLimpo,
-      'cpf': cpfLimpo,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set(
+      {
+        'nome': nome,
+        'displayName': nome,
+        'email': user.email ?? _email,
+        'telefone': telefoneLimpo,
+        'cpf': cpfLimpo,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
 
     if (!mounted) return;
 
@@ -303,7 +346,10 @@ class _PerfilPageState extends State<PerfilPage> {
           ),
           content: Text(
             message,
-            style: const TextStyle(color: AppColors.textoFraco, height: 1.5),
+            style: const TextStyle(
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
           ),
           actions: [
             TextButton(
@@ -340,7 +386,10 @@ class _PerfilPageState extends State<PerfilPage> {
           ),
           content: const Text(
             'Essa ação exige uma confirmação segura antes de remover a conta. Para a entrega atual, o fluxo está sinalizado, mas não executa exclusão automática.',
-            style: TextStyle(color: AppColors.textoFraco, height: 1.5),
+            style: TextStyle(
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
           ),
           actions: [
             TextButton(
@@ -377,7 +426,10 @@ class _PerfilPageState extends State<PerfilPage> {
           ),
           content: const Text(
             'Tem certeza que deseja sair da sua conta?',
-            style: TextStyle(color: AppColors.textoFraco, height: 1.5),
+            style: TextStyle(
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
           ),
           actions: [
             TextButton(
@@ -415,7 +467,11 @@ class _PerfilPageState extends State<PerfilPage> {
 
     if (!mounted) return;
 
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+          (route) => false,
+    );
   }
 }
 
@@ -439,7 +495,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withValues(alpha: 0.22),
+                    AppColors.azul.withOpacity(0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -456,7 +512,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withValues(alpha: 0.07),
+                    AppColors.destaque.withOpacity(0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -473,7 +529,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withValues(alpha: 0.18),
+                    AppColors.roxo.withOpacity(0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -541,10 +597,13 @@ class _ProfileCard extends StatelessWidget {
                 height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.destaque, width: 1.2),
+                  border: Border.all(
+                    color: AppColors.destaque,
+                    width: 1.2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.destaque.withValues(alpha: 0.12),
+                      color: AppColors.destaque.withOpacity(0.12),
                       blurRadius: 22,
                     ),
                   ],
@@ -604,7 +663,11 @@ class _ProfileCard extends StatelessWidget {
             value: telefone,
           ),
           const SizedBox(height: 10),
-          _ProfileInfoRow(icon: Icons.badge_outlined, label: 'CPF', value: cpf),
+          _ProfileInfoRow(
+            icon: Icons.badge_outlined,
+            label: 'CPF',
+            value: cpf,
+          ),
           const SizedBox(height: 16),
           AppButton.primary(
             label: 'Editar perfil',
@@ -635,7 +698,11 @@ class _ProfileInfoRow extends StatelessWidget {
       padding: const EdgeInsets.all(13),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.destaque, size: 18),
+          Icon(
+            icon,
+            color: AppColors.destaque,
+            size: 18,
+          ),
           const SizedBox(width: 10),
           Text(
             label,
@@ -668,8 +735,14 @@ class _ProfileInfoRow extends StatelessWidget {
 
 class _SecuritySection extends StatelessWidget {
   final VoidCallback onResetPassword;
+  final bool twoFactorEnabled;
+  final VoidCallback onToggleTwoFactor;
 
-  const _SecuritySection({required this.onResetPassword});
+  const _SecuritySection({
+    required this.onResetPassword,
+    required this.twoFactorEnabled,
+    required this.onToggleTwoFactor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -691,10 +764,13 @@ class _SecuritySection extends StatelessWidget {
             onTap: onResetPassword,
           ),
           const SizedBox(height: 2),
-          const _StatusRow(
+          _ToggleRow(
             title: 'Autenticação de dois fatores',
-            subtitle: 'Em desenvolvimento pela equipe',
-            active: false,
+            subtitle: twoFactorEnabled
+                ? 'Autenticação de dois fatores ativa'
+                : 'Autenticação de dois fatores inativa',
+            active: twoFactorEnabled,
+            onTap: onToggleTwoFactor,
           ),
         ],
       ),
@@ -726,7 +802,10 @@ class _AccountActions extends StatelessWidget {
             onPressed: onDeleteAccount,
             child: const Text(
               'Excluir conta',
-              style: TextStyle(color: AppColors.textoFraco, fontSize: 12),
+              style: TextStyle(
+                color: AppColors.textoFraco,
+                fontSize: 12,
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -751,7 +830,11 @@ class _SectionCard extends StatelessWidget {
   final IconData? icon;
   final Widget child;
 
-  const _SectionCard({this.title, this.icon, required this.child});
+  const _SectionCard({
+    this.title,
+    this.icon,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -766,7 +849,11 @@ class _SectionCard extends StatelessWidget {
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: AppColors.destaque, size: 18),
+                  Icon(
+                    icon,
+                    color: AppColors.destaque,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                 ],
                 Text(
@@ -817,12 +904,18 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.bordaClara),
+              border: Border.all(
+                color: AppColors.bordaClara,
+              ),
             ),
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: AppColors.destaque, size: 19),
+                  Icon(
+                    icon,
+                    color: AppColors.destaque,
+                    size: 19,
+                  ),
                   const SizedBox(width: 10),
                 ],
                 Expanded(
@@ -867,6 +960,80 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
+class _ToggleRow extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _ToggleRow({
+    required this.title,
+    required this.subtitle,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: premiumFieldDecoration(radius: 16),
+      padding: const EdgeInsets.all(14),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.textoPrincipal,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 42,
+              height: 24,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: active ? AppColors.destaque : AppColors.bordaMedia,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Align(
+                alignment: active ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: active ? AppColors.fundo : AppColors.textoFraco,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StatusRow extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -892,7 +1059,10 @@ class _StatusRow extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _StatusText(title: title, subtitle: subtitle),
+            child: _StatusText(
+              title: title,
+              subtitle: subtitle,
+            ),
           ),
         ],
       ),
@@ -904,7 +1074,10 @@ class _StatusText extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _StatusText({required this.title, required this.subtitle});
+  const _StatusText({
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -973,7 +1146,11 @@ class _ProfileEditField extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
         decoration: InputDecoration(
-          icon: Icon(icon, color: AppColors.destaque, size: 19),
+          icon: Icon(
+            icon,
+            color: AppColors.destaque,
+            size: 19,
+          ),
           labelText: label,
           labelStyle: const TextStyle(
             color: AppColors.textoMuitoFraco,
@@ -1017,7 +1194,9 @@ class CpfInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(
+        offset: formatted.length,
+      ),
     );
   }
 }
@@ -1048,7 +1227,9 @@ class TelefoneInputFormatter extends TextInputFormatter {
 
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(
+        offset: formatted.length,
+      ),
     );
   }
 }
@@ -1062,8 +1243,7 @@ class _EditProfileSheet extends StatefulWidget {
   required String nome,
   required String telefone,
   required String cpf,
-  })
-  onSave;
+  }) onSave;
 
   const _EditProfileSheet({
     required this.nomeInicial,
@@ -1109,14 +1289,20 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   static String _formatarCpfInicial(String cpf) {
     final numeros = cpf.replaceAll(RegExp(r'[^0-9]'), '');
-    if (numeros.length != 11) return cpf;
+
+    if (numeros.length != 11) {
+      return cpf;
+    }
 
     return '${numeros.substring(0, 3)}.${numeros.substring(3, 6)}.${numeros.substring(6, 9)}-${numeros.substring(9, 11)}';
   }
 
   static String _formatarTelefoneInicial(String telefone) {
     final numeros = telefone.replaceAll(RegExp(r'[^0-9]'), '');
-    if (numeros.length != 11) return telefone;
+
+    if (numeros.length != 11) {
+      return telefone;
+    }
 
     return '(${numeros.substring(0, 2)}) ${numeros.substring(2, 7)}-${numeros.substring(7, 11)}';
   }
@@ -1321,7 +1507,9 @@ class _PremiumBottomSheet extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(30),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1341,13 +1529,17 @@ class _PremiumBottomSheet extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: AppColors.destaque.withValues(alpha: 0.12),
+                  color: AppColors.destaque.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.destaque.withValues(alpha: 0.28),
+                    color: AppColors.destaque.withOpacity(0.28),
                   ),
                 ),
-                child: Icon(icon, color: AppColors.destaque, size: 22),
+                child: Icon(
+                  icon,
+                  color: AppColors.destaque,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

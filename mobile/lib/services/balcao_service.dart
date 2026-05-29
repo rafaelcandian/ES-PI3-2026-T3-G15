@@ -108,6 +108,35 @@ class BalcaoService {
     }
   }
 
+  Future<String?> cancelarOferta({
+    required String orderId,
+  }) async {
+    try {
+      _uid;
+
+      final callable = FirebaseFunctions.instance.httpsCallable('cancelOffer');
+
+      await callable.call({
+        'orderId': orderId,
+      });
+
+      return null;
+    } on FirebaseFunctionsException catch (e) {
+      switch (e.code) {
+        case 'permission-denied':
+          return 'Você não tem permissão para cancelar esta oferta';
+        case 'failed-precondition':
+          return 'Esta oferta não pode ser cancelada';
+        case 'not-found':
+          return 'Oferta não encontrada';
+        default:
+          return 'Erro ao cancelar oferta: ${e.message}';
+      }
+    } catch (e) {
+      return 'Erro inesperado: $e';
+    }
+  }
+
   Future<Map<String, List<OrderModel>>> getOpenedOrders(
     String startupId,
   ) async {

@@ -12,8 +12,9 @@ class Oferta {
   final String volume;
   final double spread;
   final String startupId;
-
-  // Indica se a oferta é da própria startup (venda primária)
+  final String id;
+  final String userId;
+  final DateTime? createdAt;
   final bool isStartup;
 
   // Preço mínimo permitido para ordens de compra.
@@ -30,6 +31,9 @@ class Oferta {
     required this.volume,
     required this.spread,
     this.startupId = '',
+    this.id = '',
+    this.userId = '',
+    this.createdAt,
     this.isStartup = false,
     this.minBuyPrice = 1.0,
   });
