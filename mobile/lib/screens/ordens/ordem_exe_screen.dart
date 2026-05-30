@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:mescla_invest/models/balcao_model.dart';
+import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
@@ -25,6 +26,7 @@ class OrdemExeScreen extends StatefulWidget {
   final List<Oferta> ofertasDisponiveis;
   final double investimentoMinimo;
   final bool compraDireto;
+  final int? quantidadeMaximaUsuario;
 
   const OrdemExeScreen({
     super.key,
@@ -33,6 +35,7 @@ class OrdemExeScreen extends StatefulWidget {
     required this.ofertasDisponiveis,
     this.investimentoMinimo = 0.0,
     this.compraDireto = false,
+    this.quantidadeMaximaUsuario,
   });
 
   @override
@@ -47,7 +50,21 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   double _precoMedioReal = 0.0;
 
+  /// Saldo em reais do usuário, carregado via CarteiraService.
+  double? _saldoUsuario;
+
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
+
+  /// Quantidade máxima que o saldo permite comprar ao preço atual.
+  int get _quantidadeMaximaPorSaldo {
+    if (_saldoUsuario == null || _preco <= 0) return 0;
+    return (_saldoUsuario! / _preco).floor();
+  }
+
+  /// Indica se o saldo é insuficiente para comprar ao menos 1 token.
+  bool get _saldoInsuficiente {
+    return _isCompra && _saldoUsuario != null && _quantidadeMaximaPorSaldo <= 0;
+  }
 
   double get _subtotal => _quantidade * _preco;
 
@@ -73,12 +90,26 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     return _isCompra && _preco < widget.oferta.minBuyPrice;
   }
 
+  int get _maximoQuantidade {
+    if (!_isCompra && widget.quantidadeMaximaUsuario != null) {
+      return widget.quantidadeMaximaUsuario!;
+    }
+
+    // No modo compra, limita pelo saldo disponível do usuário.
+    if (_isCompra && _saldoUsuario != null) {
+      final limitePorSaldo = _quantidadeMaximaPorSaldo;
+      return limitePorSaldo.clamp(0, widget.oferta.quantidade);
+    }
+
+    return widget.oferta.quantidade;
+  }
+
   @override
   void initState() {
     super.initState();
 
     // Inicia com 1 token se houver disponibilidade, caso contrário 0.
-    _quantidade = widget.oferta.quantidade > 0 ? 1 : 0;
+    _quantidade = _maximoQuantidade > 0 ? 1 : 0;
     _preco = widget.oferta.preco;
 
     _quantidadeController = TextEditingController(text: _quantidade.toString());
@@ -90,6 +121,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       if (!mounted) return;
       setState(() => _precoMedioReal = preco);
     });
+
+    // Busca o saldo do usuário para limitar a compra.
+    _carregarSaldoUsuario();
   }
 
   @override
@@ -99,6 +133,17 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       ..removeListener(_atualizarPrecoDigitado)
       ..dispose();
     super.dispose();
+  }
+
+  Future<void> _carregarSaldoUsuario() async {
+    try {
+      final saldo = await CarteiraService().getBalance();
+      if (!mounted) return;
+      setState(() => _saldoUsuario = saldo);
+    } catch (_) {
+      // Em caso de erro, mantém _saldoUsuario como null
+      // e a tela usará apenas o limite da oferta.
+    }
   }
 
   Future<double> _calcularPrecoMedioReal() async {
@@ -135,11 +180,20 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
     if (valor == null || valor <= 0 || valor == _preco) return;
 
-    setState(() => _preco = valor);
+    setState(() {
+      _preco = valor;
+
+      // Recalcula o máximo ao alterar preço (afeta limite por saldo).
+      final novoMaximo = _maximoQuantidade;
+      if (_quantidade > novoMaximo) {
+        _quantidade = novoMaximo;
+        _atualizarControllerQuantidade(novoMaximo);
+      }
+    });
   }
 
   void _atualizarQuantidade(String value) {
-    final maximo = widget.oferta.quantidade;
+    final maximo = _maximoQuantidade;
 
     if (value.isEmpty) {
       setState(() => _quantidade = 0);
@@ -157,7 +211,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   }
 
   void _alterarQuantidade(int novaQuantidade) {
-    final maximo = widget.oferta.quantidade;
+    final maximo = _maximoQuantidade;
     final quantidadeAjustada = novaQuantidade.clamp(0, maximo).toInt();
 
     HapticFeedback.selectionClick();
@@ -169,12 +223,14 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
   }
 
   void _selecionarPercentual(double percentual) {
-    final maximo = widget.oferta.quantidade;
+    final maximo = _maximoQuantidade;
 
     if (maximo <= 0) {
       AppSnackBar.show(
         context,
-        message: 'Esta oferta não possui tokens disponíveis.',
+        message: _saldoInsuficiente
+            ? 'Saldo insuficiente para esta compra.'
+            : 'Esta oferta não possui tokens disponíveis.',
         error: true,
       );
       return;
@@ -200,10 +256,26 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       _precoController.selection = TextSelection.fromPosition(
         TextPosition(offset: _precoController.text.length),
       );
+
+      // Recalcula o máximo ao alterar preço (afeta limite por saldo).
+      final novoMaximo = _maximoQuantidade;
+      if (_quantidade > novoMaximo) {
+        _quantidade = novoMaximo;
+        _atualizarControllerQuantidade(novoMaximo);
+      }
     });
   }
 
   void _confirmarOrdem() {
+    if (_saldoInsuficiente) {
+      AppSnackBar.show(
+        context,
+        message: 'Saldo insuficiente para esta compra.',
+        error: true,
+      );
+      return;
+    }
+
     if (_quantidade <= 0) {
       AppSnackBar.show(
         context,
@@ -213,11 +285,11 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       return;
     }
 
-    if (_quantidade > widget.oferta.quantidade) {
+    if (_quantidade > _maximoQuantidade) {
       AppSnackBar.show(
         context,
         message:
-        'A quantidade máxima disponível é ${widget.oferta.quantidade} tokens.',
+        'A quantidade máxima disponível é $_maximoQuantidade tokens.',
         error: true,
       );
       return;
@@ -298,13 +370,53 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
                         _buildOrderConfiguration(),
                         const SizedBox(height: 18),
                         _buildFinancialSummary(),
+                        if (_saldoInsuficiente) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.redAccent.withValues(alpha: 0.30),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.redAccent,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Saldo insuficiente para esta compra.',
+                                    style: TextStyle(
+                                      color: Colors.redAccent.withValues(alpha: 0.90),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 28),
                         AppButton.primary(
-                          label: 'Confirmar $actionLabel',
+                          label: _saldoInsuficiente
+                              ? 'Saldo insuficiente'
+                              : 'Confirmar $actionLabel',
                           icon: _isCompra
                               ? Icons.shopping_bag_rounded
                               : Icons.sell_rounded,
-                          onTap: _confirmarOrdem,
+                          onTap: _saldoInsuficiente
+                              ? null
+                              : _confirmarOrdem,
                         ),
                       ],
                     ),
@@ -370,13 +482,13 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
           _QuantityControlBox(
             controller: _quantidadeController,
             quantidade: _quantidade,
-            maximo: widget.oferta.quantidade,
+            maximo: _maximoQuantidade,
             onChanged: _atualizarQuantidade,
             onMinus: () {
               if (_quantidade > 0) _alterarQuantidade(_quantidade - 1);
             },
             onPlus: () {
-              if (_quantidade < widget.oferta.quantidade) {
+              if (_quantidade < _maximoQuantidade) {
                 _alterarQuantidade(_quantidade + 1);
               }
             },

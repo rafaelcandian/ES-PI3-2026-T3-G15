@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
 // Descrição: Handler para criação de novos usuários no banco de dados.
 
 import {onCall, HttpsError} from "firebase-functions/v2/https";

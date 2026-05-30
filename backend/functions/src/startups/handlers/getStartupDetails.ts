@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
 // Descrição: Handler para recuperar os detalhes de uma startup específica por ID.
 
 import {onCall, HttpsError} from "firebase-functions/v2/https";

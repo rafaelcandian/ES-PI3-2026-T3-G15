@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
 // Descrição: Handler para listar todas as startups com filtros opcionais.
 
 import {onCall} from "firebase-functions/v2/https";
