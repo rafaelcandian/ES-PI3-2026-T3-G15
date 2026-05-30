@@ -1,3 +1,6 @@
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
+
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { requireAuthenticatedUser } from "../../shared/auth";
 import { db } from "../../shared/firebase";
@@ -23,7 +26,7 @@ export const sendQuestion = onCall(async (request) => {
   }
 
   const userData = userDoc.data()!;
-  
+
   if (isPrivada) {
     const tokens = userData.tokens || {};
     const hasTokens = tokens[startupId] && tokens[startupId] > 0;
@@ -35,7 +38,7 @@ export const sendQuestion = onCall(async (request) => {
   const autorNome = userData.nome || "Usuário Desconhecido";
 
   const perguntaRef = db.collection("startups").doc(startupId).collection("perguntas").doc();
-  
+
   await perguntaRef.set({
     autorId: uid,
     autorNome: autorNome,
