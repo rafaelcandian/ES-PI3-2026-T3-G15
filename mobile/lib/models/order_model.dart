@@ -1,3 +1,6 @@
+// Autor: Arthur Valerio De Santi
+// RA: 25006924
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum OrderType { buy, sell }
