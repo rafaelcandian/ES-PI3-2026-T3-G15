@@ -8,6 +8,7 @@ class TwoFactorLoginResult {
   final bool setupRequired;
   final String? secret;
   final String? otpAuthUri;
+  final bool requiresVerification;
 
   const TwoFactorLoginResult({
     required this.email,
@@ -15,6 +16,7 @@ class TwoFactorLoginResult {
     required this.setupRequired,
     this.secret,
     this.otpAuthUri,
+    this.requiresVerification = false,
   });
 }
 
@@ -106,48 +108,41 @@ class AuthService {
 
       final userRef = _db.collection('usuarios').doc(user.uid);
       final userDoc = await userRef.get();
+
       final data = userDoc.data() ?? <String, dynamic>{};
-      final twoFactor = Map<String, dynamic>.from(data['twoFactor'] ?? {});
+      final twoFactor = Map<String, dynamic>.from(
+        data['twoFactor'] ?? {},
+      );
+
       final enabled = twoFactor['enabled'] == true;
       final secret = twoFactor['secret'] as String?;
 
-      final setupRequired = !enabled || secret == null || secret.isEmpty;
-      String? setupSecret;
-      String? otpAuthUri;
-
-      if (setupRequired) {
-        setupSecret = _totp.generateSecret();
-        otpAuthUri = _totp.buildOtpAuthUri(
-          issuer: 'MesclaInvest',
-          account: userEmail,
-          secret: setupSecret,
+      // 2FA DESATIVADO → LOGIN NORMAL
+      if (!enabled || secret == null || secret.isEmpty) {
+        return TwoFactorLoginResult(
+          email: userEmail,
+          senha: senha,
+          setupRequired: false,
+          requiresVerification: false,
         );
-
-        await userRef.set({
-          'twoFactor': {
-            'enabled': false,
-            'pendingSecret': setupSecret,
-            'pendingCreatedAt': FieldValue.serverTimestamp(),
-            'issuer': 'MesclaInvest',
-          },
-        }, SetOptions(merge: true));
       }
 
+      // 2FA ATIVO → PEDIR CÓDIGO
       await _auth.signOut();
 
       return TwoFactorLoginResult(
         email: userEmail,
         senha: senha,
-        setupRequired: setupRequired,
-        secret: setupSecret,
-        otpAuthUri: otpAuthUri,
+        setupRequired: false,
+        requiresVerification: true,
       );
     } on FirebaseAuthException catch (e) {
       await _auth.signOut();
 
       if (e.code == 'user-not-found') {
         throw Exception("Usuario nao encontrado");
-      } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+      } else if (e.code == 'wrong-password' ||
+          e.code == 'invalid-credential') {
         throw Exception("Senha incorreta");
       } else {
         throw Exception("Erro no login");
@@ -155,6 +150,80 @@ class AuthService {
     } catch (e) {
       await _auth.signOut();
       throw Exception('Erro ao iniciar verificacao: $e');
+    }
+  }
+
+  Future<TwoFactorLoginResult> createTwoFactorSetup() async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception('Usuario nao autenticado');
+    }
+
+    final userEmail = user.email ?? '';
+    final secret = _totp.generateSecret();
+    final otpAuthUri = _totp.buildOtpAuthUri(
+      issuer: 'MesclaInvest',
+      account: userEmail,
+      secret: secret,
+    );
+
+    await _db.collection('usuarios').doc(user.uid).set({
+      'twoFactor': {
+        'enabled': false,
+        'pendingSecret': secret,
+        'pendingCreatedAt': FieldValue.serverTimestamp(),
+        'issuer': 'MesclaInvest',
+      },
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    return TwoFactorLoginResult(
+      email: userEmail,
+      senha: '',
+      setupRequired: true,
+      secret: secret,
+      otpAuthUri: otpAuthUri,
+    );
+  }
+
+  Future<String?> confirmTwoFactorSetup(String code) async {
+    try {
+      final user = _auth.currentUser;
+
+      if (user == null) {
+        return 'Usuario nao autenticado.';
+      }
+
+      final userRef = _db.collection('usuarios').doc(user.uid);
+      final userDoc = await userRef.get();
+      final data = userDoc.data() ?? <String, dynamic>{};
+      final twoFactor = Map<String, dynamic>.from(data['twoFactor'] ?? {});
+      final pendingSecret = twoFactor['pendingSecret'] as String?;
+
+      if (pendingSecret == null || pendingSecret.isEmpty) {
+        return 'Chave de autenticacao nao encontrada.';
+      }
+
+      if (!_totp.verifyCode(pendingSecret, code)) {
+        return 'Codigo invalido.';
+      }
+
+      await userRef.set({
+        'twoFactor': {
+          'enabled': true,
+          'secret': pendingSecret,
+          'pendingSecret': FieldValue.delete(),
+          'pendingCreatedAt': FieldValue.delete(),
+          'enabledAt': FieldValue.serverTimestamp(),
+          'issuer': 'MesclaInvest',
+        },
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return null;
+    } catch (e) {
+      return 'Erro ao ativar 2FA: $e';
     }
   }
 
@@ -180,29 +249,16 @@ class AuthService {
       final data = userDoc.data() ?? <String, dynamic>{};
       final twoFactor = Map<String, dynamic>.from(data['twoFactor'] ?? {});
       final enabled = twoFactor['enabled'] == true;
-      final secret = enabled
-          ? twoFactor['secret'] as String?
-          : twoFactor['pendingSecret'] as String?;
+      final secret = twoFactor['secret'] as String?;
 
-      if (secret == null || secret.isEmpty) {
-        await _auth.signOut();
-        return 'Chave de autenticacao nao encontrada.';
+      // Se não tiver 2FA ativo, libera login normal
+      if (!enabled || secret == null || secret.isEmpty) {
+        return null;
       }
 
       if (!_totp.verifyCode(secret, code)) {
         await _auth.signOut();
         return 'Codigo invalido.';
-      }
-
-      if (!enabled) {
-        await userRef.update({
-          'twoFactor.enabled': true,
-          'twoFactor.secret': secret,
-          'twoFactor.pendingSecret': FieldValue.delete(),
-          'twoFactor.pendingCreatedAt': FieldValue.delete(),
-          'twoFactor.enabledAt': FieldValue.serverTimestamp(),
-          'twoFactor.issuer': 'MesclaInvest',
-        });
       }
 
       return null;
