@@ -232,10 +232,7 @@ async function tryMatching(
       const existingOfferDoc = await t.get(offerRef);
 
       if (!buyerDoc.exists || !sellerDoc.exists) {
-        throw new HttpsError(
-          "not-found",
-          "Comprador ou vendedor não encontrado.",
-        );
+        return;
       }
 
       if (!newOfferDoc.exists || !existingOfferDoc.exists) {
@@ -264,10 +261,14 @@ async function tryMatching(
         );
       }
 
+      t.set(buyerRef, {
+        tokens: {
+          [newOffer.startupId]: admin.firestore.FieldValue.increment(matchedQuantity)
+        }
+      }, { merge: true });
+
       t.update(buyerRef, {
         saldo: admin.firestore.FieldValue.increment(-total),
-        [`tokens.${newOffer.startupId}`]:
-          admin.firestore.FieldValue.increment(matchedQuantity),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
