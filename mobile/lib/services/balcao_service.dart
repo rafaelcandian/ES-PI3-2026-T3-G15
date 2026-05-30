@@ -1,3 +1,6 @@
+// Autor: Arthur Valerio De Santi
+// RA: 25006924
+
 // ignore_for_file: avoid_print
 // ignore_for_file: unused_field
 
