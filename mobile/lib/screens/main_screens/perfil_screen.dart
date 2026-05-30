@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:mescla_invest/services/autenticacao.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
@@ -18,6 +19,8 @@ class PerfilPage extends StatefulWidget {
 }
 
 class _PerfilPageState extends State<PerfilPage> {
+  final AuthService _authService = AuthService();
+
   bool _loading = true;
 
   String _nome = 'Usuário';
@@ -190,11 +193,7 @@ class _PerfilPageState extends State<PerfilPage> {
                             _SecuritySection(
                               onResetPassword: _sendPasswordReset,
                               twoFactorEnabled: _twoFactorEnabled,
-                              onToggleTwoFactor: () {
-                                _showSnackBar(
-                                  'Para ativar ou alterar o 2FA, faça logout e login novamente.',
-                                );
-                              },
+                              onToggleTwoFactor: _toggleTwoFactor,
                             ),
                             const SizedBox(height: 22),
                             _AccountActions(
@@ -406,6 +405,139 @@ class _PerfilPageState extends State<PerfilPage> {
         );
       },
     );
+  }
+
+  Future<void> _toggleTwoFactor() async {
+    if (_twoFactorEnabled) {
+      await _desativarTwoFactor();
+    } else {
+      await _ativarTwoFactor();
+    }
+  }
+
+  Future<void> _desativarTwoFactor() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      _showSnackBar('Usuário não autenticado.');
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Desativar 2FA',
+            style: TextStyle(
+              color: AppColors.destaque,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: const Text(
+            'Tem certeza que deseja desativar a autenticação de dois fatores?',
+            style: TextStyle(
+              color: AppColors.textoFraco,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(
+                  color: AppColors.textoFraco,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text(
+                'Desativar',
+                style: TextStyle(
+                  color: AppColors.destaque,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('usuarios').doc(user.uid).set(
+        {
+          'twoFactor': {
+            'enabled': false,
+            'secret': FieldValue.delete(),
+            'otpAuthUri': FieldValue.delete(),
+            'pendingSecret': FieldValue.delete(),
+            'pendingCreatedAt': FieldValue.delete(),
+            'disabledAt': FieldValue.serverTimestamp(),
+          },
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _twoFactorEnabled = false;
+      });
+
+      _showSnackBar('Autenticação de dois fatores desativada.');
+    } catch (_) {
+      if (!mounted) return;
+
+      _showSnackBar(
+        'Não foi possível desativar o 2FA. Verifique as regras do Firestore.',
+      );
+    }
+  }
+
+  Future<void> _ativarTwoFactor() async {
+    try {
+      final setup = await _authService.createTwoFactorSetup();
+
+      if (!mounted) return;
+
+      final ativou = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) {
+          return _TwoFactorSetupSheet(
+            secret: setup.secret ?? '',
+            email: setup.email,
+            onConfirm: _authService.confirmTwoFactorSetup,
+          );
+        },
+      );
+
+      if (ativou == true && mounted) {
+        setState(() {
+          _twoFactorEnabled = true;
+        });
+
+        _showSnackBar('Autenticação de dois fatores ativada.');
+        await _carregarDadosUsuario();
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      _showSnackBar('Não foi possível iniciar a ativação do 2FA.');
+    }
   }
 
   Future<void> _logout() async {
@@ -1479,6 +1611,206 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TwoFactorSetupSheet extends StatefulWidget {
+  final String secret;
+  final String email;
+  final Future<String?> Function(String code) onConfirm;
+
+  const _TwoFactorSetupSheet({
+    required this.secret,
+    required this.email,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_TwoFactorSetupSheet> createState() => _TwoFactorSetupSheetState();
+}
+
+class _TwoFactorSetupSheetState extends State<_TwoFactorSetupSheet> {
+  final _codigoController = TextEditingController();
+
+  bool _loading = false;
+  String? _erro;
+
+  @override
+  void dispose() {
+    _codigoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _confirmar() async {
+    final codigo = _codigoController.text.trim();
+
+    setState(() {
+      _erro = null;
+    });
+
+    if (!RegExp(r'^\d{6}$').hasMatch(codigo)) {
+      setState(() {
+        _erro = 'Digite o código de 6 dígitos.';
+      });
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    final erro = await widget.onConfirm(codigo);
+
+    if (!mounted) return;
+
+    setState(() => _loading = false);
+
+    if (erro == null) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
+        _erro = erro.toLowerCase().contains('codigo') ||
+                erro.toLowerCase().contains('código')
+            ? 'Código inválido. Confira o Microsoft Authenticator e tente novamente.'
+            : 'Não foi possível ativar o 2FA. Tente novamente.';
+      });
+    }
+  }
+
+  void _copiarChave() {
+    Clipboard.setData(ClipboardData(text: widget.secret));
+    _showLocalSnack('Chave copiada.');
+  }
+
+  void _showLocalSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: AppColors.textoPrincipal),
+        ),
+        backgroundColor: AppColors.card,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _PremiumBottomSheet(
+      title: 'Ativar 2FA',
+      icon: Icons.shield_outlined,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Adicione a chave abaixo no Microsoft Authenticator e depois digite o código de 6 dígitos gerado pelo app.',
+              style: TextStyle(
+                color: AppColors.textoFraco,
+                height: 1.5,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: premiumFieldDecoration(radius: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Chave manual',
+                    style: TextStyle(
+                      color: AppColors.textoMuitoFraco,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SelectableText(
+                    widget.secret,
+                    style: const TextStyle(
+                      color: AppColors.textoPrincipal,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.7,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AppButton.outline(
+                    label: 'Copiar chave',
+                    icon: Icons.copy_rounded,
+                    onTap: _copiarChave,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            _ProfileEditField(
+              controller: _codigoController,
+              label: 'Código do autenticador',
+              icon: Icons.pin_outlined,
+              enabled: !_loading,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+            ),
+            if (_erro != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.redAccent.withOpacity(0.38),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _erro!,
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            AppButton.primary(
+              label: 'Confirmar e ativar',
+              loading: _loading,
+              onTap: _loading ? null : _confirmar,
+            ),
+          ],
         ),
       ),
     );

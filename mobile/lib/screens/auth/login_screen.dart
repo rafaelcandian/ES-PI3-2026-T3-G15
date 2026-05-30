@@ -244,6 +244,23 @@ class _LoginTelaState extends State<LoginTela> {
         _isLoading = false;
       });
 
+      if (!twoFactor.requiresVerification && !twoFactor.setupRequired) {
+        AppSnackBar.show(
+          context,
+          message: 'Login realizado com sucesso!',
+          success: true,
+          duration: const Duration(seconds: 2),
+        );
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/catalogo',
+              (_) => false,
+        );
+
+        return;
+      }
+
       AppSnackBar.show(
         context,
         message: twoFactor.setupRequired

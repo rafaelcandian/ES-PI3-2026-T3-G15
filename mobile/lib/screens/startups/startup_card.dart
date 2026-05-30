@@ -15,8 +15,11 @@ class StartupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = data.progress.clamp(0.0, 1.0);
+    final totalTokens = data.totalTokens <= 0 ? data.tokens : data.totalTokens;
+    final soldTokens = (totalTokens - data.tokens).clamp(0, totalTokens);
+    final progress = totalTokens <= 0 ? 0.0 : soldTokens / totalTokens;
     final progressPercent = (progress * 100).round();
+    final capturedValue = soldTokens * data.minBuyPrice;
 
     return GestureDetector(
       onTap: onDetailsTap,
@@ -118,6 +121,7 @@ class StartupCard extends StatelessWidget {
                     _ProgressBlock(
                       progress: progress,
                       progressPercent: progressPercent,
+                      capturedValue: capturedValue,
                       goal: data.goal,
                     ),
 
@@ -180,12 +184,6 @@ class _StartupImageHeader extends StatelessWidget {
             left: 16,
             top: 16,
             child: _PillTag(label: data.tag, icon: Icons.auto_awesome_rounded),
-          ),
-
-          Positioned(
-            right: 16,
-            top: 16,
-            child: _EquityBadge(equity: data.equity),
           ),
 
           Positioned(
@@ -273,34 +271,6 @@ class _PillTag extends StatelessWidget {
   }
 }
 
-class _EquityBadge extends StatelessWidget {
-  final double equity;
-
-  const _EquityBadge({required this.equity});
-
-  @override
-  Widget build(BuildContext context) {
-    final equityPercent = equity <= 1 ? equity * 100 : equity;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppColors.fundoEscuro.withOpacity(0.82),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.destaque.withOpacity(0.26)),
-      ),
-      child: Text(
-        '${equityPercent.toStringAsFixed(1)}% Equity',
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          color: AppColors.destaque,
-        ),
-      ),
-    );
-  }
-}
-
 class _InfoItem extends StatelessWidget {
   final String label;
   final String value;
@@ -374,11 +344,13 @@ class _InfoItem extends StatelessWidget {
 class _ProgressBlock extends StatelessWidget {
   final double progress;
   final int progressPercent;
+  final double capturedValue;
   final double goal;
 
   const _ProgressBlock({
     required this.progress,
     required this.progressPercent,
+    required this.capturedValue,
     required this.goal,
   });
 
@@ -434,7 +406,7 @@ class _ProgressBlock extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Meta estimada',
+                'Captado',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white.withOpacity(0.55),
@@ -442,7 +414,7 @@ class _ProgressBlock extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'R\$ ${goal.toStringAsFixed(2)}',
+                'R\$ ${capturedValue.toStringAsFixed(2)} / R\$ ${goal.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white.withOpacity(0.72),

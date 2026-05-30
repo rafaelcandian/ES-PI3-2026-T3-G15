@@ -204,6 +204,12 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
     final StartupData startup = arguments;
 
+    final totalTokens = startup.totalTokens <= 0 ? startup.tokens : startup.totalTokens;
+    final soldTokens = (totalTokens - startup.tokens).clamp(0, totalTokens);
+    final captacaoProgress = totalTokens <= 0 ? 0.0 : soldTokens / totalTokens;
+    final captacaoPercent = (captacaoProgress * 100).round();
+    final valorCaptado = soldTokens * startup.minBuyPrice;
+
     if (!_verificacaoIniciada) {
       _verificacaoIniciada = true;
 
@@ -278,7 +284,12 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                _MetricCard(startup: startup),
+                _MetricCard(
+                  startup: startup,
+                  captacaoProgress: captacaoProgress,
+                  captacaoPercent: captacaoPercent,
+                  valorCaptado: valorCaptado,
+                ),
                 const SizedBox(height: 22),
                 _buildSectionCard(
                   title: 'Descrição',
@@ -341,11 +352,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                         'Meta de captação',
                         'R\$ ${startup.goal.toStringAsFixed(2)}',
                       ),
-                      const SizedBox(height: 12),
-                      _buildInfoRow(
-                        'Equity',
-                        '${startup.equity.toStringAsFixed(1)}%',
-                      ),
                     ],
                   ),
                 ),
@@ -383,11 +389,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       },
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                _buildSectionCard(
-                  title: 'Pitch Deck',
-                  child: const _PitchDeckTile(),
                 ),
                 const SizedBox(height: 18),
                 _buildSectionCard(
@@ -463,7 +464,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
       simbolo: simbolo,
       variacao: 0,
       volume: '${startup.tokens}',
-      spread: 0.4,
+      spread: 0.0,
       startupId: startup.id,
       minBuyPrice: startup.minBuyPrice,
     );
@@ -996,9 +997,15 @@ class _HeroImage extends StatelessWidget {
 
 class _MetricCard extends StatelessWidget {
   final StartupData startup;
+  final double captacaoProgress;
+  final int captacaoPercent;
+  final double valorCaptado;
 
   const _MetricCard({
     required this.startup,
+    required this.captacaoProgress,
+    required this.captacaoPercent,
+    required this.valorCaptado,
   });
 
   @override
@@ -1020,7 +1027,7 @@ class _MetricCard extends StatelessWidget {
               Expanded(
                 child: _MetricColumn(
                   label: 'Captação',
-                  value: '${(startup.progress * 100).toStringAsFixed(0)}%',
+                  value: '$captacaoPercent%',
                 ),
               ),
             ],
@@ -1043,12 +1050,34 @@ class _MetricCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
               minHeight: 8,
-              value: startup.progress.clamp(0.0, 1.0),
+              value: captacaoProgress.clamp(0.0, 1.0),
               backgroundColor: AppColors.campo,
               valueColor: const AlwaysStoppedAnimation<Color>(
                 AppColors.destaque,
               ),
             ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text(
+                'Captado',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'R\$ ${valorCaptado.toStringAsFixed(2)} / R\$ ${startup.goal.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1089,33 +1118,6 @@ class _MetricColumn extends StatelessWidget {
               color: AppColors.destaque,
               fontSize: 20,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PitchDeckTile extends StatelessWidget {
-  const _PitchDeckTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: premiumFieldDecoration(radius: 18),
-      child: const Row(
-        children: [
-          Icon(Icons.picture_as_pdf_rounded, color: AppColors.destaque),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Pitch Deck disponível em breve',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
             ),
           ),
         ],

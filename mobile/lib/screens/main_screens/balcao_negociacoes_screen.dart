@@ -1210,15 +1210,6 @@ class _OfertaCardState extends State<_OfertaCard> {
                           runSpacing: 4,
                           children: [
                             _MiniInfo(
-                              label: 'Vol',
-                              value: widget.oferta.volume,
-                            ),
-                            _MiniInfo(
-                              label: 'Spread',
-                              value:
-                              '${widget.oferta.spread.toStringAsFixed(1)}%',
-                            ),
-                            _MiniInfo(
                               label: 'Tokens',
                               value: '${widget.oferta.quantidade}',
                             ),

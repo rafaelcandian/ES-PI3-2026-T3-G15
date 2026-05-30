@@ -145,7 +145,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.',
+                        'Oportunidades exclusivas de investimento através de ativos digitais fracionados.',
                         textAlign: TextAlign.left,
                         style: TextStyle(
                           fontSize: 14,
