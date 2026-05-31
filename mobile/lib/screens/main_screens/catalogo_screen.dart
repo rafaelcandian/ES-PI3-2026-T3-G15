@@ -200,7 +200,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
                         child: _EmptyStateCard(
                           icon: Icons.error_outline_rounded,
                           title: 'Erro ao carregar startups',
-                          message: snapshot.error.toString(),
+                          message: 'Não foi possível carregar as informações das startups. Verifique sua conexão e tente novamente.',
                         ),
                       );
                     }
