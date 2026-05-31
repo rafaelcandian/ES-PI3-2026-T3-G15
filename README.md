@@ -91,8 +91,8 @@ O projeto tem como objetivo aplicar na prática conceitos de:
 ```bash
 ES-PI3-MesclaInvest/
 │
-├── mobile/                 # Aplicação Flutter
-├── backend/                # TypeScript / Cloud Functions Firebase
+├── backend/                 # TypeScript / Cloud Functions Firebase
+├── mobile/                  # Aplicação Flutter
 ├── README.md
 ```
 
@@ -152,4 +152,4 @@ O aplicativo será iniciado em um emulador Android ou dispositivo físico conect
 
 Este projeto possui finalidade acadêmica e educacional, sendo utilizado como prática de desenvolvimento de software no curso de Engenharia de Software da PUC-Campinas.
 
---=
+---
