@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:flutter/material.dart';
 
@@ -18,6 +19,15 @@ import 'recuperacao_senha_screen.dart';
 import 'verificacao_login_screen.dart';
 
 /* Tela de login principal que gerencia o primeiro fator de autenticação e redirecionamento para 2FA. */
+/*
+  Tela principal de login do aplicativo.
+
+  Responsável por:
+  - validar e-mail e senha;
+  - iniciar autenticação;
+  - tratar autenticação em 2 fatores (2FA);
+  - redirecionar o usuário após login.
+*/
 class LoginTela extends StatefulWidget {
   const LoginTela({super.key});
 
@@ -25,20 +35,39 @@ class LoginTela extends StatefulWidget {
   State<LoginTela> createState() => _LoginTelaState();
 }
 
+/*
+  Estado interno da tela de login.
+
+  Controla:
+  - loading;
+  - validação;
+  - exibição da senha;
+  - navegação entre telas.
+*/
 class _LoginTelaState extends State<LoginTela> {
   /* GlobalKey necessária para validar o formulário e acessar os campos de texto. */
+  // Chave usada para validar o formulário.
   final _formKey = GlobalKey<FormState>();
+  // Serviço responsável pela autenticação.
   final _auth = AuthService();
 
+  // Controller do campo de e-mail.
   final emailController = TextEditingController();
+  // Controller do campo de senha.
   final senhaController = TextEditingController();
 
   /* Estados de controle da UI: loading para feedback visual e obscurePassword para privacidade. */
+  // Controla estado de carregamento da tela.
   bool _isLoading = false;
+  // Controla visibilidade da senha.
   bool _obscurePassword = true;
+  // Define quando a validação automática será ativada.
   bool _autoValidate = false;
 
   @override
+  /*
+    Libera memória dos controllers ao fechar a tela.
+  */
   void dispose() {
     emailController.dispose();
     senhaController.dispose();
@@ -46,6 +75,9 @@ class _LoginTelaState extends State<LoginTela> {
   }
 
   @override
+  /*
+    Método principal responsável por montar toda a interface.
+  */
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.fundo,
@@ -78,6 +110,9 @@ class _LoginTelaState extends State<LoginTela> {
     );
   }
 
+  /*
+    Card principal contendo os campos de login.
+  */
   Widget _buildLoginCard() {
     return AuthCard(
       child: Column(
@@ -165,6 +200,9 @@ class _LoginTelaState extends State<LoginTela> {
     );
   }
 
+  /*
+    Valida o e-mail informado pelo usuário.
+  */
   String? _validarEmail(String? value) {
     final email = value?.trim() ?? '';
 
@@ -179,6 +217,9 @@ class _LoginTelaState extends State<LoginTela> {
     return null;
   }
 
+  /*
+    Valida a senha informada.
+  */
   String? _validarSenha(String? value) {
     final senha = value ?? '';
 
@@ -193,6 +234,9 @@ class _LoginTelaState extends State<LoginTela> {
     return null;
   }
 
+  /*
+    Link para redirecionar o usuário para a tela de cadastro.
+  */
   Widget _buildCadastroRedirect() {
     return GestureDetector(
       onTap: _isLoading
@@ -223,6 +267,15 @@ class _LoginTelaState extends State<LoginTela> {
   }
 
   /* Inicia o processo de autenticação, tratando login simples e 2FA. */
+  /*
+    Realiza o processo de login.
+
+    Etapas:
+    - valida formulário;
+    - chama autenticação;
+    - verifica 2FA;
+    - redireciona o usuário.
+  */
   Future<void> _submitLogin() async {
     FocusScope.of(context).unfocus();
 
@@ -303,6 +356,9 @@ class _LoginTelaState extends State<LoginTela> {
     }
   }
 
+  /*
+    Exibe mensagem de erro amigável para o usuário.
+  */
   void _showLoginError(String message) {
     final friendlyMessage = _formatarErroLogin(message);
 
@@ -315,6 +371,9 @@ class _LoginTelaState extends State<LoginTela> {
   }
 
   /* Converte códigos de erro técnicos em mensagens compreensíveis. */
+  /*
+    Converte erros técnicos em mensagens mais amigáveis.
+  */
   String _formatarErroLogin(String message) {
     final lowerMessage = message.toLowerCase().trim();
 
@@ -363,6 +422,9 @@ class _LoginTelaState extends State<LoginTela> {
   }
 
   /* Navegação para o fluxo de recuperação de acesso. */
+  /*
+    Abre a tela de recuperação de senha.
+  */
   void _abrirRecuperacaoSenha() {
     Navigator.push(
       context,

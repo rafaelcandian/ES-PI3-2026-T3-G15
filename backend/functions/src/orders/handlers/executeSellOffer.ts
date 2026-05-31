@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Guilherme Henrique Moreira
+// RA: 25006702
 // Descrição: Executa a compra direta de uma oferta específica do balcão.
 
 import {onCall, HttpsError} from "firebase-functions/v2/https";

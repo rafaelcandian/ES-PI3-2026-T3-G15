@@ -1,63 +1,106 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/* Histórico de movimentações financeiras na carteira (Depósitos, Compras, Vendas) */
-enum WalletTransactionType { deposit, purchase, sale, withdraw }
+/* 
+  Enum responsável pelos tipos de movimentações
+  possíveis dentro da carteira do usuário.
+*/
+enum WalletTransactionType {
+  deposit,   // Depósito de saldo
+  purchase,  // Compra de tokens
+  sale,      // Venda de tokens
+  withdraw,  // Saque de saldo
+}
 
-enum WalletTransactionStatus { pending, completed, cancelled, failed }
+/* 
+  Enum responsável pelos possíveis status
+  de uma movimentação financeira.
+*/
+enum WalletTransactionStatus {
+  pending,    // Pendente
+  completed,  // Concluída
+  cancelled,  // Cancelada
+  failed,     // Falhou
+}
 
+/* 
+  Classe responsável por representar uma movimentação
+  financeira dentro da carteira do usuário.
+*/
 class WalletTransactionModel {
+
+  // ID único da transação
   final String id;
+
+  // ID do usuário dono da transação
   final String userId;
 
-  /// Tipo da movimentação:
-  /// deposit = entrada de dinheiro por Pix simulado
-  /// purchase = compra de tokens
-  /// sale = venda de tokens
-  /// withdraw = saque simulado, caso vocês queiram usar depois
+  /* 
+    Tipo da movimentação:
+    
+    deposit  -> entrada de dinheiro
+    purchase -> compra de tokens
+    sale     -> venda de tokens
+    withdraw -> saque
+  */
   final WalletTransactionType type;
 
-  /// Status da movimentação:
-  /// pending = pendente
-  /// completed = concluída
-  /// cancelled = cancelada
-  /// failed = falhou
+  /* 
+    Status atual da movimentação:
+    
+    pending   -> pendente
+    completed -> concluída
+    cancelled -> cancelada
+    failed    -> falhou
+  */
   final WalletTransactionStatus status;
 
-  /// Valor da transação.
-  ///
-  /// Sugestão:
-  /// - depósito: valor positivo
-  /// - venda: valor positivo
-  /// - compra: valor negativo ou valor positivo com type purchase
-  ///
-  /// Para facilitar o histórico visual, eu prefiro salvar compra como negativo.
+  /* 
+    Valor da transação.
+    
+    Sugestão usada no sistema:
+    - depósito = valor positivo
+    - venda = valor positivo
+    - compra = valor negativo
+  */
   final double amount;
 
-  /// Descrição amigável para mostrar na carteira.
-  ///
-  /// Exemplo:
-  /// "Depósito via Pix simulado"
-  /// "Compra de 50 tokens NPA"
-  /// "Venda de 20 tokens NPA"
+  /* 
+    Descrição amigável da movimentação.
+    
+    Exemplos:
+    "Compra de 10 tokens"
+    "Depósito via Pix"
+  */
   final String description;
 
-  /// Método usado na movimentação.
-  ///
-  /// Exemplo:
-  /// "pix_simulado"
-  /// "balcao"
+  /* 
+    Método utilizado na movimentação.
+    
+    Exemplos:
+    "pix_simulado"
+    "balcao"
+  */
   final String method;
 
-  /// Campos opcionais para quando a transação estiver ligada a uma startup/token.
+  /* 
+    Campos opcionais relacionados a startup/token.
+    
+    São usados apenas quando a transação
+    envolve compra ou venda de ativos.
+  */
   final String? startupId;
   final String? startupName;
   final String? tokenSymbol;
   final int? tokenQuantity;
   final double? pricePerToken;
 
+  // Data de criação da transação
   final DateTime createdAt;
 
+  /* Construtor da classe */
   const WalletTransactionModel({
     required this.id,
     required this.userId,
@@ -74,35 +117,56 @@ class WalletTransactionModel {
     this.pricePerToken,
   });
 
+  /* 
+    Converte os dados vindos do Firestore
+    para um objeto WalletTransactionModel.
+  */
   factory WalletTransactionModel.fromFirestore(
     Map<String, dynamic> data,
     String id,
   ) {
     return WalletTransactionModel(
       id: id,
+
+      // Busca o ID do usuário
       userId: data['userId'] ?? '',
+
+      // Converte o texto salvo no banco para enum
       type: WalletTransactionType.values.firstWhere(
         (item) => item.name == data['type'],
         orElse: () => WalletTransactionType.deposit,
       ),
+
+      // Converte o status salvo no banco para enum
       status: WalletTransactionStatus.values.firstWhere(
         (item) => item.name == data['status'],
         orElse: () => WalletTransactionStatus.pending,
       ),
+
+      // Converte valores numéricos para double
       amount: (data['amount'] as num? ?? 0).toDouble(),
+
       description: data['description'] ?? '',
       method: data['method'] ?? '',
+
+      // Dados opcionais relacionados ao token
       startupId: data['startupId'],
       startupName: data['startupName'],
       tokenSymbol: data['tokenSymbol'],
       tokenQuantity: data['tokenQuantity'],
       pricePerToken: (data['pricePerToken'] as num?)?.toDouble(),
+
+      // Converte Timestamp do Firestore para DateTime
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
     );
   }
 
+  /* 
+    Converte o objeto para Map,
+    permitindo salvar no Firestore.
+  */
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -116,10 +180,16 @@ class WalletTransactionModel {
       'tokenSymbol': tokenSymbol,
       'tokenQuantity': tokenQuantity,
       'pricePerToken': pricePerToken,
+
+      // Salva a data no formato Timestamp do Firestore
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 
+  /* 
+    Método utilizado para criar uma cópia
+    do objeto alterando apenas alguns campos.
+  */
   WalletTransactionModel copyWith({
     String? id,
     String? userId,
@@ -152,37 +222,59 @@ class WalletTransactionModel {
     );
   }
 
+  /* 
+    Verifica se a movimentação representa
+    entrada de dinheiro na carteira.
+  */
   bool get isEntrada {
     return type == WalletTransactionType.deposit ||
         type == WalletTransactionType.sale;
   }
 
+  /* 
+    Verifica se a movimentação representa
+    saída de dinheiro da carteira.
+  */
   bool get isSaida {
     return type == WalletTransactionType.purchase ||
         type == WalletTransactionType.withdraw;
   }
 
+  /* 
+    Retorna um texto amigável para o tipo
+    da movimentação.
+  */
   String get typeLabel {
     switch (type) {
       case WalletTransactionType.deposit:
         return 'Depósito';
+
       case WalletTransactionType.purchase:
         return 'Compra';
+
       case WalletTransactionType.sale:
         return 'Venda';
+
       case WalletTransactionType.withdraw:
         return 'Saque';
     }
   }
 
+  /* 
+    Retorna um texto amigável para o status
+    da movimentação.
+  */
   String get statusLabel {
     switch (status) {
       case WalletTransactionStatus.pending:
         return 'Pendente';
+
       case WalletTransactionStatus.completed:
         return 'Concluída';
+
       case WalletTransactionStatus.cancelled:
         return 'Cancelada';
+
       case WalletTransactionStatus.failed:
         return 'Falhou';
     }

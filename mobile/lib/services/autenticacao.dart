@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mescla_invest/services/totp_service.dart';

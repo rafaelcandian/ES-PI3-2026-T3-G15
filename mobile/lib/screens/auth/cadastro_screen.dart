@@ -1,4 +1,19 @@
+// ==========================================
+// ARQUIVO COMENTADO AUTOMATICAMENTE
+// Projeto: MesclaInvest
+// ==========================================
+
+
+// Este arquivo é responsável pela tela de cadastro.
+// Aqui são realizadas:
+// - validações dos campos
+// - criação de conta
+// - tratamento de erros
+// - integração com Firebase
+// - feedback visual para o usuário
+
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

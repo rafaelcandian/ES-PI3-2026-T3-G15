@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'dart:math' as math;
 
@@ -31,6 +32,16 @@ import 'ativo_detalhe_screen.dart';
    Implementa o padrão 'Materialized View' na UI, agregando dados de múltiplas coleções
    (Usuários, Startups, Transações e Histórico de Preços) para fornecer uma visão 
    holística e consolidada da exposição financeira do usuário. */
+/*
+  Tela principal da carteira do usuário.
+
+  Responsável por:
+  - exibir patrimônio total;
+  - mostrar gráfico patrimonial;
+  - listar ativos;
+  - listar movimentações;
+  - permitir aportes financeiros.
+*/
 class CarteiraPage extends StatefulWidget {
   const CarteiraPage({super.key});
 
@@ -38,11 +49,25 @@ class CarteiraPage extends StatefulWidget {
   State<CarteiraPage> createState() => _CarteiraPageState();
 }
 
+/*
+  Estado interno da carteira.
+
+  Controla:
+  - saldo;
+  - ativos;
+  - movimentações;
+  - gráfico;
+  - carregamentos;
+  - privacidade dos valores.
+*/
 class _CarteiraPageState extends State<CarteiraPage> {
+  // Período selecionado no gráfico patrimonial.
   String selectedTimePeriod = '1 mês';
 
   /* Dados do gráfico de evolução patrimonial */
+  // Dados do gráfico patrimonial.
   List<double> _chartData = [];
+  // Pontos detalhados utilizados no gráfico.
   List<Map<String, dynamic>> _chartPoints = [];
   double _chartStartValue = 0.0;
   double _chartEndValue = 0.0;
@@ -51,30 +76,47 @@ class _CarteiraPageState extends State<CarteiraPage> {
   String _chartStartLabel = '';
   String _chartEndLabel = '';
 
+  // Saldo disponível na carteira.
   double _saldo = 0.0;
+  // Lista de ativos possuídos pelo usuário.
   List<AtivoCarteira> _ativos = [];
+  // Histórico de movimentações recentes.
   List<Map<String, dynamic>> _movimentacoes = [];
+  // Controla carregamento da tela.
   bool _loading = true;
+  // Permite ocultar valores financeiros por privacidade.
   bool _ocultarValores = false; /* Implementação de privacidade para o usuário (Sensitive Data Masking) */
 
   @override
+  /*
+    Inicializa carregando os dados da carteira.
+  */
   void initState() {
     super.initState();
+    // Carrega todas as informações da carteira.
     _loadData();
   }
 
   /* Abre a modal de aporte financeiro e recarrega os dados em caso de sucesso. */
+  /*
+    Abre a tela de adicionar saldo.
+  */
   Future<void> _abrirAdicionarFundos() async {
-    final resultado = await Navigator.push(
+    final resultado = await // Navega para a próxima tela.
+      Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const AdicionarFundosScreen()),
     );
 
     if (resultado == true) {
-      await _loadData();
+      await // Carrega todas as informações da carteira.
+    _loadData();
     }
   }
 
+  /*
+    Atualiza o período selecionado do gráfico.
+  */
   Future<void> _trocarPeriodoGrafico(String period) async {
     if (period == selectedTimePeriod) return;
 
@@ -83,13 +125,21 @@ class _CarteiraPageState extends State<CarteiraPage> {
       _loading = true;
     });
 
-    await _loadData();
+    await // Carrega todas as informações da carteira.
+    _loadData();
   }
 
   /* Motor de Agregação de Dados Financeiros.
      Realiza o 'Join' lógico entre o mapa de tokens do usuário e a coleção global de startups.
      A arquitetura prioriza a consistência eventual: dados de preço são buscados em tempo 
      real para garantir que o Valuation da carteira reflita o mercado atual. */
+  /*
+    Método principal responsável por carregar:
+    - saldo;
+    - ativos;
+    - movimentações;
+    - gráfico patrimonial.
+  */
   Future<void> _loadData() async {
     try {
       final carteiraService = CarteiraService();
@@ -102,6 +152,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
         return;
       }
 
+      // Busca saldo atual da carteira.
       final saldo = await carteiraService.getBalance();
 
       if (mounted) {
@@ -110,6 +161,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
         });
       }
 
+      // Busca todos os tokens possuídos pelo usuário.
       final tokensMap = await carteiraService.getTokens();
 
       final List<AtivoCarteira> ativosTemp = [];
@@ -257,6 +309,13 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   /* Processa os pontos de dados para exibir a variação nominal e percentual do período. */
+  /*
+    Calcula resumo do gráfico:
+    - valor inicial;
+    - valor final;
+    - variação absoluta;
+    - variação percentual.
+  */
   Map<String, dynamic> _calcularResumoGrafico({
     required List<Map<String, dynamic>> chartPoints,
     required List<double> chartData,
@@ -305,6 +364,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
      Essencial para contabilidade de investimentos, este método mitiga o impacto de 
      múltiplas compras em diferentes níveis de preço, fornecendo o 'Break-even Point' 
      real para o investidor (Total Investido / Total de Tokens). */
+  /*
+    Calcula o preço médio ponderado do ativo.
+
+    Fórmula:
+    total investido / total de tokens.
+  */
   Future<double> _calcularPrecoMedio({
     required FirebaseFirestore firestore,
     required String uid,
@@ -391,6 +456,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return totalInvestido / totalTokens;
   }
 
+  /*
+    Busca ofertas abertas do ativo no book de ordens.
+  */
   Future<List<Oferta>> _buscarOfertasDoAtivo(AtivoCarteira ativo) async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -430,12 +498,16 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
   }
 
+  /*
+    Abre tela detalhada do ativo selecionado.
+  */
   Future<void> _abrirDetalheAtivo(AtivoCarteira ativo) async {
     try {
       final ofertas = await _buscarOfertasDoAtivo(ativo);
 
       if (!mounted) return;
 
+      // Navega para a próxima tela.
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -454,6 +526,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
   }
 
+  /*
+    Gera ticker/símbolo baseado no nome da startup.
+  */
   static String _gerarSimbolo(String nome) {
     final palavras = nome
         .replaceAll(RegExp(r'[^a-zA-ZÀ-ÿ0-9 ]'), '')
@@ -472,6 +547,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return palavras.take(3).map((p) => p[0]).join().toUpperCase();
   }
 
+  /*
+    Retorna patrimônio total:
+    saldo + valor de todos os ativos.
+  */
   double get patrimonioTotal {
     final totalAtivos = _ativos.fold<double>(
       0,
@@ -481,10 +560,16 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return _saldo + totalAtivos;
   }
 
+  /*
+    Soma total de tokens do usuário.
+  */
   int get tokensTotais {
     return _ativos.fold<int>(0, (total, ativo) => total + ativo.tokens);
   }
 
+  /*
+    Calcula média de variação dos ativos.
+  */
   double get variacaoMedia {
     if (_ativos.isEmpty) return 0;
 
@@ -496,8 +581,12 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return soma / _ativos.length;
   }
 
+  // Retorna saldo disponível.
   double get saldoDisponivel => _saldo;
 
+  /*
+    Padroniza os tipos de movimentação.
+  */
   String _normalizarTipoMovimentacao(Map<String, dynamic> mov) {
     final type = (mov['type'] ??
         mov['operationType'] ??
@@ -530,6 +619,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return 'movimentacao';
   }
 
+  /*
+    Recupera timestamp da movimentação.
+  */
   Timestamp? _timestampMovimentacao(Map<String, dynamic> mov) {
     final valor = mov['createdAt'] ??
         mov['createAt'] ??
@@ -539,6 +631,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return valor is Timestamp ? valor : null;
   }
 
+  /*
+    Formata data da movimentação para exibição.
+  */
   String _dataMovimentacao(Map<String, dynamic> mov) {
     final timestamp = _timestampMovimentacao(mov);
 
@@ -562,6 +657,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return '$dia/$mes às $hora:$minuto';
   }
 
+  /*
+    Define título da movimentação.
+  */
   String _tituloMovimentacao(Map<String, dynamic> mov) {
     final tipo = _normalizarTipoMovimentacao(mov);
 
@@ -577,6 +675,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
   }
 
+  /*
+    Define descrição detalhada da movimentação.
+  */
   String _descricaoMovimentacao(Map<String, dynamic> mov) {
     final tipo = _normalizarTipoMovimentacao(mov);
     final ticker = (mov['ticker'] ?? mov['simbolo'] ?? '').toString();
@@ -613,6 +714,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return partes.join(' • ');
   }
 
+  /*
+    Formata valor monetário da movimentação.
+  */
   String _valorMovimentacao(Map<String, dynamic> mov) {
     final tipo = _normalizarTipoMovimentacao(mov);
     final amount = (mov['amount'] as num?)?.toDouble();
@@ -636,6 +740,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     return '${entrada ? '+' : '-'} R\$ ${valor.toStringAsFixed(2)}';
   }
 
+  /*
+    Retorna ícone correspondente ao tipo da movimentação.
+  */
   IconData _iconeMovimentacao(Map<String, dynamic> mov) {
     final tipo = _normalizarTipoMovimentacao(mov);
 
@@ -651,6 +758,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
   }
 
+  /*
+    Retorna cor correspondente ao tipo da movimentação.
+  */
   Color _corMovimentacao(Map<String, dynamic> mov) {
     final tipo = _normalizarTipoMovimentacao(mov);
 
@@ -667,6 +777,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -820,6 +933,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 }
 
+/*
+  Card principal do patrimônio do usuário.
+*/
 class _PatrimonioCard extends StatelessWidget {
   final double patrimonioTotal;
   final double saldoDisponivel;
@@ -840,6 +956,9 @@ class _PatrimonioCard extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     final positiva = variacaoMedia >= 0;
 
@@ -940,6 +1059,9 @@ class _PatrimonioCard extends StatelessWidget {
   }
 }
 
+/*
+  Widget reutilizável para resumo financeiro.
+*/
 class _ResumoItem extends StatelessWidget {
   final String label;
   final String value;
@@ -950,6 +1072,9 @@ class _ResumoItem extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
@@ -983,6 +1108,9 @@ class _ResumoItem extends StatelessWidget {
   }
 }
 
+/*
+  Card visual de cada ativo da carteira.
+*/
 class _AtivoCard extends StatelessWidget {
   final AtivoCarteira ativo;
   final VoidCallback onTap;
@@ -993,6 +1121,9 @@ class _AtivoCard extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
@@ -1069,6 +1200,9 @@ class _AtivoCard extends StatelessWidget {
   }
 }
 
+/*
+  Tile reutilizável de movimentação financeira.
+*/
 class _MovimentacaoTile extends StatelessWidget {
   final String titulo;
   final String descricao;
@@ -1085,6 +1219,9 @@ class _MovimentacaoTile extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),

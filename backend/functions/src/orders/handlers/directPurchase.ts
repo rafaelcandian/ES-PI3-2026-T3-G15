@@ -1,6 +1,7 @@
 // Autor: Gabriel Benevides Bosso
 // RA: 24013653
 // Descrição: Handler para processar a compra direta de tokens de uma startup.
+/* Guilherme Henrique Moreira - 25006702 */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { requireAuthenticatedUser } from "../../shared/auth";

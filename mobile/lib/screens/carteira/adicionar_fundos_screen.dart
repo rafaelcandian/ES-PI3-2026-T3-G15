@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,12 @@ import '../../themes/app_theme.dart';
    Interface para simulação de aporte financeiro via Pix. Implementa a conversão de tipos
    locais para a infraestrutura de Cloud Functions, garantindo que o saldo seja atualizado
    de forma segura e auditável no backend. */
+/*
+  Tela responsável por adicionar saldo à carteira.
+
+  Simula um aporte via Pix para utilização
+  no ambiente de testes da aplicação.
+*/
 class AdicionarFundosScreen extends StatefulWidget {
   const AdicionarFundosScreen({super.key});
 
@@ -24,23 +31,44 @@ class AdicionarFundosScreen extends StatefulWidget {
   State<AdicionarFundosScreen> createState() => _AdicionarFundosScreenState();
 }
 
+/*
+  Estado interno da tela de aporte.
+
+  Controla:
+  - valor digitado;
+  - validação;
+  - loading;
+  - integração com carteira.
+*/
 class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
+  // Controller do campo de valor.
   final TextEditingController _valorController = TextEditingController();
 
+  // Valor digitado pelo usuário.
   double _valor = 0.0;
+  // Controla estado de carregamento da tela.
   bool _loading = false;
 
+  // Valor mínimo permitido para aporte.
   static const double _valorMinimo = 10.0;
+  // Valor máximo permitido para aporte.
   static const double _valorMaximo = 100000000.0;
 
+  // Valores rápidos exibidos em chips.
   final List<double> _valoresRapidos = [50, 100, 250, 500];
 
+  // Taxa do aporte. Atualmente zerada.
   double get _taxa => 0.0;
 
+  // Valor final que será creditado na carteira.
   double get _totalCreditado => _valor - _taxa;
 
+  // Verifica se o valor digitado está dentro do limite permitido.
   bool get _valorValido => _valor >= _valorMinimo && _valor <= _valorMaximo;
 
+  /*
+    Formata valores para moeda brasileira.
+  */
   String _formatarMoeda(double valor) {
     final valorAbsoluto = valor.abs().toStringAsFixed(2);
     final partes = valorAbsoluto.split('.');
@@ -56,6 +84,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     return 'R\$ $sinal$reais,$centavos';
   }
 
+  /*
+    Formata valor para exibição no campo de texto.
+  */
   String _formatarValorInput(double valor) {
     return _formatarMoeda(valor).replaceFirst('R\$ ', '');
   }
@@ -64,6 +95,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
      Converte entradas textuais formatadas (mascaradas) para o domínio numérico (Double).
      Lida com a localização brasileira (vírgula decimal) para evitar erros de casting 
      durante a persistência no Firestore. */
+  /*
+    Converte texto digitado em valor numérico.
+  */
   double _parseValorDigitado(String value) {
     var texto = value.replaceAll('R\$', '').replaceAll(' ', '').trim();
 
@@ -75,11 +109,17 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   }
 
   @override
+  /*
+    Libera memória do controller ao sair da tela.
+  */
   void dispose() {
     _valorController.dispose();
     super.dispose();
   }
 
+  /*
+    Atualiza o valor digitado em tempo real.
+  */
   void _atualizarValor(String value) {
     final valorDigitado = _parseValorDigitado(value);
 
@@ -88,6 +128,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     });
   }
 
+  /*
+    Seleciona rapidamente um valor pré-definido.
+  */
   void _selecionarValorRapido(double valor) {
     HapticFeedback.selectionClick();
 
@@ -101,6 +144,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   }
 
   /* Salva a transação de depósito na subcoleção do usuário para histórico. */
+  /*
+    Registra o aporte no histórico da carteira.
+  */
   Future<void> _registrarAporteNoHistorico() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -130,7 +176,17 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
      2. Validação Pre-flight de limites operacionais (R\$ 10,00 a R\$ 100M).
      3. Chamada RPC via Cloud Functions para o serviço 'loadWallet'.
      4. Registro de auditoria na subcoleção 'transacoesCarteira'. */
+  /*
+    Processa o aporte financeiro.
+
+    Etapas:
+    - valida valor;
+    - chama serviço da carteira;
+    - registra transação;
+    - retorna para tela anterior.
+  */
   Future<void> _confirmarAporte() async {
+    // Fecha o teclado antes do processamento.
     FocusScope.of(context).unfocus();
 
     if (_valor <= 0) {
@@ -157,7 +213,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     });
 
     try {
+      // Adiciona saldo na carteira simulada.
       await CarteiraService().addBalancePixSimulado(_totalCreditado);
+      // Salva transação no histórico do usuário.
       await _registrarAporteNoHistorico();
 
       if (!mounted) return;
@@ -168,6 +226,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
       if (!mounted) return;
 
+      // Retorna para tela anterior após sucesso.
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -180,6 +239,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     }
   }
 
+  /*
+    Exibe snackbar de sucesso.
+  */
   void _showSuccessSnackBar(String message) {
     AppSnackBar.show(
       context,
@@ -189,6 +251,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Exibe snackbar de erro.
+  */
   void _showErrorSnackBar(String message) {
     AppSnackBar.show(
       context,
@@ -199,6 +264,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   }
 
   @override
+  /*
+    Método principal responsável por construir a interface.
+  */
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.fundo,
@@ -240,6 +308,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Barra superior com botão de voltar.
+  */
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
@@ -261,6 +332,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Cabeçalho principal da tela.
+  */
   Widget _buildHeader() {
     return const PageHeader(
       title: 'Adicionar saldo à carteira',
@@ -269,6 +343,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Card com resumo da carteira.
+  */
   Widget _buildResumoCarteira() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -324,6 +401,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Card responsável pela entrada do valor.
+  */
   Widget _buildValorCard() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -420,6 +500,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Card exibindo método de pagamento.
+  */
   Widget _buildMetodoCard() {
     return _InfoCard(
       title: 'Método de pagamento',
@@ -486,6 +569,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Exibe resumo financeiro do aporte.
+  */
   Widget _buildResumoFinanceiro() {
     return _InfoCard(
       title: 'Resumo le aporte',
@@ -508,6 +594,9 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     );
   }
 
+  /*
+    Botão responsável por confirmar o aporte.
+  */
   Widget _buildConfirmButton() {
     final disabled = _loading || !_valorValido;
 
@@ -521,10 +610,16 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
 // ===================== BACKGROUND =====================
 
+/*
+  Fundo visual com brilhos e efeitos premium.
+*/
 class _AtmosphericBackground extends StatelessWidget {
   const _AtmosphericBackground();
 
   @override
+  /*
+    Método principal responsável por construir a interface.
+  */
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: Stack(
@@ -588,6 +683,9 @@ class _AtmosphericBackground extends StatelessWidget {
 
 // ===================== CARDS =====================
 
+/*
+  Card reutilizável para informações da tela.
+*/
 class _InfoCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -595,6 +693,9 @@ class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.title, required this.children});
 
   @override
+  /*
+    Método principal responsável por construir a interface.
+  */
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -619,6 +720,9 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
+/*
+  Linha reutilizável para exibição de dados financeiros.
+*/
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -631,6 +735,9 @@ class _InfoRow extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável por construir a interface.
+  */
   Widget build(BuildContext context) {
     return Container(
       decoration: destaque
@@ -676,6 +783,9 @@ class _InfoRow extends StatelessWidget {
 
 // ===================== CHIPS =====================
 
+/*
+  Chip reutilizável de valor rápido.
+*/
 class _QuickValueChip extends StatelessWidget {
   final String label;
   final bool ativo;
@@ -688,6 +798,9 @@ class _QuickValueChip extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável por construir a interface.
+  */
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
@@ -720,10 +833,16 @@ class _QuickValueChip extends StatelessWidget {
 }
 
 /* Bloqueia a interação durante o processamento do aporte simulado. */
+/*
+  Overlay exibido durante processamento do aporte.
+*/
 class _LoadingOverlay extends StatelessWidget {
   const _LoadingOverlay();
 
   @override
+  /*
+    Método principal responsável por construir a interface.
+  */
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.fundo.withValues(alpha: 0.72),

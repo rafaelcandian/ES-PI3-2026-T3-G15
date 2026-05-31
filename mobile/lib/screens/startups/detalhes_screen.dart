@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';

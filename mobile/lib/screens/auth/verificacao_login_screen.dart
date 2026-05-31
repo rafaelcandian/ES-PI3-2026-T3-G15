@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,12 @@ import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 /* Tela responsável pela verificação do TOTP (Time-based One-Time Password).
    Esta tela implementa a camada extra de segurança RFC 6238, exigindo que o usuário 
    forneça um código gerado por um dispositivo confiável após validar e-mail e senha. */
+/*
+  Tela responsável pela autenticação em duas etapas (2FA).
+
+  O usuário precisa informar o código gerado
+  pelo aplicativo autenticador para concluir o login.
+*/
 class VerificacaoLoginTela extends StatefulWidget {
   final String email;
   final String senha;
@@ -38,35 +45,65 @@ class VerificacaoLoginTela extends StatefulWidget {
   State<VerificacaoLoginTela> createState() => _VerificacaoLoginTelaState();
 }
 
+/*
+  Estado interno da tela de verificação.
+
+  Controla:
+  - validação do código;
+  - geração de nova chave;
+  - loading;
+  - feedback visual.
+*/
 class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
+  // Chave usada para validar o formulário.
   final _formKey = GlobalKey<FormState>();
+  // Controller do campo de código TOTP.
   final _codigoController = TextEditingController();
+  // Serviço responsável pela autenticação.
   final _auth = AuthService();
 
+  // Chave secreta utilizada no TOTP.
   String? _secret;
+  // URI usada para integração com apps autenticadores.
   String? _otpAuthUri;
 
+  // Controla loading da validação do código.
   bool _isLoading = false;
+  // Controla geração de nova chave de autenticação.
   bool _isGenerating = false;
+  // Ativa validação automática dos campos.
   bool _autoValidate = false;
 
+  // Mensagem de feedback exibida ao usuário.
   String? _feedbackMessage;
+  // Define se o feedback é erro ou sucesso.
   bool _feedbackIsError = false;
 
   @override
+  /*
+    Inicializa dados recebidos da tela anterior.
+  */
   void initState() {
     super.initState();
+    // Recebe chave secreta da tela anterior.
     _secret = widget.secret;
+    // Recebe URI de autenticação.
     _otpAuthUri = widget.otpAuthUri;
   }
 
   @override
+  /*
+    Libera memória do controller ao sair da tela.
+  */
   void dispose() {
     _codigoController.dispose();
     super.dispose();
   }
 
   @override
+  /*
+    Método responsável por construir toda a interface.
+  */
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -118,6 +155,13 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /*
+    Card principal contendo:
+    - instruções;
+    - chave secreta;
+    - campo do código;
+    - botão de validação.
+  */
   Widget _buildVerificationCard() {
     return AuthCard(
       child: Form(
@@ -193,6 +237,10 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
   }
 
   /* Exibe a chave secreta para configuração inicial do 2FA. */
+  /*
+    Exibe a chave secreta para configuração manual
+    no aplicativo autenticador.
+  */
   Widget _buildSecretBox() {
     final secret = _secret ?? '';
 
@@ -264,6 +312,14 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /*
+    Caixa visual de feedback.
+
+    Exibe:
+    - erros;
+    - sucesso;
+    - confirmações.
+  */
   Widget _buildFeedbackBox({
     required String message,
     required bool isError,
@@ -319,6 +375,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /*
+    Valida o código TOTP digitado pelo usuário.
+  */
   String? _validarCodigo(String? value) {
     final code = value?.trim() ?? '';
 
@@ -333,6 +392,13 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     return null;
   }
 
+  /*
+    Links inferiores da tela.
+
+    Permite:
+    - gerar nova chave;
+    - voltar ao login.
+  */
   Widget _buildBottomLink() {
     return Column(
       children: [
@@ -384,7 +450,16 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
   }
 
   /* Valida o código TOTP gerado pelo app autenticador do usuário. */
+  /*
+    Verifica o código digitado pelo usuário.
+
+    Etapas:
+    - valida formulário;
+    - chama autenticação;
+    - libera acesso ao sistema.
+  */
   Future<void> _verifyCode() async {
+    // Fecha o teclado antes de validar o código.
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -401,6 +476,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
       return;
     }
 
+    // Vibração leve de feedback ao usuário.
     HapticFeedback.mediumImpact();
 
     setState(() => _isLoading = true);
@@ -441,6 +517,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
   }
 
   /* Permite redefinir a chave de segurança caso necessário. */
+  /*
+    Gera uma nova chave secreta para o 2FA.
+  */
   Future<void> _generateNewSecret() async {
     setState(() {
       _isGenerating = true;
@@ -477,6 +556,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     }
   }
 
+  /*
+    Exibe feedback visual e snackbar.
+  */
   void _showFeedback(String message, {required bool isError}) {
     setState(() {
       _feedbackMessage = message;
@@ -492,6 +574,9 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /*
+    Converte erros técnicos em mensagens amigáveis.
+  */
   String _formatarErroVerificacao(String error) {
     final mensagem = error.toLowerCase().trim();
 
@@ -541,7 +626,11 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
   }
 
   /* Facilita a transferência da chave para o app autenticador. */
+  /*
+    Copia a chave secreta para a área de transferência.
+  */
   void _copiarChave(String secret) {
+    // Copia a chave para a área de transferência.
     Clipboard.setData(ClipboardData(text: secret));
 
     AppSnackBar.show(
@@ -552,11 +641,17 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /*
+    Retorna para a tela de login.
+  */
   void _voltarParaLogin() {
     Navigator.pop(context);
   }
 }
 
+/*
+  Botão reutilizável de voltar.
+*/
 class _BackButton extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -565,6 +660,9 @@ class _BackButton extends StatelessWidget {
   });
 
   @override
+  /*
+    Método responsável por construir toda a interface.
+  */
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, top: 4),

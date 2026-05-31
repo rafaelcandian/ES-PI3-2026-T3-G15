@@ -11,6 +11,16 @@ import '../../themes/app_theme.dart';
 /* Ponto de Entrada e Bootstrapping da Aplicação.
    Responsável pela inicialização de serviços globais, gestão de persistência de sessão 
    e transição de navegação baseada no estado de autenticação (Auth-state Routing). */
+/*
+  Tela de Splash do aplicativo.
+
+  É a primeira tela exibida ao abrir o app.
+
+  Responsável por:
+  - mostrar animação inicial;
+  - verificar sessão do usuário;
+  - redirecionar para login ou catálogo.
+*/
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -18,19 +28,39 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+/*
+  Estado interno da SplashScreen.
+
+  Controla:
+  - animações;
+  - efeitos visuais;
+  - verificação de login automático.
+*/
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
+  // Controller da animação principal de entrada.
   late final AnimationController _introController;
+  // Controller da animação do loader circular.
   late final AnimationController _loaderController;
 
+  // Animação de fade da tela.
   late final Animation<double> _fadeAnimation;
+  // Animação de escala do conteúdo.
   late final Animation<double> _scaleAnimation;
+  // Animação de movimentação vertical.
   late final Animation<Offset> _slideAnimation;
 
   @override
+  /*
+    Inicializa:
+    - animações;
+    - estilo do sistema;
+    - verificação do usuário.
+  */
   void initState() {
     super.initState();
 
+    // Define cor da barra superior e navegação.
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: AppColors.fundo,
@@ -40,11 +70,13 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
+    // Controla animação de entrada da splash.
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 950),
     );
 
+    // Controla rotação contínua do loader.
     _loaderController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -64,7 +96,9 @@ class _SplashScreenState extends State<SplashScreen>
           CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
         );
 
+    // Inicia animação principal.
     _introController.forward();
+    // Verifica se existe usuário logado.
     _checkUser();
   }
 
@@ -72,13 +106,25 @@ class _SplashScreenState extends State<SplashScreen>
      Aplica o padrão 'Automatic Login': verifica via SDK do Firebase a presença de 
      um JWT válido no Secure Storage local. Se presente, direciona para o catálogo 
      (Home); caso contrário, redireciona para o fluxo de autenticação primário. */
+  /*
+    Verifica autenticação do usuário.
+
+    Se existir usuário logado:
+    -> vai para catálogo.
+
+    Caso contrário:
+    -> vai para login.
+  */
   Future<void> _checkUser() async {
+    // Aguarda alguns segundos para exibir a splash.
     await Future.delayed(const Duration(milliseconds: 2800));
 
     if (!mounted) return;
 
+    // Obtém usuário atualmente autenticado.
     final user = FirebaseAuth.instance.currentUser;
 
+    // Substitui a splash pela próxima tela.
     Navigator.pushReplacementNamed(
       context,
       user != null ? '/catalogo' : '/login',
@@ -86,6 +132,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
+  /*
+    Libera os controllers da memória.
+  */
   void dispose() {
     _introController.dispose();
     _loaderController.dispose();
@@ -93,6 +142,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   @override
+  /*
+    Constrói interface visual do widget.
+  */
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.fundoEscuro,
@@ -150,8 +202,14 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
+/*
+  Widget responsável pelo brilho e logo principal.
+*/
 class _LogoGlow extends StatelessWidget {
   @override
+  /*
+    Constrói interface visual do widget.
+  */
   Widget build(BuildContext context) {
     return Stack(
       alignment: Alignment.center,
@@ -188,12 +246,19 @@ class _LogoGlow extends StatelessWidget {
 }
 
 /* Widget de carregamento estilizado seguindo a identidade visual premium. */
+/*
+  Loader circular animado personalizado.
+*/
 class PremiumCircleLoader extends StatelessWidget {
+  // Animação utilizada para rotacionar o loader.
   final Animation<double> animation;
 
   const PremiumCircleLoader({super.key, required this.animation});
 
   @override
+  /*
+    Constrói interface visual do widget.
+  */
   Widget build(BuildContext context) {
     return SizedBox(
       width: 76,
@@ -214,10 +279,19 @@ class PremiumCircleLoader extends StatelessWidget {
 /* Motor de Pintura Customizado para o Loader Premium.
    Implementa animações de varredura (SweepGradient) e arcos dinâmicos via CustomPainter,
    minimizando o custo de CPU em comparação com bibliotecas de animação baseadas em imagem. */
+/*
+  Classe responsável por desenhar manualmente
+  o loader circular utilizando Canvas.
+*/
 class _PremiumCirclePainter extends CustomPainter {
   @override
+  /*
+    Desenha os elementos gráficos do loader.
+  */
   void paint(Canvas canvas, Size size) {
+    // Centro do círculo.
     final center = size.center(Offset.zero);
+    // Raio do loader.
     final radius = size.width / 2 - 6;
 
     final basePaint = Paint()
@@ -226,6 +300,7 @@ class _PremiumCirclePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
+    // Desenha círculo base.
     canvas.drawCircle(center, radius, basePaint);
 
     final glowPaint = Paint()
@@ -234,6 +309,7 @@ class _PremiumCirclePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
+    // Desenha arco luminoso animado.
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -math.pi / 2,
@@ -259,6 +335,7 @@ class _PremiumCirclePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
+    // Desenha arco luminoso animado.
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -math.pi / 2,
@@ -279,10 +356,18 @@ class _PremiumCirclePainter extends CustomPainter {
 }
 
 /* Elementos visuais de fundo para compor a estética da marca. */
+/*
+  Fundo visual da splash screen.
+
+  Responsável pelos brilhos e efeitos da tela.
+*/
 class _SplashBackground extends StatelessWidget {
   const _SplashBackground();
 
   @override
+  /*
+    Constrói interface visual do widget.
+  */
   Widget build(BuildContext context) {
     return Stack(
       children: [
@@ -323,9 +408,15 @@ class _SplashBackground extends StatelessWidget {
   }
 }
 
+/*
+  Widget reutilizável de círculo luminoso.
+*/
 class _GlowCircle extends StatelessWidget {
+  // Tamanho do brilho.
   final double size;
+  // Cor do brilho.
   final Color color;
+  // Intensidade da transparência.
   final double opacity;
 
   const _GlowCircle({
@@ -335,6 +426,9 @@ class _GlowCircle extends StatelessWidget {
   });
 
   @override
+  /*
+    Constrói interface visual do widget.
+  */
   Widget build(BuildContext context) {
     return Container(
       width: size,

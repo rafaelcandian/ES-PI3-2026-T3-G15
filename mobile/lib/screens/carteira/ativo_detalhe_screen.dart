@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,6 +24,15 @@ import '../ordens/ordem_exe_screen.dart';
    Implementa a visão de profundidade (Deep Dive) para um ativo da carteira.
    Diferencia-se da visão geral por reconstruir o histórico de performance 
    especificamente para a startup selecionada, permitindo ações de reinvestimento ou desinvestimento. */
+/*
+  Tela de detalhes de um ativo específico da carteira.
+
+  Responsável por:
+  - mostrar métricas do ativo;
+  - reconstruir histórico de performance;
+  - abrir compra e venda;
+  - exibir gráfico do ativo.
+*/
 class AtivoDetalheScreen extends StatefulWidget {
   final AtivoCarteira ativo;
   final List<Oferta> ofertasDisponiveis;
@@ -37,31 +47,67 @@ class AtivoDetalheScreen extends StatefulWidget {
   State<AtivoDetalheScreen> createState() => _AtivoDetalheScreenState();
 }
 
+/*
+  Estado interno da tela de detalhes do ativo.
+
+  Controla:
+  - gráfico;
+  - carregamento;
+  - métricas;
+  - dados da startup;
+  - navegação para ordens.
+*/
 class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
+  // Período selecionado no gráfico.
   String selectedTimePeriod = '1 mês';
 
+  // Dados utilizados no gráfico do ativo.
   List<double> _assetChartData = [];
+  // Valor inicial do período selecionado.
   double _assetStartValue = 0.0;
+  // Valor final do período selecionado.
   double _assetEndValue = 0.0;
+  // Resultado absoluto do ativo no período.
   double _assetVariation = 0.0;
+  // Resultado percentual do ativo no período.
   double _assetVariationPercent = 0.0;
   String _assetStartLabel = '';
   String _assetEndLabel = '';
+  // Controla carregamento do gráfico.
   bool _loadingAssetChart = true;
 
+  // Quantidade de tokens disponíveis para compra direta.
   int _tokensDisponiveis = 0;
+  // Valor atual do token da startup.
   double _tokenValue = 0.0;
+  // Valor mínimo permitido para investimento.
   double _investimentoMinimo = 0.0;
+  // Controla carregamento das informações da startup.
   bool _carregandoDadosStartup = true;
 
   @override
+  /*
+    Inicializa:
+    - gráfico do ativo;
+    - dados da startup.
+  */
   void initState() {
     super.initState();
+    // Carrega gráfico histórico do ativo.
     _loadAssetChart();
+    // Busca dados atuais da startup.
     _carregarDadosStartup();
   }
 
   /* Recupera informações atualizadas da startup no Firestore para as ações de trade. */
+  /*
+    Busca dados atualizados da startup no Firestore.
+
+    Utilizado para:
+    - compra direta;
+    - tokens disponíveis;
+    - investimento mínimo.
+  */
   Future<void> _carregarDadosStartup() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -95,6 +141,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     }
   }
 
+  /*
+    Calcula a data inicial baseada no período selecionado.
+  */
   DateTime _periodStartDate(String period) {
     final now = DateTime.now();
 
@@ -116,6 +165,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     }
   }
 
+  /*
+    Formata datas para exibição no gráfico.
+  */
   String _formatDateLabel(DateTime date, String period) {
     final hour = date.hour.toString().padLeft(2, '0');
     final minute = date.minute.toString().padLeft(2, '0');
@@ -127,6 +179,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     return '$day/$month';
   }
 
+  /*
+    Verifica se a transação representa uma compra.
+  */
   bool _isCompraAtivo(Map<String, dynamic> data) {
     final type =
     (data['type'] ??
@@ -143,6 +198,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
         type.contains('startup_investment');
   }
 
+  /*
+    Verifica se a transação representa uma venda.
+  */
   bool _isVendaAtivo(Map<String, dynamic> data) {
     final type =
     (data['type'] ??
@@ -158,6 +216,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
         type.contains('venda');
   }
 
+  /*
+    Recupera a data da transação independente do formato salvo.
+  */
   DateTime? _dataTransacao(Map<String, dynamic> data) {
     final raw = data['createdAt'] ?? data['createAt'] ?? data['created_at'];
 
@@ -173,6 +234,15 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
      este método reconstrói a curva de patrimônio do ativo retroagindo nas transações 
      da subcoleção 'transacoesCarteira'. Aplica lógica de soma/subtração de tokens 
      sobre o preço histórico para gerar os pontos do gráfico. */
+  /*
+    Reconstrói o gráfico do ativo baseado no histórico
+    de transações do usuário.
+
+    Calcula:
+    - evolução patrimonial;
+    - resultado;
+    - percentual de valorização.
+  */
   Future<void> _loadAssetChart() async {
     if (!mounted) return;
 
@@ -325,6 +395,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     }
   }
 
+  /*
+    Atualiza o período selecionado do gráfico.
+  */
   void _trocarPeriodoAtivo(String period) {
     if (period == selectedTimePeriod) return;
 
@@ -332,12 +405,22 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       selectedTimePeriod = period;
     });
 
+    // Carrega gráfico histórico do ativo.
     _loadAssetChart();
   }
 
   /* Motor de Seleção de Liquidez (Liquidity Finder).
      Busca no Livro de Ofertas (Order Book) a melhor contraparte para a execução da ordem.
      Aplica o critério de 'Melhor Preço de Execução' para proteger o patrimônio do usuário. */
+  /*
+    Seleciona a melhor oferta disponível no book.
+
+    Compra:
+    -> menor preço de venda.
+
+    Venda:
+    -> maior preço de compra.
+  */
   Oferta? _selecionarOfertaParaModo(ModoNegociacao modo) {
     final tipoNecessario = modo == ModoNegociacao.compra
         ? TipoOferta.venda
@@ -362,6 +445,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     return ofertasValidas.first;
   }
 
+  /*
+    Abre a tela de execução de ordem.
+  */
   void _abrirOrdem(BuildContext context, ModoNegociacao modo) {
     final oferta = _selecionarOfertaParaModo(modo);
 
@@ -370,11 +456,13 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
           ? 'Nenhuma oferta de venda disponível para compra.'
           : 'Nenhuma oferta de compra disponível para venda.';
 
+      // Exibe erro caso não existam ofertas disponíveis.
       AppSnackBar.show(context, message: mensagem, error: true);
 
       return;
     }
 
+    // Navega para a tela de execução da ordem.
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -389,6 +477,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 
   /* Direciona para a compra de tokens emitidos diretamente pela startup (mercado primário). */
+  /*
+    Realiza compra direta de tokens da startup.
+  */
   void _abrirCompraDireta(BuildContext context) {
     if (_tokensDisponiveis <= 0) {
       AppSnackBar.show(context, message: 'Não há tokens disponíveis para esta startup.', error: true);
@@ -410,6 +501,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
       minBuyPrice: _tokenValue > 0 ? _tokenValue : widget.ativo.valorToken,
     );
 
+    // Navega para a tela de execução da ordem.
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -426,6 +518,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 
   @override
+  /*
+    Método principal responsável por construir toda a interface.
+  */
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.fundo,
@@ -568,12 +663,24 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   }
 }
 
+/*
+  Card principal do ativo.
+
+  Exibe:
+  - nome;
+  - ticker;
+  - valor total;
+  - quantidade em carteira.
+*/
 class _AtivoHeroCard extends StatelessWidget {
   final AtivoCarteira ativo;
 
   const _AtivoHeroCard({required this.ativo});
 
   @override
+  /*
+    Método principal responsável por construir toda a interface.
+  */
   Widget build(BuildContext context) {
     final negative = ativo.variacao < 0;
 
@@ -626,6 +733,9 @@ class _AtivoHeroCard extends StatelessWidget {
   }
 }
 
+/*
+  Card contendo métricas detalhadas do ativo.
+*/
 class _DetalheMetricasCard extends StatelessWidget {
   final AtivoCarteira ativo;
   final double variacaoPeriodo;
@@ -638,6 +748,9 @@ class _DetalheMetricasCard extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável por construir toda a interface.
+  */
   Widget build(BuildContext context) {
     final resultadoPositivo = resultadoPeriodo >= 0;
 
@@ -703,6 +816,9 @@ class _DetalheMetricasCard extends StatelessWidget {
   }
 }
 
+/*
+  Item reutilizável de métrica.
+*/
 class _DetailMetricItem extends StatelessWidget {
   final String label;
   final String value;
@@ -713,6 +829,9 @@ class _DetailMetricItem extends StatelessWidget {
   });
 
   @override
+  /*
+    Método principal responsável por construir toda a interface.
+  */
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),

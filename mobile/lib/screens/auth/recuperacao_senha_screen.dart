@@ -1,4 +1,5 @@
 /* Victória Nobre - 25016398 */
+/* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,13 @@ import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 /* Módulo de Recuperação de Acesso (Self-service Password Reset).
    Implementa a interface para o fluxo de redefinição de credenciais, seguindo 
    práticas de segurança que evitam a enumeração de usuários (User Enumeration Defense). */
+/*
+  Tela responsável pela recuperação de senha.
+
+  O usuário informa o e-mail cadastrado
+  e recebe um link de redefinição enviado
+  pelo Firebase Authentication.
+*/
 class RecuperacaoSenhaTela extends StatefulWidget {
   const RecuperacaoSenhaTela({super.key});
 
@@ -25,26 +33,48 @@ class RecuperacaoSenhaTela extends StatefulWidget {
   State<RecuperacaoSenhaTela> createState() => _RecuperacaoSenhaTelaState();
 }
 
+/*
+  Estado interno da tela de recuperação.
+
+  Controla:
+  - formulário;
+  - loading;
+  - feedback visual;
+  - envio do e-mail.
+*/
 class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
+  // Chave usada para validar o formulário.
   final _formKey = GlobalKey<FormState>();
+  // Controller do campo de e-mail.
   final _emailController = TextEditingController();
 
+  // Serviço responsável pela autenticação.
   final AuthService _auth = AuthService();
 
+  // Controla estado de carregamento.
   bool _isLoading = false;
+  // Ativa validação automática dos campos.
   bool _autoValidate = false;
 
   /* Armazena a mensagem de retorno para exibição direta no card. */
+  // Mensagem de feedback exibida ao usuário.
   String? _feedbackMessage;
+  // Define se o feedback é erro ou sucesso.
   bool _feedbackIsError = false;
 
   @override
+  /*
+    Libera memória do controller ao sair da tela.
+  */
   void dispose() {
     _emailController.dispose();
     super.dispose();
   }
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -96,6 +126,12 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     );
   }
 
+  /*
+    Card principal contendo:
+    - explicação;
+    - campo de e-mail;
+    - botão de envio.
+  */
   Widget _buildRecoveryCard() {
     return AuthCard(
       child: Form(
@@ -147,6 +183,14 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   }
 
   /* Widget customizado para feedback de operação dentro do fluxo de auth. */
+  /*
+    Caixa visual de feedback.
+
+    Exibe mensagens de:
+    - sucesso;
+    - erro;
+    - recuperação enviada.
+  */
   Widget _buildFeedbackBox({
     required String message,
     required bool isError,
@@ -206,6 +250,9 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     );
   }
 
+  /*
+    Valida o e-mail digitado pelo usuário.
+  */
   String? _validarEmail(String? value) {
     final email = value?.trim() ?? '';
 
@@ -220,6 +267,9 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     return null;
   }
 
+  /*
+    Link para retornar à tela de login.
+  */
   Widget _buildBottomLink() {
     return GestureDetector(
       onTap: _isLoading ? null : () => Navigator.pop(context),
@@ -252,7 +302,16 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   /* Orquestra a requisição de recuperação ao Firebase Auth.
      A segurança é reforçada pelo Firebase, que envia tokens temporários via canal OOB (Out-of-band),
      garantindo que a redefinição ocorra apenas através do e-mail verificado do usuário. */
+  /*
+    Envia o e-mail de recuperação de senha.
+
+    Etapas:
+    - valida formulário;
+    - chama Firebase;
+    - trata sucesso e erros.
+  */
   Future<void> _sendResetEmail() async {
+    // Fecha o teclado antes de iniciar o envio.
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -269,11 +328,13 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
       return;
     }
 
+    // Vibração leve para feedback tátil.
     HapticFeedback.mediumImpact();
 
     setState(() => _isLoading = true);
 
     try {
+      // Chama o Firebase para enviar o e-mail de recuperação.
       final error = await _auth.resetPassword(_emailController.text.trim());
 
       if (!mounted) return;
@@ -308,6 +369,9 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   }
 
   /* Exibe mensagens de retorno contextuais (sucesso ou erro) na própria tela. */
+  /*
+    Exibe feedback visual e snackbar.
+  */
   void _showFeedback(String message, {required bool isError}) {
     setState(() {
       _feedbackMessage = message;
@@ -324,6 +388,9 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   }
 
   /* Tratamento de exceções específicas do fluxo de recuperação. */
+  /*
+    Converte erros técnicos em mensagens amigáveis.
+  */
   String _formatarErroRecuperacao(String error) {
     final mensagem = error.toLowerCase().trim();
 
@@ -354,10 +421,16 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   }
 }
 
+/*
+  Botão reutilizável de voltar.
+*/
 class _BackButton extends StatelessWidget {
   const _BackButton();
 
   @override
+  /*
+    Método principal responsável pela construção da interface.
+  */
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, top: 4),
