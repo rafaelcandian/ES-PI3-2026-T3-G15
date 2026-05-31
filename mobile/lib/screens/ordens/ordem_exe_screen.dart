@@ -521,6 +521,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
             isCompra: _isCompra,
             minBuyPrice: widget.oferta.minBuyPrice,
             precoAbaixoDoMinimo: _precoAbaixoDoMinimo,
+            bloqueado: !widget.compraDireto && _isCompra,
             onMinus: () => _alterarPreco(-0.10),
             onPlus: () => _alterarPreco(0.10),
           ),
@@ -916,6 +917,7 @@ class _PriceControlBox extends StatelessWidget {
   final bool precoAbaixoDoMinimo;
   final VoidCallback onMinus;
   final VoidCallback onPlus;
+  final bool bloqueado;
 
   const _PriceControlBox({
     required this.controller,
@@ -924,6 +926,7 @@ class _PriceControlBox extends StatelessWidget {
     required this.precoAbaixoDoMinimo,
     required this.onMinus,
     required this.onPlus,
+    this.bloqueado = false,
   });
 
   @override
@@ -944,10 +947,11 @@ class _PriceControlBox extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _RoundActionButton(icon: Icons.remove_rounded, onTap: onMinus),
+              _RoundActionButton(icon: Icons.remove_rounded, onTap: bloqueado ? null : onMinus),
               Expanded(
                 child: TextField(
                   controller: controller,
+                  enabled: !bloqueado,
                   textAlign: TextAlign.center,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -967,10 +971,42 @@ class _PriceControlBox extends StatelessWidget {
                   ),
                 ),
               ),
-              _RoundActionButton(icon: Icons.add_rounded, onTap: onPlus),
+              _RoundActionButton(icon: Icons.add_rounded, onTap: bloqueado ? null : onPlus),
             ],
           ),
-          if (isCompra) ...[
+          if (bloqueado) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: Colors.amber.withValues(alpha: 0.30),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.lock_outline,
+                    color: Colors.amber,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Preço definido pelo vendedor. Você está aceitando esta oferta pelo valor anunciado.',
+                      style: TextStyle(
+                        color: Colors.amber.withValues(alpha: 0.90),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (isCompra) ...[
             const SizedBox(height: 8),
             Text(
               precoAbaixoDoMinimo

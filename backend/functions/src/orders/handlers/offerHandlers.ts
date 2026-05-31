@@ -279,7 +279,7 @@ async function tryMatching(
       const sellerTokens = sellerData.tokens ?? {};
       const sellerTokensStartup = Number(sellerTokens[newOffer.startupId] ?? 0);
 
-      if (buyerSaldo < total) {
+      if (buyerSaldo < totalComprador) {
         if (newOffer.type === "sell") {
           t.update(offerRef, {
             status: "cancelled",
