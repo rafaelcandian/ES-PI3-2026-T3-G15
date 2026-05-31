@@ -12,6 +12,14 @@ import {registerWalletSnapshot} from "../../users/handlers/walletHandlers";
 export const executeSellOffer = onCall(async (request) => {
   requireAuthenticatedUser(request);
 
+  console.log('executeSellOffer chamado:', {
+    uid: request.auth?.uid,
+    data: request.data,
+    orderId: request.data?.orderId,
+    quantity: request.data?.quantity,
+  });
+
+
   const buyerId = request.auth!.uid;
   const orderId = String(request.data?.orderId ?? "").trim();
   const quantity = Number(request.data?.quantity ?? 0);
