@@ -1,5 +1,4 @@
 /* Victória Nobre - 25016398 */
-/* Guilherme Henrique Moreira - 25006702 */
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';

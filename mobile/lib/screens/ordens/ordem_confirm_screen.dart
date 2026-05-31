@@ -1,5 +1,7 @@
-/* Victória Nobre - 25016398 */
 /* Guilherme Henrique Moreira - 25006702 */
+/* Gabriel Benevides Bosso- 24016398 */
+
+//Ordens foram feitas por Guilherme e Gabriel.
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';

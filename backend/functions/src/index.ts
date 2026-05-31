@@ -1,5 +1,6 @@
 
-/* Guilherme Henrique Moreira - 25006702 */
+// Autor: Guilherme Henrique Moreira
+// RA: 25006702
 /**
  * Import function triggers from their respective submodules:
  *

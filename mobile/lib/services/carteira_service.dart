@@ -1,7 +1,8 @@
 /* Victória Nobre - 25016398 */
 /* Guilherme Henrique Moreira - 25006702 */
-// Autor: Arthur Valerio De Santi
-// RA: 25006924
+//Participação do desenvolvimento tanto do Guilherme quanto da Victória, com foco na implementação do serviço de carteira, incluindo a lógica de transações,
+//integração com Firestore e Cloud Functions, e a construção de gráficos financeiros para o aplicativo. O código foi escrito em Dart para uso em um ambiente Flutter, 
+//utilizando Firebase como backend.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';

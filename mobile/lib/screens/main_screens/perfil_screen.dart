@@ -1,4 +1,3 @@
-/* Victória Nobre - 25016398 */
 /* Guilherme Henrique Moreira - 25006702 */
 
 import 'package:cloud_firestore/cloud_firestore.dart';

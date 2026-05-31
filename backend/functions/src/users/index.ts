@@ -1,4 +1,6 @@
 
+// Autor: Guilherme Henrique Moreira
+// RA: 25006702
 // Descrição: Exportação centralizada das funções do módulo de usuários.
 
 export {createUser} from "./handlers/createUser";

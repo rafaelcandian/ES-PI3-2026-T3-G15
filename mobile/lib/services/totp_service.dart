@@ -1,5 +1,3 @@
-/* Victória Nobre - 25016398 */
-/* Guilherme Henrique Moreira - 25006702 */
 // Autor: Rafael Antonio Candian
 // RA: 25016954
 

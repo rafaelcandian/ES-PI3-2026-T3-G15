@@ -1,3 +1,6 @@
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
+
 // =============================================================================
 // PROPÓSITO DO ARQUIVO:
 // Ponto de entrada (barrel export) do módulo de perguntas.

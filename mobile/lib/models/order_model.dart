@@ -1,5 +1,3 @@
-/* Victória Nobre - 25016398 */
-/* Guilherme Henrique Moreira - 25006702 */
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
 

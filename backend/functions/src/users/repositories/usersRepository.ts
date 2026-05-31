@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
 // Descrição: Repositório para abstrair o acesso ao Firestore na coleção de usuários.
 
 import {db} from "../../shared/firebase";

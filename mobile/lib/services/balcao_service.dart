@@ -1,10 +1,5 @@
-/* Victória Nobre - 25016398 */
-/* Guilherme Henrique Moreira - 25006702 */
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
-
-// ignore_for_file: avoid_print
-// ignore_for_file: unused_field
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';

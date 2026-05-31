@@ -1,5 +1,9 @@
 /* Victória Nobre - 25016398 */
 /* Guilherme Henrique Moreira - 25006702 */
+//Tanto Guilherme quanto Victória contribuíram igualmente para a implementação desta tela, compartilhando as responsabilidades de desenvolvimento, 
+//testes e refinamento das funcionalidades apresentadas. O código foi escrito de forma colaborativa, com ambos os desenvolvedores participando ativamente 
+//em todas as etapas do processo, garantindo uma integração fluida das funcionalidades e uma experiência de usuário consistente. 
+
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';

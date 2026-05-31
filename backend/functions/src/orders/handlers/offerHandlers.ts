@@ -1,7 +1,6 @@
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
 // Descrição: Handlers para ofertas de compra/venda e matching seguro do balcão.
-/* Guilherme Henrique Moreira - 25006702 */
 
 // =============================================================================
 // PROPÓSITO DO ARQUIVO:

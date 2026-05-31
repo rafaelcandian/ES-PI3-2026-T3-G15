@@ -1,7 +1,6 @@
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
 // Descrição: Handlers para as ofertas de compra e venda e sistema de matching.
-/* Guilherme Henrique Moreira - 25006702 */
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { requireAuthenticatedUser } from "../../shared/auth";
