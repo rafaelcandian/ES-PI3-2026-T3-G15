@@ -111,6 +111,43 @@ class BalcaoService {
     }
   }
 
+  Future<String?> comprarOfertaVendaExistente({
+    required String orderId,
+    required int quantity,
+    required double totalFinal,
+    required double taxa,
+  }) async {
+    try {
+      _uid;
+
+      if (orderId.trim().isEmpty) {
+        return 'Oferta inválida.';
+      }
+
+      if (quantity <= 0) {
+        return 'Quantidade inválida.';
+      }
+
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'executeSellOffer',
+      );
+
+      await callable.call({
+        'orderId': orderId,
+        'quantity': quantity,
+      });
+
+      return null;
+    } on FirebaseFunctionsException catch (e) {
+      return _handleFunctionError(
+        e,
+        fallback: 'Erro ao comprar oferta do balcão',
+      );
+    } catch (e) {
+      return 'Erro inesperado: $e';
+    }
+  }
+
   Future<String?> cancelarOferta({
     required String orderId,
   }) async {

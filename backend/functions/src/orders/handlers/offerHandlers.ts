@@ -157,13 +157,17 @@ export const createOffer = onCall(async (request) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    await tryMatching(newOfferRef.id, {
-      userId: uid,
-      startupId,
-      type,
-      quantity: quantityInt,
-      pricePerToken,
-    });
+    try {
+      await tryMatching(newOfferRef.id, {
+        userId: uid,
+        startupId,
+        type,
+        quantity: quantityInt,
+        pricePerToken,
+      });
+    } catch (matchingError) {
+      console.warn("Matching ignorado após criação da ordem:", matchingError);
+    }
 
     return { success: true };
   } catch (e) {
@@ -237,7 +241,29 @@ async function tryMatching(
       const newOfferDoc = await t.get(newOfferRef);
       const existingOfferDoc = await t.get(offerRef);
 
-      if (!buyerDoc.exists || !sellerDoc.exists) {
+      if (!buyerDoc.exists) {
+        const invalidBuyOrderRef =
+          newOffer.type === "buy" ? newOfferRef : offerRef;
+
+        t.update(invalidBuyOrderRef, {
+          status: "cancelled",
+          cancelReason: "Comprador não encontrado.",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        return;
+      }
+
+      if (!sellerDoc.exists) {
+        const invalidSellOrderRef =
+          newOffer.type === "sell" ? newOfferRef : offerRef;
+
+        t.update(invalidSellOrderRef, {
+          status: "cancelled",
+          cancelReason: "Vendedor não encontrado.",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
         return;
       }
 
@@ -253,7 +279,17 @@ async function tryMatching(
       const sellerTokens = sellerData.tokens ?? {};
       const sellerTokensStartup = Number(sellerTokens[newOffer.startupId] ?? 0);
 
-      if (buyerSaldo < totalComprador) {
+      if (buyerSaldo < total) {
+        if (newOffer.type === "sell") {
+          t.update(offerRef, {
+            status: "cancelled",
+            cancelReason: "Saldo insuficiente do comprador.",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          return;
+        }
+
         throw new HttpsError(
           "failed-precondition",
           "Saldo insuficiente do comprador.",
@@ -261,6 +297,16 @@ async function tryMatching(
       }
 
       if (sellerTokensStartup < matchedQuantity) {
+        if (newOffer.type === "buy") {
+          t.update(offerRef, {
+            status: "cancelled",
+            cancelReason: "Tokens insuficientes do vendedor.",
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          return;
+        }
+
         throw new HttpsError(
           "failed-precondition",
           "Tokens insuficientes do vendedor.",

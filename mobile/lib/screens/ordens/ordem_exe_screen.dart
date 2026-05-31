@@ -315,6 +315,10 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       volume: widget.oferta.volume,
       spread: widget.oferta.spread,
       startupId: widget.oferta.startupId,
+      id: widget.oferta.id,
+      userId: widget.oferta.userId,
+      createdAt: widget.oferta.createdAt,
+      isStartup: widget.oferta.isStartup,
       minBuyPrice: widget.oferta.minBuyPrice,
     );
 
