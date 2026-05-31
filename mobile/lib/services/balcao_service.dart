@@ -24,6 +24,9 @@ class BalcaoService {
     return user.uid;
   }
 
+  // MÉTODO: getOpenOffers
+  // Recupera em tempo real (Stream) todas as ofertas abertas no balcão para uma startup específica.
+  // Utilizado para popular o order book (livro de ofertas) na tela de negociações.
   Stream<List<Map<String, dynamic>>> getOpenOffers(String startupId) {
     return _firestore
         .collection('orders')
@@ -39,6 +42,9 @@ class BalcaoService {
   }
 
   /* Cria uma oferta de compra no balcão. Usa Cloud Functions para validar saldo e bloquear o valor em 'garantia' no backend */
+  // MÉTODO: createPurchaseOffer
+  // Lança uma nova ordem de compra no mercado secundário (balcão).
+  // A validação de saldo e bloqueio de fundos ocorre de forma segura no backend.
   Future<String?> createPurchaseOffer({
     required String startupId,
     required int quantity,
@@ -65,6 +71,9 @@ class BalcaoService {
     }
   }
 
+  // MÉTODO: createSellOffer
+  // Lança uma nova ordem de venda no mercado secundário.
+  // O backend garantirá que os tokens fiquem bloqueados para evitar gastos duplos (double spending).
   Future<String?> createSellOffer({
     required String startupId,
     required int quantity,
@@ -90,6 +99,9 @@ class BalcaoService {
     }
   }
 
+  // MÉTODO: comprarDiretoDaStartup
+  // Executa uma compra no mercado primário (direto com a startup).
+  // Invoca a Cloud Function 'directPurchase', que lida com a transação atômica.
   Future<String?> comprarDiretoDaStartup({
     required String startupId,
     required int quantity,
@@ -116,6 +128,9 @@ class BalcaoService {
     }
   }
 
+  // MÉTODO: comprarOfertaVendaExistente
+  // Executa a contraparte de uma oferta de venda que já está no balcão (Mercado Secundário).
+  // Chama a Cloud Function 'executeSellOffer' para realizar a troca de titularidade e valores.
   Future<String?> comprarOfertaVendaExistente({
     required String orderId,
     required int quantity,
@@ -153,6 +168,9 @@ class BalcaoService {
     }
   }
 
+  // MÉTODO: cancelarOferta
+  // Permite que o usuário cancele uma oferta aberta que ele mesmo criou no balcão.
+  // Invoca a Cloud Function 'cancelOffer', que libera o saldo ou tokens retidos.
   Future<String?> cancelarOferta({
     required String orderId,
   }) async {

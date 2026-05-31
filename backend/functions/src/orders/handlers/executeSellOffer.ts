@@ -24,12 +24,18 @@ export const executeSellOffer = onCall(async (request) => {
   const orderId = String(request.data?.orderId ?? "").trim();
   const quantity = Number(request.data?.quantity ?? 0);
 
+  // VALIDAÇÕES DA OFERTA:
+  // Verifica se o ID da ordem foi fornecido e se a quantidade desejada é estritamente positiva,
+  // prevenindo o processamento de requisições malformadas ou com valores lógicos incorretos.
   if (!orderId || quantity <= 0) {
     throw new HttpsError("invalid-argument", "Dados da compra inválidos.");
   }
 
   const quantityInt = Math.floor(quantity);
 
+  // TRANSAÇÃO ATÔMICA:
+  // Inicia um bloco de transação no Firestore para garantir as propriedades ACID (Atomicidade, Consistência, Isolamento e Durabilidade).
+  // Assegura que todas as leituras e atualizações (saldo e tokens) sejam aplicadas integralmente ou totalmente revertidas em caso de falha.
   await db.runTransaction(async (transaction) => {
     const orderRef = db.collection("orders").doc(orderId);
     const orderDoc = await transaction.get(orderRef);
@@ -70,6 +76,9 @@ export const executeSellOffer = onCall(async (request) => {
       );
     }
 
+    // CÁLCULO DO TOTAL:
+    // Determina o valor financeiro total da transação multiplicando a quantidade de tokens
+    // desejada pelo preço unitário definido pelo vendedor na oferta original.
     const pricePerToken = Number(orderData.pricePerToken ?? 0);
     const totalPrice = quantityInt * pricePerToken;
 
@@ -108,6 +117,9 @@ export const executeSellOffer = onCall(async (request) => {
       );
     }
 
+    // TRANSFERÊNCIA DE TOKENS E SALDO (COMPRADOR):
+    // Deduz o valor total da compra do saldo do comprador e incrementa a quantidade
+    // correspondente de tokens da startup em sua carteira.
     transaction.update(buyerRef, {
       saldo: admin.firestore.FieldValue.increment(-totalPrice),
       [`tokens.${startupId}`]:
@@ -115,6 +127,9 @@ export const executeSellOffer = onCall(async (request) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // TRANSFERÊNCIA DE TOKENS E SALDO (VENDEDOR):
+    // Credita o valor total da venda no saldo do vendedor e subtrai a quantidade
+    // correspondente de tokens da startup de sua carteira.
     transaction.update(sellerRef, {
       saldo: admin.firestore.FieldValue.increment(totalPrice),
       [`tokens.${startupId}`]:
@@ -136,6 +151,8 @@ export const executeSellOffer = onCall(async (request) => {
     const startupName = startupData.title ?? startupData.nome ?? "Startup";
     const ticker = startupData.ticker ?? startupData.simbolo ?? "";
 
+    // REGISTRO DE TRANSAÇÕES GERAIS:
+    // Consolida o histórico da transação de balcão para fins de auditoria global e rastreabilidade da plataforma.
     transaction.set(db.collection("transactions").doc(), {
       buyerId,
       sellerId,

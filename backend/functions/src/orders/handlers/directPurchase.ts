@@ -19,10 +19,14 @@ export const directPurchase = onCall(async (request) => {
   const quantity = Number(data.quantity);
   const pricePerToken = Number(data.pricePerToken);
 
+  // VALIDAÇÃO 1: Verifica se os dados mínimos necessários para a compra foram enviados pelo cliente.
+  // Isso evita que a função prossiga com dados corrompidos ou incompletos.
   if (!startupId || !quantity || !pricePerToken) {
     throw new HttpsError("invalid-argument", "Campos obrigatórios ausentes.");
   }
 
+  // VALIDAÇÃO 2: Garante que os valores numéricos de quantidade e preço sejam estritamente positivos.
+  // Evita ataques de injeção de valores negativos que poderiam adulterar o saldo do usuário.
   if (quantity <= 0 || pricePerToken <= 0) {
     throw new HttpsError(
       "invalid-argument",
@@ -31,10 +35,20 @@ export const directPurchase = onCall(async (request) => {
   }
 
   const quantityInt = Math.floor(quantity);
+
+  // CÁLCULO DE TAXA E TOTAIS:
+  // 1. totalPrice: o valor base da compra sem taxas.
+  // 2. fee: taxa administrativa da plataforma (0.4% do valor total).
+  // 3. totalComTaxa: valor final que será descontado do saldo do usuário.
   const totalPrice = quantityInt * pricePerToken;
   const fee = totalPrice * 0.004;
   const totalComTaxa = totalPrice + fee;
 
+  // TRANSAÇÃO ATÔMICA:
+  // Utilizamos runTransaction para garantir que todas as leituras e escritas no Firestore 
+  // ocorram de forma consistente. Se qualquer validação falhar no meio do processo 
+  // (ex: saldo insuficiente detectado), todas as alterações são revertidas automaticamente, 
+  // mantendo a integridade dos dados e evitando "condição de corrida".
   await db.runTransaction(async (transaction) => {
     const userRef = db.collection("usuarios").doc(uid);
     const startupRef = db.collection("startups").doc(startupId);
@@ -59,9 +73,9 @@ export const directPurchase = onCall(async (request) => {
 
     const minBuyPrice = Number(
       startupData.minBuyPrice ??
-        startupData.tokenValue ??
-        startupData.valorToken ??
-        1,
+      startupData.tokenValue ??
+      startupData.valorToken ??
+      1,
     );
 
     if (pricePerToken < minBuyPrice) {
@@ -82,6 +96,9 @@ export const directPurchase = onCall(async (request) => {
     const tokensAtuais = userData.tokens || {};
     const atual = Number(tokensAtuais[startupId] || 0);
 
+    // DÉBITO DO COMPRADOR E ATUALIZAÇÃO DA CARTEIRA:
+    // Deduz de forma atômica o valor total com taxas do saldo financeiro do usuário
+    // e incrementa a respectiva quantidade de tokens recém-adquiridos.
     transaction.update(userRef, {
       saldo: FieldValue.increment(-totalComTaxa),
       [`tokens.${startupId}`]: FieldValue.increment(quantityInt),
@@ -97,6 +114,9 @@ export const directPurchase = onCall(async (request) => {
       startupUpdate.investorsCount = FieldValue.increment(1);
     }
 
+    // ATUALIZAÇÃO DE TOKENS DA STARTUP:
+    // Subtrai os tokens recém-comprados do montante disponível na startup e, caso seja
+    // o primeiro investimento do usuário nesta empresa, incrementa o contador de investidores.
     transaction.update(startupRef, startupUpdate);
 
     const transactionRef = db.collection("transactions").doc();

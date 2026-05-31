@@ -20,6 +20,10 @@ export const createUser = onCall(async (request) => {
     throw new HttpsError("already-exists", "Usuário já existe.");
   }
 
+  // CRIAÇÃO DO DOCUMENTO DO USUÁRIO:
+  // Inicializa o novo usuário no banco de dados definindo atributos padrão cruciais,
+  // como saldo zerado (0), um dicionário vazio para tokens, e define isAdmin como false.
+  // Utiliza a função do repositório para isolar a lógica do Firestore do handler.
   await createUserDocument({
     uid,
     nome,
