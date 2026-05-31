@@ -15,6 +15,9 @@ export const getStartupDetails = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "ID da startup é obrigatório.");
   }
 
+  // BUSCA DETALHADA:
+  // Chama o repositório para buscar a startup específica com base no ID recebido.
+  // Como o ID é o identificador único do documento no Firestore, a busca é rápida e direta.
   const startup = await getStartupById(id);
   if (!startup) {
     throw new HttpsError("not-found", "Startup não encontrada.");

@@ -36,6 +36,9 @@ class CarteiraService {
     return _userRef.snapshots();
   }
 
+  // LEITURA DO FIRESTORE (Saldo):
+  // Faz uma leitura única (get) no documento do usuário logado para obter seu saldo atual.
+  // Este saldo é frequentemente usado para validar se o usuário tem poder de compra suficiente.
   Future<double> getBalance() async {
     final doc = await _userRef.get();
     final data = doc.data();
@@ -45,6 +48,9 @@ class CarteiraService {
     return (data['saldo'] as num? ?? 0).toDouble();
   }
 
+  // LEITURA DO FIRESTORE (Tokens):
+  // Busca a carteira de ativos do usuário (campo 'tokens' no documento).
+  // Retorna um mapa onde a chave é o startupId e o valor é a quantidade possuída.
   Future<Map<String, dynamic>> getTokens() async {
     final doc = await _userRef.get();
     final data = doc.data();
@@ -103,6 +109,9 @@ class CarteiraService {
     }
   }
 
+  // CÁLCULO DE VALIDAÇÃO:
+  // Compara o saldo obtido do Firestore com o valor necessário para a operação.
+  // Retorna um booleano (true/false) determinando se a ação pode prosseguir no frontend.
   Future<bool> hasSufBalance(double valor) async {
     final saldo = await getBalance();
     return saldo >= valor;

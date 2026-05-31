@@ -73,8 +73,13 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   double get _subtotal => _quantidade * _preco;
 
+  // CÁLCULO DE TAXA:
+  // A taxa da plataforma é fixa em 0.4% do subtotal da operação.
   double get _taxa => _subtotal * 0.004;
 
+  // CÁLCULO DO VALOR FINAL:
+  // Se for compra, a taxa é adicionada ao total que o usuário pagará.
+  // Se for venda, a taxa é deduzida do valor líquido que o usuário receberá.
   double get _totalFinal => _isCompra ? _subtotal + _taxa : _subtotal - _taxa;
 
   double get _precoReferencia {
@@ -101,7 +106,9 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       return widget.quantidadeMaximaUsuario!;
     }
 
-    // No modo compra, limita pelo saldo disponível do usuário.
+    // LIMITE POR SALDO (COMPRA):
+    // Garante que o usuário não consiga selecionar no slider/input uma quantidade
+    // de tokens que faria o total ultrapassar o dinheiro (saldo) que ele tem na conta.
     if (_isCompra && _saldoUsuario != null) {
       final limitePorSaldo = _quantidadeMaximaPorSaldo;
       return limitePorSaldo.clamp(0, widget.oferta.quantidade);
@@ -230,6 +237,10 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     });
   }
 
+  // BOTÃO PERCENTUAL (Máx, 50%, etc.):
+  // Esta função é chamada quando o usuário clica nos botões de atalho de quantidade.
+  // Ela pega o valor máximo permitido (_maximoQuantidade) e multiplica pelo percentual
+  // escolhido. Assim, se o botão for "Máx" (1.0), selecionará o máximo possível sem estourar saldo ou estoque.
   void _selecionarPercentual(double percentual) {
     final maximo = _maximoQuantidade;
 

@@ -67,12 +67,15 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       String? erro;
 
       if (_isCompra) {
+        // LÓGICA DE DECISÃO DE COMPRA:
+        // Caso 1: Compra Direta. O usuário optou por comprar tokens emitidos pela própria startup (se o valor for acima do mínimo exigido).
         if (widget.atingiuMinimo && widget.compraDireto) {
           erro = await BalcaoService().comprarDiretoDaStartup(
             startupId: widget.oferta.startupId,
             quantity: widget.oferta.quantidade,
             pricePerToken: widget.oferta.preco,
           );
+        // Caso 2: Compra no Balcão (Oferta Existente). O usuário decidiu pegar (taker) uma oferta de venda que já existia criada por outro investidor.
         } else if (widget.oferta.id.trim().isNotEmpty) {
           erro = await BalcaoService().comprarOfertaVendaExistente(
             orderId: widget.oferta.id,
@@ -80,6 +83,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
             totalFinal: widget.totalFinal,
             taxa: widget.taxa,
           );
+        // Caso 3: Nova Oferta de Compra. O usuário quer criar a própria ordem (maker) pedindo um preço específico no mercado secundário.
         } else {
           erro = await BalcaoService().createPurchaseOffer(
             startupId: widget.oferta.startupId,
