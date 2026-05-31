@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
 // Descrição: Tipagens e interfaces para o módulo de ordens de compra e venda.
 
 import * as FirebaseFirestore from "firebase-admin/firestore";

@@ -42,10 +42,49 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
   String _assetEndLabel = '';
   bool _loadingAssetChart = true;
 
+  int _tokensDisponiveis = 0;
+  double _tokenValue = 0.0;
+  double _investimentoMinimo = 0.0;
+  bool _carregandoDadosStartup = true;
+
   @override
   void initState() {
     super.initState();
     _loadAssetChart();
+    _carregarDadosStartup();
+  }
+
+  Future<void> _carregarDadosStartup() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('startups')
+          .doc(widget.ativo.startupId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        if (mounted) {
+          setState(() {
+            _tokensDisponiveis = (data['tokens'] as num?)?.toInt() ?? 0;
+            _tokenValue = (data['tokenValue'] ?? data['minBuyPrice'] as num?)?.toDouble() ?? widget.ativo.valorToken;
+            _investimentoMinimo = (data['investimentoMinimo'] ?? data['minInvestment'] as num?)?.toDouble() ?? 0.0;
+            _carregandoDadosStartup = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _carregandoDadosStartup = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _carregandoDadosStartup = false;
+        });
+      }
+    }
   }
 
   DateTime _periodStartDate(String period) {
@@ -327,6 +366,43 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
           oferta: oferta,
           modo: modo,
           ofertasDisponiveis: widget.ofertasDisponiveis,
+          quantidadeMaximaUsuario: modo == ModoNegociacao.venda ? widget.ativo.tokens : null,
+        ),
+      ),
+    );
+  }
+
+  void _abrirCompraDireta(BuildContext context) {
+    if (_tokensDisponiveis <= 0) {
+      AppSnackBar.show(context, message: 'Não há tokens disponíveis para esta startup.', error: true);
+      return;
+    }
+
+    final ofertaSimulada = Oferta(
+      id: 'direct-${widget.ativo.startupId}',
+      startupId: widget.ativo.startupId,
+      quantidade: _tokensDisponiveis,
+      preco: _tokenValue > 0 ? _tokenValue : widget.ativo.valorToken,
+      tipo: TipoOferta.venda,
+      isStartup: true,
+      empresa: widget.ativo.nome,
+      simbolo: widget.ativo.simbolo,
+      variacao: 0.0,
+      volume: '$_tokensDisponiveis',
+      spread: 0.4,
+      minBuyPrice: _tokenValue > 0 ? _tokenValue : widget.ativo.valorToken,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrdemExeScreen(
+          oferta: ofertaSimulada,
+          modo: ModoNegociacao.compra,
+          ofertasDisponiveis: [ofertaSimulada],
+          quantidadeMaximaUsuario: null,
+          investimentoMinimo: _investimentoMinimo,
+          compraDireto: true,
         ),
       ),
     );
@@ -446,8 +522,10 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                           Expanded(
                             child: AppButton.primary(
                               label: 'Comprar mais',
-                              onTap: () =>
-                                  _abrirOrdem(context, ModoNegociacao.compra),
+                              loading: _carregandoDadosStartup,
+                              onTap: _carregandoDadosStartup 
+                                  ? null 
+                                  : () => _abrirCompraDireta(context),
                             ),
                           ),
                         ],

@@ -218,7 +218,13 @@ async function tryMatching(
     const sellerId = newOffer.type === "sell" ? newOffer.userId : offer.userId;
     const price = Number(offer.pricePerToken);
     const matchedQuantity = Math.min(remainingNewQuantity, offerQuantity);
-    const total = matchedQuantity * price;
+    
+    const FEE_RATE = 0.004;
+    const totalBruto = matchedQuantity * price;
+    const fee = totalBruto * FEE_RATE;
+    const totalComprador = totalBruto + fee;
+    const totalVendedor = totalBruto - fee;
+    
     const remainingExistingQuantity = offerQuantity - matchedQuantity;
     const remainingAfterNew = remainingNewQuantity - matchedQuantity;
 
@@ -314,12 +320,12 @@ async function tryMatching(
       }, { merge: true });
 
       t.update(buyerRef, {
-        saldo: admin.firestore.FieldValue.increment(-total),
+        saldo: admin.firestore.FieldValue.increment(-totalComprador),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       t.update(sellerRef, {
-        saldo: admin.firestore.FieldValue.increment(total),
+        saldo: admin.firestore.FieldValue.increment(totalVendedor),
         [`tokens.${newOffer.startupId}`]:
           admin.firestore.FieldValue.increment(-matchedQuantity),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -355,7 +361,8 @@ async function tryMatching(
         startupId: newOffer.startupId,
         quantity: matchedQuantity,
         pricePerToken: price,
-        totalPrice: total,
+        totalPrice: totalBruto,
+        fee: fee,
         type: "balcao",
         createdAt: admin.firestore.Timestamp.now(),
       });
@@ -373,10 +380,10 @@ async function tryMatching(
         ticker,
         quantity: matchedQuantity,
         pricePerToken: price,
-        subtotal: total,
-        fee: 0,
-        totalPrice: total,
-        amount: -total,
+        subtotal: totalBruto,
+        fee: fee,
+        totalPrice: totalComprador,
+        amount: -totalComprador,
         description: `Compra de ${matchedQuantity} tokens de ${startupName}`,
         method: "balcao_trade",
         source: "balcao",
@@ -393,10 +400,10 @@ async function tryMatching(
         ticker,
         quantity: matchedQuantity,
         pricePerToken: price,
-        subtotal: total,
-        fee: 0,
-        totalPrice: total,
-        amount: total,
+        subtotal: totalBruto,
+        fee: fee,
+        totalPrice: totalVendedor,
+        amount: totalVendedor,
         description: `Venda de ${matchedQuantity} tokens de ${startupName}`,
         method: "balcao_trade",
         source: "balcao",

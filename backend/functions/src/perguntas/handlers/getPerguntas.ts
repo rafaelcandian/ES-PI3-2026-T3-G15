@@ -1,3 +1,6 @@
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
+
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../../shared/firebase";
 import { GetPerguntasData } from "../types/perguntasTypes";
@@ -15,7 +18,7 @@ export const getPerguntas = onCall(async (request) => {
   if (request.auth && request.auth.uid) {
     const uid = request.auth.uid;
     const userDoc = await db.collection("usuarios").doc(uid).get();
-    
+
     if (userDoc.exists) {
       const userData = userDoc.data()!;
       const tokens = userData.tokens || {};

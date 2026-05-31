@@ -1,5 +1,5 @@
-// Autor:
-// RA:
+// Autor: Gabriel Benevides Bosso
+// RA: 24013653
 // Descrição: Handler para processar a compra direta de tokens de uma startup.
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
@@ -31,6 +31,8 @@ export const directPurchase = onCall(async (request) => {
 
   const quantityInt = Math.floor(quantity);
   const totalPrice = quantityInt * pricePerToken;
+  const fee = totalPrice * 0.004;
+  const totalComTaxa = totalPrice + fee;
 
   await db.runTransaction(async (transaction) => {
     const userRef = db.collection("usuarios").doc(uid);
@@ -50,7 +52,7 @@ export const directPurchase = onCall(async (request) => {
     const startupData = startupDoc.data()!;
 
     const saldoAtual = Number(userData.saldo || 0);
-    if (saldoAtual < totalPrice) {
+    if (saldoAtual < totalComTaxa) {
       throw new HttpsError("failed-precondition", "Saldo insuficiente.");
     }
 
@@ -80,7 +82,7 @@ export const directPurchase = onCall(async (request) => {
     const atual = Number(tokensAtuais[startupId] || 0);
 
     transaction.update(userRef, {
-      saldo: FieldValue.increment(-totalPrice),
+      saldo: FieldValue.increment(-totalComTaxa),
       [`tokens.${startupId}`]: FieldValue.increment(quantityInt),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -103,6 +105,7 @@ export const directPurchase = onCall(async (request) => {
       quantity: quantityInt,
       pricePerToken,
       totalPrice,
+      fee,
       type: "direct",
       createdAt: Timestamp.now(),
     });
@@ -121,9 +124,9 @@ export const directPurchase = onCall(async (request) => {
       quantity: quantityInt,
       pricePerToken,
       subtotal: totalPrice,
-      fee: 0,
-      totalPrice,
-      amount: -totalPrice,
+      fee,
+      totalPrice: totalComTaxa,
+      amount: -totalComTaxa,
       description: `Compra de ${quantityInt} tokens de ${startupName}`,
       method: "direct_purchase",
       source: "startup",
