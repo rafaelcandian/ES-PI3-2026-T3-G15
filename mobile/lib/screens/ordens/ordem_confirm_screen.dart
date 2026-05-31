@@ -64,6 +64,13 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
             quantity: widget.oferta.quantidade,
             pricePerToken: widget.oferta.preco,
           );
+        } else if (widget.oferta.id.trim().isNotEmpty) {
+          erro = await BalcaoService().comprarOfertaVendaExistente(
+            orderId: widget.oferta.id,
+            quantity: widget.oferta.quantidade,
+            totalFinal: widget.totalFinal,
+            taxa: widget.taxa,
+          );
         } else {
           erro = await BalcaoService().createPurchaseOffer(
             startupId: widget.oferta.startupId,
@@ -100,6 +107,10 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
       return 'Investimento realizado!';
     }
 
+    if (_isCompra && widget.oferta.id.trim().isNotEmpty) {
+      return 'Compra realizada!';
+    }
+
     return _isCompra
         ? 'Ordem de compra registrada!'
         : 'Ordem de venda registrada!';
@@ -108,6 +119,10 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
   String _subtituloConclusao() {
     if (_isCompra && widget.compraDireto && widget.atingiuMinimo) {
       return 'Seus tokens foram adquiridos com sucesso e a movimentação foi salva automaticamente na carteira.';
+    }
+
+    if (_isCompra && widget.oferta.id.trim().isNotEmpty) {
+      return 'Os tokens da oferta selecionada foram comprados com sucesso e a movimentação foi salva na carteira.';
     }
 
     if (_isCompra) {

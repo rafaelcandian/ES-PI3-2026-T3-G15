@@ -4,4 +4,5 @@
 
 export {createOffer} from "./handlers/offerHandlers";
 export {cancelOffer} from "./handlers/cancelOffer";
-export { directPurchase } from './handlers/directPurchase';
+export {directPurchase} from "./handlers/directPurchase";
+export {executeSellOffer} from "./handlers/executeSellOffer";

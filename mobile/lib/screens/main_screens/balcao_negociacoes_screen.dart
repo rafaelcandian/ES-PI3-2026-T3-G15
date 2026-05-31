@@ -81,6 +81,10 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
 
         final buyOrders = ordens['buy'] ?? [];
         for (final order in buyOrders) {
+          final double variacao = tokenValue > 0
+              ? ((order.pricePerToken - tokenValue) / tokenValue) * 100
+              : 0.0;
+
           tempOfertasCompra.add(
             Oferta(
               tipo: TipoOferta.compra,
@@ -88,7 +92,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
               preco: order.pricePerToken,
               empresa: title,
               simbolo: simbolo,
-              variacao: 0.0,
+              variacao: variacao,
               volume: '0',
               spread: 0.0,
               startupId: startupId,
@@ -102,6 +106,10 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
 
         final sellOrders = ordens['sell'] ?? [];
         for (final order in sellOrders) {
+          final double variacao = tokenValue > 0
+              ? ((order.pricePerToken - tokenValue) / tokenValue) * 100
+              : 0.0;
+
           tempOfertasVenda.add(
             Oferta(
               tipo: TipoOferta.venda,
@@ -109,7 +117,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
               preco: order.pricePerToken,
               empresa: title,
               simbolo: simbolo,
-              variacao: 0.0,
+              variacao: variacao,
               volume: '0',
               spread: 0.0,
               startupId: startupId,
