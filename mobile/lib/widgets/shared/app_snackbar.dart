@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Utilitário para exibir mensagens de feedback ao usuário (sucesso, erro, info) */
 class AppSnackBar {
   static void show(
     BuildContext context, {
@@ -9,6 +11,7 @@ class AppSnackBar {
     bool error = false,
     Duration duration = const Duration(seconds: 3),
   }) {
+    /* Limpa notificações anteriores para evitar sobreposição */
     ScaffoldMessenger.of(context).clearSnackBars();
 
     final IconData icon = success

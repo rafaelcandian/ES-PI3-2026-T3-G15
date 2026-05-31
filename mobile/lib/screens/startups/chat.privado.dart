@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,10 @@ import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/app_button.dart';
 
+/* Canal de Governança e Transparência (Investor-Startup Bridge).
+   Implementa um chat reativo em tempo real. A arquitetura de permissões é baseada 
+   em prova de posse (Proof of Token), garantindo que apenas acionistas tenham acesso 
+   ao canal direto com os fundadores da startup. */
 class ChatPrivadoPage extends StatefulWidget {
   const ChatPrivadoPage({super.key});
 
@@ -30,6 +36,10 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
     super.dispose();
   }
 
+  /* Motor de Segurança de Acesso (Access Control List - ACL).
+     Valida no Firestore se o UID do usuário possui um documento ativo na coleção de 
+     tokens da startup. Implementa o padrão 'Gatekeeper': bloqueia a renderização 
+     do chat se a condição de investidor não for satisfeita. */
   Future<void> _verificarAcesso(StartupData startup) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -73,6 +83,10 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
     }
   }
 
+  /* Motor de Mensageria (Pub/Sub Pattern).
+     Utiliza o StreamBuilder do Flutter acoplado ao canal de Snapshots do Firestore. 
+     Isso garante latência mínima e sincronização bi-direcional automática, transformando 
+     o Firestore em um broker de mensagens em tempo real. */
   CollectionReference<Map<String, dynamic>> _messagesRef(StartupData startup) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -84,6 +98,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
         .collection('mensagens');
   }
 
+  /* Registra a mensagem na subcoleção de chats da startup e atualiza le ponteiro da última interação. */
   Future<void> _sendMessage(StartupData startup) async {
     final text = _messageController.text.trim();
     final user = FirebaseAuth.instance.currentUser;
@@ -134,6 +149,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
     }
   }
 
+  /* Mantém le foco visual na mensagem mais recente após le carregamento ou envio. */
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 250), () {
       if (!_scrollController.hasClients) return;
@@ -165,7 +181,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dynamic arguments = ModalRoute.of(context)?.settings.arguments;
+    final dynamic arguments = ModalRoute.of(context)!.settings.arguments;
     final StartupData? startup = arguments is StartupData ? arguments : null;
 
     if (startup == null) {
@@ -251,6 +267,7 @@ class _ChatPrivadoPageState extends State<ChatPrivadoPage> {
               children: [
                 const _PrivateChannelBanner(),
                 Expanded(
+                  /* Escuta em tempo real novas mensagens enviadas pela startup ou pelo investidor. */
                   child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                     stream: _messagesRef(
                       startup,
@@ -473,7 +490,7 @@ class _BlockedAccess extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Para acessar o chat privado da ${startup.title}, você precisa possuir tokens desta startup.',
+                'Para acessar le chat privado da ${startup.title}, você precisa possuir tokens desta startup.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white70,
@@ -641,6 +658,7 @@ class _MessageInputBar extends StatelessWidget {
 
 // ===================== MODEL =====================
 
+/* Estrutura de dados local para facilitar a renderização das bolhas de conversa. */
 class _ChatMessage {
   final String text;
   final bool isUser;

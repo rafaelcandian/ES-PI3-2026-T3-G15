@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,6 +15,9 @@ import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 
+/* Módulo de Recuperação de Acesso (Self-service Password Reset).
+   Implementa a interface para o fluxo de redefinição de credenciais, seguindo 
+   práticas de segurança que evitam a enumeração de usuários (User Enumeration Defense). */
 class RecuperacaoSenhaTela extends StatefulWidget {
   const RecuperacaoSenhaTela({super.key});
 
@@ -29,6 +34,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
   bool _isLoading = false;
   bool _autoValidate = false;
 
+  /* Armazena a mensagem de retorno para exibição direta no card. */
   String? _feedbackMessage;
   bool _feedbackIsError = false;
 
@@ -140,6 +146,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     );
   }
 
+  /* Widget customizado para feedback de operação dentro do fluxo de auth. */
   Widget _buildFeedbackBox({
     required String message,
     required bool isError,
@@ -242,6 +249,9 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     );
   }
 
+  /* Orquestra a requisição de recuperação ao Firebase Auth.
+     A segurança é reforçada pelo Firebase, que envia tokens temporários via canal OOB (Out-of-band),
+     garantindo que a redefinição ocorra apenas através do e-mail verificado do usuário. */
   Future<void> _sendResetEmail() async {
     FocusScope.of(context).unfocus();
 
@@ -253,7 +263,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
 
     if (!(_formKey.currentState?.validate() ?? false)) {
       _showFeedback(
-        'Informe um e-mail válido para receber o link de recuperação.',
+        'Informe um e-mail válido para receber le link de recuperação.',
         isError: true,
       );
       return;
@@ -297,6 +307,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     }
   }
 
+  /* Exibe mensagens de retorno contextuais (sucesso ou erro) na própria tela. */
   void _showFeedback(String message, {required bool isError}) {
     setState(() {
       _feedbackMessage = message;
@@ -312,6 +323,7 @@ class _RecuperacaoSenhaTelaState extends State<RecuperacaoSenhaTela> {
     );
   }
 
+  /* Tratamento de exceções específicas do fluxo de recuperação. */
   String _formatarErroRecuperacao(String error) {
     final mensagem = error.toLowerCase().trim();
 

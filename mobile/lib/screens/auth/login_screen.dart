@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/services/autenticacao.dart';
@@ -15,6 +17,7 @@ import 'cadastro_screen.dart';
 import 'recuperacao_senha_screen.dart';
 import 'verificacao_login_screen.dart';
 
+/* Tela de login principal que gerencia o primeiro fator de autenticação e redirecionamento para 2FA. */
 class LoginTela extends StatefulWidget {
   const LoginTela({super.key});
 
@@ -23,12 +26,14 @@ class LoginTela extends StatefulWidget {
 }
 
 class _LoginTelaState extends State<LoginTela> {
+  /* GlobalKey necessária para validar o formulário e acessar os campos de texto. */
   final _formKey = GlobalKey<FormState>();
   final _auth = AuthService();
 
   final emailController = TextEditingController();
   final senhaController = TextEditingController();
 
+  /* Estados de controle da UI: loading para feedback visual e obscurePassword para privacidade. */
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _autoValidate = false;
@@ -137,6 +142,7 @@ class _LoginTelaState extends State<LoginTela> {
     );
   }
 
+  /* Link simples para recuperação de senha, conforme padrão visual de UX. */
   Widget _buildForgotPasswordLink() {
     return Align(
       alignment: Alignment.centerLeft,
@@ -216,6 +222,7 @@ class _LoginTelaState extends State<LoginTela> {
     );
   }
 
+  /* Inicia o processo de autenticação, tratando login simples e 2FA. */
   Future<void> _submitLogin() async {
     FocusScope.of(context).unfocus();
 
@@ -244,6 +251,7 @@ class _LoginTelaState extends State<LoginTela> {
         _isLoading = false;
       });
 
+      /* Se o usuário não tiver 2FA ativo, segue para o catálogo. */
       if (!twoFactor.requiresVerification && !twoFactor.setupRequired) {
         AppSnackBar.show(
           context,
@@ -261,6 +269,7 @@ class _LoginTelaState extends State<LoginTela> {
         return;
       }
 
+      /* Caso precise de 2FA, navega para a tela de verificação. */
       AppSnackBar.show(
         context,
         message: twoFactor.setupRequired
@@ -305,6 +314,7 @@ class _LoginTelaState extends State<LoginTela> {
     );
   }
 
+  /* Converte códigos de erro técnicos em mensagens compreensíveis. */
   String _formatarErroLogin(String message) {
     final lowerMessage = message.toLowerCase().trim();
 
@@ -352,6 +362,7 @@ class _LoginTelaState extends State<LoginTela> {
     return 'Não foi possível entrar. Verifique e-mail e senha e tente novamente.';
   }
 
+  /* Navegação para o fluxo de recuperação de acesso. */
   void _abrirRecuperacaoSenha() {
     Navigator.push(
       context,

@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Background atmosférico para profundidade visual seguindo a identidade Premium do app */
 class AtmosphericBackground extends StatelessWidget {
   final double topGlowOpacity;
   final double middleGlowOpacity;

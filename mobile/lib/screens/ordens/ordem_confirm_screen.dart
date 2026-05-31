@@ -1,6 +1,9 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/balcao_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
@@ -10,9 +13,10 @@ import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 import 'package:mescla_invest/widgets/shared/info_row.dart';
 import 'package:mescla_invest/widgets/shared/section_card.dart';
 
-/// Tela de processamento e conclusão da ordem.
-///
-/// Usa os componentes globais do projeto para manter o padrão visual.
+/* Hub de Efetivação Transacional (Transaction Settlement Hub).
+   Responsável pela execução final da ordem, interagindo com o BalcaoService.
+   Implementa a orquestração de chamadas assíncronas e a gestão de estados de feedback
+   (Loading, Success, Failure) para garantir a integridade da percepção do usuário. */
 class OrdemConfirmScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -47,6 +51,11 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     _executarOrdem();
   }
 
+  /* Orquestrador de Chamadas de Serviço (Service Dispatcher).
+     Encapsula a lógica de decisão sobre qual endpoint do backend invocar:
+     1. Direct Purchase: Compra imediata da Startup (Mercado Primário).
+     2. Existing Order Execution: Compra de oferta de outro usuário (Mercado Secundário).
+     3. Order Creation: Lançamento de nova oferta Limit no balcão. */
   Future<void> _executarOrdem() async {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -102,6 +111,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     }
   }
 
+  /* Define dinamicamente le título de sucesso com base no tipo de operação realizada. */
   String _tituloConclusao() {
     if (_isCompra && widget.compraDireto && widget.atingiuMinimo) {
       return 'Investimento realizado!';
@@ -166,35 +176,13 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 12),
-                        _StatusIcon(
-                          concluida: _concluida,
-                          erro: _erro != null,
-                        ),
+                        _StatusIcon(concluida: _concluida, erro: _erro != null),
                         const SizedBox(height: 24),
-                        Text(
-                          _tituloTela,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _erro != null
-                                ? Colors.redAccent
-                                : AppColors.destaque,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            _subtituloTela,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              height: 1.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                        PageHeader(
+                          title: _tituloTela,
+                          subtitle: _subtituloTela,
+                          centered: true,
+                          titleFontSize: 26,
                         ),
                         const SizedBox(height: 28),
                         _buildResumoCard(),
@@ -311,6 +299,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
     );
   }
 
+  /* Opções de navegação pós-transação: retornar ao catálogo ou conferir le portfólio. */
   Widget _buildActions() {
     return Column(
       key: const ValueKey('actions'),
@@ -322,7 +311,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/catalogo',
-                  (route) => false,
+              (route) => false,
             );
           },
         ),
@@ -334,7 +323,7 @@ class _OrdemConfirmScreenState extends State<OrdemConfirmScreen> {
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/carteira',
-                  (route) => false,
+              (route) => false,
             );
           },
         ),
@@ -507,7 +496,10 @@ class _WaitingMessage extends StatelessWidget {
     return Container(
       key: const ValueKey('waiting'),
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
+      ),
       decoration: premiumFieldDecoration(radius: 18),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -535,6 +527,9 @@ class _WaitingMessage extends StatelessWidget {
   }
 }
 
+/* Widget de Visualização de Fluxo (Progress Tracker).
+   Implementa uma checklist visual das etapas lógicas da transação, mitigando a 
+   ansiedade do usuário durante operações de I/O de rede e processamento em nuvem. */
 class _StepsCard extends StatelessWidget {
   final bool concluida;
   final bool erro;

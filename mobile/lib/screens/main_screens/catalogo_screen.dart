@@ -1,5 +1,8 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
@@ -10,6 +13,9 @@ import 'package:mescla_invest/services/startup_service.dart';
 
 import '../../themes/app_theme.dart';
 
+/* Página de Catálogo: Atua como o Marketplace primário do app.
+   A implementação utiliza StreamBuilder para reagir a mudanças no banco de dados 
+   (Firestore) sem necessidade de Refresh manual, seguindo o padrão Reactive Programming. */
 class CatalogoStartupsPage extends StatefulWidget {
   const CatalogoStartupsPage({super.key});
 
@@ -20,6 +26,7 @@ class CatalogoStartupsPage extends StatefulWidget {
 class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   final StartupService _startupService = StartupService();
 
+  /* Filtros pré-definidos para categorização de startups, visando facilitar a UX do investidor. */
   final List<String> _areaFilters = [
     'Todas',
     'Varejo',
@@ -42,6 +49,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
   bool _areaFilterOpen = false;
   bool _stageFilterOpen = false;
 
+  /* Aplica filtros de área e estágio para refinar a listagem de oportunidades. */
   List<StartupData> _applyFilters(List<StartupData> startups) {
     return startups.where((startup) {
       final areaMatch =
@@ -58,6 +66,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
     }).toList();
   }
 
+  /* Transição para a tela de informações detalhadas da startup selecionada. */
   void _abrirDetalhes(StartupData startup) {
     Navigator.pushNamed(context, '/detalhes', arguments: startup);
   }
@@ -130,7 +139,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
     return Scaffold(
       extendBody: false,
       backgroundColor: AppColors.fundo,
-      appBar: const AppBarPadrao(titulo: 'Catálogo de Startups'),
+      appBar: const AppBarPadrao(titulo: ''),
       bottomNavigationBar: const BottomNavBar(selectedIndex: 0),
       body: Stack(
         children: [
@@ -141,24 +150,14 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
               const SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(20, 18, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Oportunidades exclusivas de investimento através de ativos digitais fracionados.',
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                    ],
+                  child: PageHeader(
+                    title: 'Catálogo de Startups',
+                    subtitle:
+                        'Oportunidades exclusivas de investimento em equity através de ativos digitais fracionados.',
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -180,6 +179,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 22)),
               SliverToBoxAdapter(
+                /* Stream que monitora em tempo real a coleção de startups no Firestore. */
                 child: StreamBuilder<List<StartupData>>(
                   stream: _startupService.getStartups(),
                   builder: (context, snapshot) {
@@ -270,6 +270,7 @@ class _CatalogoStartupsPageState extends State<CatalogoStartupsPage> {
 
 // ===================== PAINEL DE FILTROS MODERNO =====================
 
+/* Componente de filtragem interativo com suporte a múltiplas categorias. */
 class _ModernFilterPanel extends StatelessWidget {
   final String selectedArea;
   final String selectedStage;

@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Cabeçalho padrão para telas de autenticação, contendo logo e títulos explicativos */
 class AuthHeader extends StatelessWidget {
   final String title;
   final String subtitle;

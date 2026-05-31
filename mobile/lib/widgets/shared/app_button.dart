@@ -1,16 +1,19 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Variantes de botão para manter consistência visual em todo o app */
 enum AppButtonVariant {
   primary,
   outline,
 }
 
+/* Botão customizado com suporte a estados de carregamento e variações de estilo */
 class AppButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
-  final bool loading;
+  final bool loading; /* Estado de carregamento para feedback visual durante chamadas Firebase/Functions */
   final IconData? icon;
   final AppButtonVariant variant;
   final bool fullWidth;
@@ -50,6 +53,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    /* Bloqueia interação se estiver em modo de carregamento ou desabilitado */
     final disabled = onTap == null;
     final foregroundColor = _isPrimary ? AppColors.fundo : AppColors.destaque;
 
@@ -89,6 +93,7 @@ class AppButton extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Center(
+                  /* Exibe indicador de progresso se o estado for 'loading' */
                   child: loading
                       ? SizedBox(
                     width: _isPrimary ? 21 : 19,

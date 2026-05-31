@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,10 +9,9 @@ import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/widgets/shared/app_button.dart';
 
-/// Bottom sheet de processamento da ordem.
-///
-/// Usa o botão global AppButton e mantém locais apenas os componentes
-/// específicos do bottom sheet.
+/* Bottom sheet de processamento da ordem: Fornece feedback visual (Loading e Success) 
+   para operações assíncronas de backend. É crucial para manter a UX fluida enquanto 
+   as Cloud Functions processam os dados financeiros complexos. */
 class OrderProcessingSheet extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -35,6 +36,7 @@ class _OrderProcessingSheetState extends State<OrderProcessingSheet> {
   void initState() {
     super.initState();
 
+    /* Simula le tempo de processamento da rede para feedback visual ao usuário. */
     _timer = Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() => _completed = true);
@@ -148,6 +150,7 @@ class _SheetHandle extends StatelessWidget {
   }
 }
 
+/* Alterna entre le estado de carregamento e le check de conclusão. */
 class _StatusIcon extends StatelessWidget {
   final bool completed;
 
@@ -230,6 +233,7 @@ class _LoadingIcon extends StatelessWidget {
   }
 }
 
+/* Lista informativa das validações internas sendo realizadas. */
 class _StepsList extends StatelessWidget {
   final bool completed;
 

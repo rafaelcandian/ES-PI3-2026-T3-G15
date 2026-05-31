@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Rodapé institucional para as telas de autenticação */
 class AuthFooter extends StatelessWidget {
   const AuthFooter({super.key});
 

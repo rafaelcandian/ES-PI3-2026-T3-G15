@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Rótulo para campos de formulário com indicação de campos obrigatórios */
 class AuthFieldLabel extends StatelessWidget {
   final String label;
   final bool required;

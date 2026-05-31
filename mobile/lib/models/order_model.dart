@@ -1,10 +1,13 @@
+/* Victória Nobre - 25016398 */
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/* Representação de uma ordem de compra ou venda no sistema de balcão */
 enum OrderType { buy, sell }
 
+/* Estados possíveis de uma ordem no livro de ofertas */
 enum OrderStatus { open, filled, cancelled }
 
 class OrderModel {
@@ -30,6 +33,7 @@ class OrderModel {
     required this.createdAt,
   });
 
+  /* Mapeia dados do Firestore para a model, garantindo conversão segura de tipos numéricos e datas */
   factory OrderModel.fromFirestore(Map<String, dynamic> data, String id) {
     final createdAtRaw = data['createdAt'];
 

@@ -1,14 +1,17 @@
+/* Victória Nobre - 25016398 */
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mescla_invest/services/totp_service.dart';
 
+/* Objeto de Transferência de Dados (DTO) para o estado da autenticação multifator.
+   Encapsula a transição de estados entre o Firebase Auth (Identidade) e o desafio de token (Segurança). */
 class TwoFactorLoginResult {
   final String email;
   final String senha;
-  final bool setupRequired;
-  final String? secret;
-  final String? otpAuthUri;
-  final bool requiresVerification;
+  final bool setupRequired; /* Flag que indica a ausência de semente TOTP no registro do usuário (Enrolment) */
+  final String? secret; /* Chave Base32 gerada via entropia segura para provisionamento de apps autenticadores */
+  final String? otpAuthUri; /* URI em conformidade com o Google Authenticator para configuração via Deep Link ou QR Code */
+  final bool requiresVerification; /* Gatilho lógico para a navegação forçada à tela de desafio de token */
 
   const TwoFactorLoginResult({
     required this.email,
@@ -20,6 +23,8 @@ class TwoFactorLoginResult {
   });
 }
 
+/* Serviço de Fachada (Facade Pattern) que orquestra a segurança de acesso da plataforma.
+   Implementa a segregação entre Autenticação (Firebase Auth) e Autorização/Perfil (Firestore). */
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -28,6 +33,7 @@ class AuthService {
   // =========================
   // CADASTRO
   // =========================
+  /* Registra novo usuário e inicializa perfil no Firestore com saldo zerado */
   Future<String?> register({
     required String nome,
     required String email,
@@ -89,11 +95,15 @@ class AuthService {
     }
   }
 
+  /* Inicia o protocolo de desafio 2FA. Implementa o padrão 'Fail-safe': se o usuário possui 2FA,
+     a sessão do Firebase é encerrada imediatamente após a validação da senha, 
+     impedindo qualquer acesso aos dados do Firestore antes da prova de posse do token temporal. */
   Future<TwoFactorLoginResult> startTwoFactorLogin(
     String email,
     String senha,
   ) async {
     try {
+      /* Primeiro autentica no Firebase para validar e-mail e senha */
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: senha,
@@ -106,6 +116,7 @@ class AuthService {
         throw Exception('Usuario nao encontrado');
       }
 
+      /* Busca configurações de segurança personalizadas do usuário */
       final userRef = _db.collection('usuarios').doc(user.uid);
       final userDoc = await userRef.get();
 
@@ -127,7 +138,8 @@ class AuthService {
         );
       }
 
-      // 2FA ATIVO → PEDIR CÓDIGO
+      // 2FA ATIVO → OBRIGA VERIFICAÇÃO DE CÓDIGO TOTP
+      /* Desloga temporariamente até que o código correto seja fornecido no próximo passo */
       await _auth.signOut();
 
       return TwoFactorLoginResult(
@@ -153,6 +165,9 @@ class AuthService {
     }
   }
 
+  /* Provisiona uma nova semente de segurança (Seed) usando o TotpService. 
+     O segredo é persistido no Firestore com status pendente (Merge: true), seguindo o 
+     princípio de defesa em profundidade até que a primeira validação seja concluída. */
   Future<TwoFactorLoginResult> createTwoFactorSetup() async {
     final user = _auth.currentUser;
 
@@ -168,6 +183,7 @@ class AuthService {
       secret: secret,
     );
 
+    /* Salva o segredo como pendente até que o usuário confirme o primeiro código com sucesso */
     await _db.collection('usuarios').doc(user.uid).set({
       'twoFactor': {
         'enabled': false,

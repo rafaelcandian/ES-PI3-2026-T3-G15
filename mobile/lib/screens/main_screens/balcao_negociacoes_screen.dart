@@ -1,9 +1,14 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:mescla_invest/widgets/shared/section_label.dart';
+import 'package:mescla_invest/widgets/shared/app_button.dart';
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
@@ -15,6 +20,9 @@ import '../../models/balcao_model.dart';
 import '../../themes/app_theme.dart';
 import '../ordens/ordem_exe_screen.dart';
 
+/* Motor de Exchange P2P (Peer-to-Peer).
+   Implementa a lógica de um Limit Order Book (LOB) simplificado, permitindo a descoberta de preços
+   e a negociação direta de equity tokenizado entre usuários no mercado secundário. */
 class BalcaoDeNegociacoesScreen extends StatefulWidget {
   const BalcaoDeNegociacoesScreen({super.key});
 
@@ -39,6 +47,9 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
   List<AtivoUsuario> _ativosUsuario = [];
   bool _loading = true;
 
+  /* Orquestrador de Dados de Mercado.
+     Carrega e segrega as ordens por tipo (Compra/Venda) e origem (Startup/Usuário).
+     Implementa a visão híbrida de Mercado Primário (Direct Purchase) e Mercado Secundário (P2P). */
   Future<void> _loadData() async {
     try {
       final saldo = await CarteiraService().getBalance();
@@ -129,8 +140,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
           );
         }
 
-        // Alteração: inclui a própria startup como vendedora direta.
-        // Isso garante que tokens disponíveis apareçam no balcão para compra.
+        /* Inclui a própria startup como vendedora direta para tokens no mercado primário. */
         final tokensDisponiveis =
             (data['tokens'] as num?)?.toInt() ??
                 (data['tokensDisponiveis'] as num?)?.toInt() ??
@@ -221,6 +231,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
     super.dispose();
   }
 
+  /* Alterna entre as visões de compra e venda com feedback tátil e animação. */
   void _trocarModo(ModoNegociacao modo) {
     if (_modo == modo) return;
 
@@ -235,6 +246,11 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
     _fadeCtrl.forward(from: 0);
   }
 
+  /* Algoritmo de Ranking e Priorização de Execução (Matching Engine Logic).
+     Aplica as seguintes heurísticas de ordenação:
+     1. Ownership: Destaca ordens do usuário atual para gestão de portfólio.
+     2. Price Improvement: Melhores preços de venda no topo (Modo Compra) e vice-versa.
+     3. Time Priority (FIFO): Ordens mais recentes ganham prioridade em caso de empate de preço. */
   List<Oferta> get _ofertasFiltradas {
     final base =
     _modo == ModoNegociacao.compra ? _ofertasVenda : _ofertasCompra;
@@ -297,7 +313,7 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
       child: Scaffold(
         backgroundColor: AppColors.fundo,
         extendBody: true,
-        appBar: const AppBarPadrao(titulo: 'Balcão de Tokens'),
+        appBar: const AppBarPadrao(titulo: ''),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 1),
         body: _loading
             ? const Center(
@@ -316,8 +332,13 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                   SliverToBoxAdapter(
                     child: Column(
                       children: [
-                        const _PageHeader(),
-                        const SizedBox(height: 20),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+                          child: PageHeader(
+                            title: 'Balcão de Tokens',
+                            subtitle: 'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
+                          ),
+                        ),
                         _SaldoOperacionalCard(saldo: _saldo),
                         const SizedBox(height: 18),
                       ],
@@ -348,10 +369,10 @@ class _BalcaoDeNegociacoesScreenState extends State<BalcaoDeNegociacoesScreen>
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.only(top: 24),
-                      child: _SectionLabel(
+                      child: SectionLabel(
                         label: isCompra
-                            ? 'MELHORES OFERTAS PARA COMPRA'
-                            : 'MELHORES OFERTAS PARA VENDA',
+                            ? 'Melhores ofertas para compra'
+                            : 'Melhores ofertas para venda',
                         hint: isCompra
                             ? 'Ordens disponíveis para você comprar tokens.'
                             : 'Ordens disponíveis para você vender seus tokens.',
@@ -405,7 +426,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.azul.withOpacity(0.22),
+                    AppColors.azul.withValues(alpha: 0.22),
                     Colors.transparent,
                   ],
                 ),
@@ -422,7 +443,7 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.destaque.withOpacity(0.07),
+                    AppColors.destaque.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
                 ),
@@ -439,41 +460,11 @@ class _AtmosphericBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.roxo.withOpacity(0.18),
+                    AppColors.roxo.withValues(alpha: 0.18),
                     Colors.transparent,
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ===================== HEADER =====================
-
-class _PageHeader extends StatelessWidget {
-  const _PageHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 14),
-          PremiumHeaderEyebrow(text: 'MERCADO SECUNDÁRIO'),
-          SizedBox(height: 14),
-          Text(
-            'Compre e venda tokens simulados de startups conectadas ao ecossistema MESCLA.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textoFraco,
-              height: 1.5,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -506,9 +497,9 @@ class _SaldoOperacionalCard extends StatelessWidget {
               height: 46,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.destaque.withOpacity(0.12),
+                color: AppColors.destaque.withValues(alpha: 0.12),
                 border: Border.all(
-                  color: AppColors.destaque.withOpacity(0.28),
+                  color: AppColors.destaque.withValues(alpha: 0.28),
                   width: 1,
                 ),
               ),
@@ -699,8 +690,8 @@ class _ModeButton extends StatelessWidget {
                   ? [
                 BoxShadow(
                   color: isPrimary
-                      ? AppColors.destaque.withOpacity(0.22)
-                      : AppColors.azul.withOpacity(0.24),
+                      ? AppColors.destaque.withValues(alpha: 0.22)
+                      : AppColors.azul.withValues(alpha: 0.24),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -794,6 +785,7 @@ class _AtivosUsuarioCard extends StatelessWidget {
   }
 }
 
+/* Atalho para criar uma ordem de venda baseada em um ativo já possuído. */
 class _AtivoVendaTile extends StatelessWidget {
   final AtivoUsuario ativo;
   final List<Oferta> ofertasDisponiveis;
@@ -933,48 +925,6 @@ class _AtivoVendaTile extends StatelessWidget {
   }
 }
 
-// ===================== LABEL DE SEÇÃO =====================
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  final String hint;
-
-  const _SectionLabel({
-    required this.label,
-    required this.hint,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textoMuitoFraco,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            hint,
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ===================== LISTA DE OFERTAS =====================
 
 class _OfertasList extends StatelessWidget {
@@ -1050,6 +1000,7 @@ class _OfertaCard extends StatefulWidget {
 class _OfertaCardState extends State<_OfertaCard> {
   bool _pressed = false;
 
+  /* Permite ao usuário remover sua própria ordem do balcão via Cloud Function. */
   Future<void> _cancelarOferta(BuildContext context) async {
     if (widget.oferta.id.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1269,44 +1220,22 @@ class _OfertaCardState extends State<_OfertaCard> {
                         onPressed: () => _cancelarOferta(context),
                         tooltip: 'Cancelar oferta',
                       )
-                          : Container(
-                        width: 90,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          gradient: isCompra
-                              ? const LinearGradient(
-                            colors: [
-                              AppColors.destaqueClaro,
-                              AppColors.destaqueEscuro,
-                            ],
-                          )
-                              : const LinearGradient(
-                            colors: [
-                              AppColors.azul,
-                              AppColors.roxo,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accent.withOpacity(0.10),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                          : AppButton.primary(
+                        label: isCompra ? 'Comprar' : 'Vender',
+                        fullWidth: false,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => OrdemExeScreen(
+                                oferta: widget.oferta,
+                                modo: widget.modo,
+                                ofertasDisponiveis: widget.ofertasDisponiveis,
+                                compraDireto: widget.oferta.isStartup,
+                              ),
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            isCompra ? 'Comprar' : 'Vender',
-                            style: TextStyle(
-                              color: isCompra
-                                  ? AppColors.fundo
-                                  : AppColors.textoPrincipal,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -1349,10 +1278,10 @@ class _TickerBox extends StatelessWidget {
       width: 46,
       height: 46,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: color.withOpacity(0.30),
+          color: color.withValues(alpha: 0.30),
         ),
       ),
       child: Center(
@@ -1408,10 +1337,10 @@ class _Badge extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.16),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: color.withOpacity(0.35),
+          color: color.withValues(alpha: 0.30),
           width: 0.5,
         ),
       ),
@@ -1444,17 +1373,17 @@ class _MiniInfo extends StatelessWidget {
         children: [
           TextSpan(
             text: '$label: ',
-            style: const TextStyle(
-              color: AppColors.textoMuitoFraco,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
               fontSize: 10,
             ),
           ),
           TextSpan(
             text: value,
-            style: const TextStyle(
-              color: AppColors.textoFraco,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

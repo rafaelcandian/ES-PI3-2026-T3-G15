@@ -1,3 +1,6 @@
+/* Victória Nobre - 25016398 */
+
+/* Representa um ativo/token que o usuário possui na carteira, com cálculos de lucro/prejuízo */
 class AtivoCarteira {
   final String startupId;
   final String nome;

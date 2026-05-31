@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -13,11 +15,14 @@ import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/shared/atmospheric_background.dart';
 
+/* Tela responsável pela verificação do TOTP (Time-based One-Time Password).
+   Esta tela implementa a camada extra de segurança RFC 6238, exigindo que o usuário 
+   forneça um código gerado por um dispositivo confiável após validar e-mail e senha. */
 class VerificacaoLoginTela extends StatefulWidget {
   final String email;
   final String senha;
-  final bool setupRequired;
-  final String? secret;
+  final bool setupRequired; /* Define se o usuário está ativando o 2FA pela primeira vez ou apenas fazendo login. */
+  final String? secret; /* Chave secreta compartilhada necessária para o algoritmo TOTP. */
   final String? otpAuthUri;
 
   const VerificacaoLoginTela({
@@ -187,6 +192,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /* Exibe a chave secreta para configuração inicial do 2FA. */
   Widget _buildSecretBox() {
     final secret = _secret ?? '';
 
@@ -377,6 +383,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     );
   }
 
+  /* Valida o código TOTP gerado pelo app autenticador do usuário. */
   Future<void> _verifyCode() async {
     FocusScope.of(context).unfocus();
 
@@ -433,6 +440,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     }
   }
 
+  /* Permite redefinir a chave de segurança caso necessário. */
   Future<void> _generateNewSecret() async {
     setState(() {
       _isGenerating = true;
@@ -532,6 +540,7 @@ class _VerificacaoLoginTelaState extends State<VerificacaoLoginTela> {
     return 'Não foi possível validar o código. Verifique as informações e tente novamente.';
   }
 
+  /* Facilita a transferência da chave para o app autenticador. */
   void _copiarChave(String secret) {
     Clipboard.setData(ClipboardData(text: secret));
 

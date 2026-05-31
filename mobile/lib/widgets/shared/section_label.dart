@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Rótulo de seção usado para separar blocos de conteúdo nas telas */
 class SectionLabel extends StatelessWidget {
   final String label;
   final String? hint;

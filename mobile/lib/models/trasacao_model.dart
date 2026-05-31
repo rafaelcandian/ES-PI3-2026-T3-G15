@@ -1,5 +1,7 @@
+/* Victória Nobre - 25016398 */
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/* Histórico de movimentações financeiras na carteira (Depósitos, Compras, Vendas) */
 enum WalletTransactionType { deposit, purchase, sale, withdraw }
 
 enum WalletTransactionStatus { pending, completed, cancelled, failed }

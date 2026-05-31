@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
+/* Card de seção para agrupar conteúdos relacionados com estilo Premium consistente */
 class SectionCard extends StatelessWidget {
   final String title;
   final Widget child;

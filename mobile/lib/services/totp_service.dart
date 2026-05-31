@@ -1,9 +1,13 @@
+/* Victória Nobre - 25016398 */
 // Autor: Rafael Antonio Candian
 // RA: 25016954
 
 import 'dart:math';
 import 'dart:typed_data';
 
+/* Implementação do Algoritmo TOTP (Time-based One-Time Password) conforme RFC 6238.
+   O serviço deriva tokens de 6 dígitos a partir de uma chave secreta e da janela de tempo atual,
+   utilizando HMAC-SHA1 para garantir a integridade e unicidade do código. */
 class TotpService {
   static const _alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   static const int _periodSeconds = 30;
@@ -34,6 +38,9 @@ class TotpService {
     return 'otpauth://totp/$label?$query';
   }
 
+  /* Protocolo de Verificação com Janela de Tolerância (Drift).
+     Considera o tempo atual e aplica um offset (window) para mitigar dessincronização 
+     de clock entre o servidor e o dispositivo do usuário, conforme recomenda a RFC. */
   bool verifyCode(String secret, String code, {int window = 1}) {
     final normalizedCode = code.trim();
 
@@ -53,19 +60,27 @@ class TotpService {
     return false;
   }
 
+  /* Motor de derivação do token (Hotp Motor).
+     1. Decodifica a semente Base32 para bytes puros.
+     2. Calcula o contador de tempo (Unix Epoch / 30s).
+     3. Gera o Hash HMAC-SHA1 da semente combinada com o contador.
+     4. Aplica 'Dynamic Truncation' para extrair 31 bits do hash e converter em 6 dígitos decimais. */
   String generateCode(String secret, {int? counter}) {
     final key = _base32Decode(secret);
+    /* O contador incrementa a cada 30 segundos conforme o padrão RFC */
     final timeCounter =
         counter ??
         DateTime.now().millisecondsSinceEpoch ~/ 1000 ~/ _periodSeconds;
     final counterBytes = Uint8List(8);
     var value = timeCounter;
 
+    /* Converte o contador para bytes Big-endian */
     for (var i = 7; i >= 0; i--) {
       counterBytes[i] = value & 0xff;
       value >>= 8;
     }
 
+    /* Aplica HMAC-SHA1 para derivar o código */
     final hash = _hmacSha1(key, counterBytes);
     final offset = hash.last & 0x0f;
     final binary =
@@ -143,6 +158,9 @@ class TotpService {
     return _sha1([...outerKeyPad, ...innerHash]);
   }
 
+  /* Implementação manual do SHA-1 (Secure Hash Algorithm 1).
+     Opera sobre blocos de 512 bits, realizando 80 iterações de funções bitwise 
+     (AND, OR, XOR, ROTL) para gerar o resumo de 160 bits necessário para o HMAC. */
   List<int> _sha1(List<int> message) {
     final bytes = List<int>.from(message);
     final bitLength = bytes.length * 8;

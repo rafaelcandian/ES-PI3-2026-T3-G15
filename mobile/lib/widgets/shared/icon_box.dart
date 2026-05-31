@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Container estilizado para ícones seguindo o design system do projeto */
 class IconBox extends StatelessWidget {
   final IconData icon;
   final Color color;

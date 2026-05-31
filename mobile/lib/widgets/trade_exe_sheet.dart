@@ -1,9 +1,11 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 
 import '../models/balcao_model.dart';
 import '../themes/app_theme.dart';
 import '../screens/ordens/ordem_process.dart';
 
+/* Bottom sheet para execução de negociações, exibindo taxas e comparativos de preço */
 class TradeExecutionSheet extends StatelessWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -18,12 +20,16 @@ class TradeExecutionSheet extends StatelessWidget {
 
   bool get isCompra => modo == ModoNegociacao.compra;
 
+  /* Subtotal bruto da operação antes das taxas */
   double get subtotal => oferta.preco * oferta.quantidade;
 
+  /* Simulação de taxa de corretagem (0.4%) para fins acadêmicos e transparência financeira */
   double get taxa => subtotal * 0.004;
 
+  /* Valor total que será efetivamente debitado ou creditado do saldo do usuário */
   double get totalFinal => isCompra ? subtotal + taxa : subtotal - taxa;
 
+  /* Cálculo do preço médio do ativo no mercado secundário para fornecer contexto ao investidor */
   double get precoMedio {
     final relacionadas = ofertasDisponiveis
         .where((item) => item.simbolo == oferta.simbolo)

@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+/* Canal direto de comunicação entre investidor e startup para dúvidas privadas */
 class PerguntaPrivadaService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;

@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +8,9 @@ import 'package:flutter/services.dart';
 
 import '../../themes/app_theme.dart';
 
+/* Ponto de Entrada e Bootstrapping da Aplicação.
+   Responsável pela inicialização de serviços globais, gestão de persistência de sessão 
+   e transição de navegação baseada no estado de autenticação (Auth-state Routing). */
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -63,6 +68,10 @@ class _SplashScreenState extends State<SplashScreen>
     _checkUser();
   }
 
+  /* Motor de Decisão de Roteamento.
+     Aplica o padrão 'Automatic Login': verifica via SDK do Firebase a presença de 
+     um JWT válido no Secure Storage local. Se presente, direciona para o catálogo 
+     (Home); caso contrário, redireciona para o fluxo de autenticação primário. */
   Future<void> _checkUser() async {
     await Future.delayed(const Duration(milliseconds: 2800));
 
@@ -154,8 +163,8 @@ class _LogoGlow extends StatelessWidget {
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                AppColors.destaque.withOpacity(0.15),
-                AppColors.destaque.withOpacity(0.05),
+                AppColors.destaque.withValues(alpha: 0.15),
+                AppColors.destaque.withValues(alpha: 0.05),
                 Colors.transparent,
               ],
             ),
@@ -167,7 +176,7 @@ class _LogoGlow extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppColors.destaque.withOpacity(0.07),
+              color: AppColors.destaque.withValues(alpha: 0.07),
               width: 1,
             ),
           ),
@@ -178,6 +187,7 @@ class _LogoGlow extends StatelessWidget {
   }
 }
 
+/* Widget de carregamento estilizado seguindo a identidade visual premium. */
 class PremiumCircleLoader extends StatelessWidget {
   final Animation<double> animation;
 
@@ -201,6 +211,9 @@ class PremiumCircleLoader extends StatelessWidget {
   }
 }
 
+/* Motor de Pintura Customizado para o Loader Premium.
+   Implementa animações de varredura (SweepGradient) e arcos dinâmicos via CustomPainter,
+   minimizando o custo de CPU em comparação com bibliotecas de animação baseadas em imagem. */
 class _PremiumCirclePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -216,11 +229,10 @@ class _PremiumCirclePainter extends CustomPainter {
     canvas.drawCircle(center, radius, basePaint);
 
     final glowPaint = Paint()
-      ..color = AppColors.destaque.withOpacity(0.12)
+      ..color = AppColors.destaque.withValues(alpha: 0.12)
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      ..strokeCap = StrokeCap.round;
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
@@ -256,7 +268,7 @@ class _PremiumCirclePainter extends CustomPainter {
     );
 
     final innerPaint = Paint()
-      ..color = AppColors.destaque.withOpacity(0.10)
+      ..color = AppColors.destaque.withValues(alpha: 0.10)
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(center, 5, innerPaint);
@@ -266,6 +278,7 @@ class _PremiumCirclePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
+/* Elementos visuais de fundo para compor a estética da marca. */
 class _SplashBackground extends StatelessWidget {
   const _SplashBackground();
 
@@ -299,7 +312,7 @@ class _SplashBackground extends StatelessWidget {
                 gradient: RadialGradient(
                   center: Alignment.center,
                   radius: 0.85,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.18)],
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.18)],
                 ),
               ),
             ),
@@ -329,7 +342,7 @@ class _GlowCircle extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [color.withOpacity(opacity), color.withOpacity(0)],
+          colors: [color.withValues(alpha: opacity), color.withValues(alpha: 0)],
         ),
       ),
     );

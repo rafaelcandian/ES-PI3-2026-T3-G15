@@ -1,8 +1,10 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Barra de navegação inferior customizada com animações e feedback tátil (haptics) */
 class BottomNavBar extends StatefulWidget {
   final int selectedIndex;
 
@@ -19,6 +21,7 @@ class _BottomNavBarState extends State<BottomNavBar>
   late List<Animation<double>> _scaleAnims;
   late List<Animation<double>> _glowAnims;
 
+  /* Define as rotas principais do aplicativo acessíveis via navegação inferior */
   static const List<_NavItem> _items = [
     _NavItem(
       icon: Icons.home_outlined,
@@ -52,6 +55,7 @@ class _BottomNavBarState extends State<BottomNavBar>
 
     _selectedIndex = widget.selectedIndex.clamp(0, _items.length - 1);
 
+    /* Inicializa controladores de animação para transições suaves entre abas */
     _controllers = List.generate(
       _items.length,
           (_) => AnimationController(

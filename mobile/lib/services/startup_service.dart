@@ -1,7 +1,9 @@
+/* Victória Nobre - 25016398 */
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 
+/* Provedor de dados para o catálogo de startups, utilizando Streams para atualizações em tempo real */
 class StartupService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 

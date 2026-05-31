@@ -1,7 +1,12 @@
+/* Victória Nobre - 25016398 */
+
+/* Modos de interação na tela de negociação */
 enum ModoNegociacao { compra, venda }
 
+/* Tipagem de ofertas presentes no book de ofertas */
 enum TipoOferta { compra, venda }
 
+/* Entidade representativa de uma intenção de negociação (oferta) no balcão */
 class Oferta {
   final TipoOferta tipo;
   final int quantidade;

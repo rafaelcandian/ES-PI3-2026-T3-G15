@@ -1,5 +1,7 @@
+/* Victória Nobre - 25016398 */
 import 'package:cloud_functions/cloud_functions.dart';
 
+/* Serviço para envio de perguntas (públicas ou privadas) processadas via Cloud Functions */
 class PerguntaService {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
 

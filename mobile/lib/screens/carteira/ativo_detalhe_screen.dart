@@ -1,7 +1,10 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/models/ativo_carteira.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
@@ -16,6 +19,10 @@ import 'package:mescla_invest/widgets/shared/wallet_chart_card.dart';
 
 import '../ordens/ordem_exe_screen.dart';
 
+/* Dashboard Analítico de Ativo Específico.
+   Implementa a visão de profundidade (Deep Dive) para um ativo da carteira.
+   Diferencia-se da visão geral por reconstruir o histórico de performance 
+   especificamente para a startup selecionada, permitindo ações de reinvestimento ou desinvestimento. */
 class AtivoDetalheScreen extends StatefulWidget {
   final AtivoCarteira ativo;
   final List<Oferta> ofertasDisponiveis;
@@ -54,6 +61,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     _carregarDadosStartup();
   }
 
+  /* Recupera informações atualizadas da startup no Firestore para as ações de trade. */
   Future<void> _carregarDadosStartup() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -160,6 +168,11 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     return null;
   }
 
+  /* Algoritmo de Reconstituição de Série Temporal (Historical Backtracking).
+     Como o Firestore não armazena snapshots diários por padrão para economizar custos,
+     este método reconstrói a curva de patrimônio do ativo retroagindo nas transações 
+     da subcoleção 'transacoesCarteira'. Aplica lógica de soma/subtração de tokens 
+     sobre o preço histórico para gerar os pontos do gráfico. */
   Future<void> _loadAssetChart() async {
     if (!mounted) return;
 
@@ -322,6 +335,9 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     _loadAssetChart();
   }
 
+  /* Motor de Seleção de Liquidez (Liquidity Finder).
+     Busca no Livro de Ofertas (Order Book) a melhor contraparte para a execução da ordem.
+     Aplica o critério de 'Melhor Preço de Execução' para proteger o patrimônio do usuário. */
   Oferta? _selecionarOfertaParaModo(ModoNegociacao modo) {
     final tipoNecessario = modo == ModoNegociacao.compra
         ? TipoOferta.venda
@@ -372,6 +388,7 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
     );
   }
 
+  /* Direciona para a compra de tokens emitidos diretamente pela startup (mercado primário). */
   void _abrirCompraDireta(BuildContext context) {
     if (_tokensDisponiveis <= 0) {
       AppSnackBar.show(context, message: 'Não há tokens disponíveis para esta startup.', error: true);
@@ -437,8 +454,17 @@ class _AtivoDetalheScreenState extends State<AtivoDetalheScreen> {
                     ),
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
+                    child: PageHeader(
+                      title: widget.ativo.nome,
+                      subtitle: 'Acompanhe a performance e gerencie sua posição no ativo.',
+                    ),
+                  ),
+                ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 32),
+                  padding: const EdgeInsets.fromLTRB(22, 22, 22, 32),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _AtivoHeroCard(ativo: widget.ativo),

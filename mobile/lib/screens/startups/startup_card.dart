@@ -1,8 +1,14 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 
+/* Componente de Apresentação de Ativo (Marketplace Item).
+   Implementa a visão de card para o catálogo. Utiliza ClipRRect para garantir
+   bordas arredondadas em imagens dinâmicas e gradientes lineares para assegurar 
+   contraste de texto sobre elementos visuais heterogêneos. */
 class StartupCard extends StatelessWidget {
   final StartupData data;
   final VoidCallback onDetailsTap;
@@ -30,12 +36,12 @@ class StartupCard extends StatelessWidget {
           border: Border.all(color: AppColors.bordaClara, width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.38),
+              color: Colors.black.withValues(alpha: 0.38),
               blurRadius: 28,
               offset: const Offset(0, 14),
             ),
             BoxShadow(
-              color: AppColors.destaque.withOpacity(0.04),
+              color: AppColors.destaque.withValues(alpha: 0.04),
               blurRadius: 22,
               offset: const Offset(0, 4),
             ),
@@ -73,7 +79,7 @@ class StartupCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.72),
+                        color: Colors.white.withValues(alpha: 0.72),
                         height: 1.45,
                       ),
                     ),
@@ -139,6 +145,9 @@ class StartupCard extends StatelessWidget {
   }
 }
 
+/* Cabeçalho Visual com Lazy Loading.
+   Gerencia a renderização de imagens remotas com tratamento de erro (Error Builder) 
+   e sobreposição de badges informativas que indicam o estado da captação em tempo real. */
 class _StartupImageHeader extends StatelessWidget {
   final StartupData data;
 
@@ -171,8 +180,8 @@ class _StartupImageHeader extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.black.withOpacity(0.08),
-                  Colors.black.withOpacity(0.62),
+                  Colors.black.withValues(alpha: 0.08),
+                  Colors.black.withValues(alpha: 0.62),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -197,13 +206,13 @@ class _StartupImageHeader extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.destaque.withOpacity(0.16),
+                    color: AppColors.destaque.withValues(alpha: 0.16),
                     border: Border.all(
-                      color: AppColors.destaque.withOpacity(0.35),
+                      color: AppColors.destaque.withValues(alpha: 0.35),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.destaque.withOpacity(0.16),
+                        color: AppColors.destaque.withValues(alpha: 0.16),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -248,9 +257,9 @@ class _PillTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.azul.withOpacity(0.78),
+        color: AppColors.azul.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -297,9 +306,9 @@ class _InfoItem extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: AppColors.destaque.withOpacity(0.11),
+              color: AppColors.destaque.withValues(alpha: 0.11),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.destaque.withOpacity(0.22)),
+              border: Border.all(color: AppColors.destaque.withValues(alpha: 0.22)),
             ),
             child: Icon(icon, color: AppColors.destaque, size: 18),
           ),
@@ -316,7 +325,7 @@ class _InfoItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 9,
-                    color: Colors.white.withOpacity(0.55),
+                    color: Colors.white.withValues(alpha: 0.55),
                     letterSpacing: 0.9,
                     fontWeight: FontWeight.w800,
                   ),
@@ -341,6 +350,7 @@ class _InfoItem extends StatelessWidget {
   }
 }
 
+/* Indicador visual do sucesso da captação em relação à meta financeira estabelecida. */
 class _ProgressBlock extends StatelessWidget {
   final double progress;
   final int progressPercent;
@@ -359,7 +369,7 @@ class _ProgressBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.fundoEscuro.withOpacity(0.38),
+        color: AppColors.fundoEscuro.withValues(alpha: 0.38),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.bordaClara),
       ),
@@ -371,7 +381,7 @@ class _ProgressBlock extends StatelessWidget {
                 'Captação',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.72),
+                  color: Colors.white.withValues(alpha: 0.72),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -409,7 +419,7 @@ class _ProgressBlock extends StatelessWidget {
                 'Captado',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withOpacity(0.55),
+                  color: Colors.white.withValues(alpha: 0.55),
                 ),
               ),
               const Spacer(),
@@ -417,7 +427,7 @@ class _ProgressBlock extends StatelessWidget {
                 'R\$ ${capturedValue.toStringAsFixed(2)} / R\$ ${goal.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withOpacity(0.72),
+                  color: Colors.white.withValues(alpha: 0.72),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -429,6 +439,7 @@ class _ProgressBlock extends StatelessWidget {
   }
 }
 
+/* Botão de ação principal para aprofundar le conhecimento sobre a oportunidade. */
 class _DetailsButton extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -447,7 +458,7 @@ class _DetailsButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: AppColors.destaque.withOpacity(0.20),
+              color: AppColors.destaque.withValues(alpha: 0.20),
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),

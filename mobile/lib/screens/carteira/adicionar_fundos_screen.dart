@@ -1,15 +1,22 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:mescla_invest/widgets/shared/app_button.dart';
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 
 import '../../themes/app_theme.dart';
 
+/* Módulo de Injeção de Liquidez (Fiat Gateway Simulator).
+   Interface para simulação de aporte financeiro via Pix. Implementa a conversão de tipos
+   locais para a infraestrutura de Cloud Functions, garantindo que o saldo seja atualizado
+   de forma segura e auditável no backend. */
 class AdicionarFundosScreen extends StatefulWidget {
   const AdicionarFundosScreen({super.key});
 
@@ -53,6 +60,10 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     return _formatarMoeda(valor).replaceFirst('R\$ ', '');
   }
 
+  /* Motor de Parsing Monetário.
+     Converte entradas textuais formatadas (mascaradas) para o domínio numérico (Double).
+     Lida com a localização brasileira (vírgula decimal) para evitar erros de casting 
+     durante a persistência no Firestore. */
   double _parseValorDigitado(String value) {
     var texto = value.replaceAll('R\$', '').replaceAll(' ', '').trim();
 
@@ -89,6 +100,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     });
   }
 
+  /* Salva a transação de depósito na subcoleção do usuário para histórico. */
   Future<void> _registrarAporteNoHistorico() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -113,6 +125,11 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
     });
   }
 
+  /* Fluxo de Confirmação e Integração Cloud.
+     1. Unfocus da UI para garantir integridade do estado do teclado.
+     2. Validação Pre-flight de limites operacionais (R\$ 10,00 a R\$ 100M).
+     3. Chamada RPC via Cloud Functions para o serviço 'loadWallet'.
+     4. Registro de auditoria na subcoleção 'transacoesCarteira'. */
   Future<void> _confirmarAporte() async {
     FocusScope.of(context).unfocus();
 
@@ -245,31 +262,10 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
   }
 
   Widget _buildHeader() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Adicionar saldo à carteira',
-          textAlign: TextAlign.left,
-          style: TextStyle(
-            color: AppColors.textoPrincipal,
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            height: 1.15,
-          ),
-        ),
-        SizedBox(height: 10),
-        Text(
-          'Insira um valor para realizar o aporte na sua carteira de investimentos.',
-          textAlign: TextAlign.left,
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 15,
-            height: 1.45,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+    return const PageHeader(
+      title: 'Adicionar saldo à carteira',
+      subtitle:
+          'Insira um valor para realizar le aporte na sua carteira de investimentos.',
     );
   }
 
@@ -492,7 +488,7 @@ class _AdicionarFundosScreenState extends State<AdicionarFundosScreen> {
 
   Widget _buildResumoFinanceiro() {
     return _InfoCard(
-      title: 'Resumo do aporte',
+      title: 'Resumo le aporte',
       children: [
         _InfoRow(
           label: 'Valor solicitado',
@@ -723,8 +719,7 @@ class _QuickValueChip extends StatelessWidget {
   }
 }
 
-// ===================== LOADING =====================
-
+/* Bloqueia a interação durante o processamento do aporte simulado. */
 class _LoadingOverlay extends StatelessWidget {
   const _LoadingOverlay();
 

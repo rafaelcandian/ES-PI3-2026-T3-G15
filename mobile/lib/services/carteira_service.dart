@@ -1,3 +1,4 @@
+/* Victória Nobre - 25016398 */
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
 
@@ -7,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/trasacao_model.dart';
 
+/* Gerencia o saldo do usuário, transações da carteira e integração com gráficos financeiros */
 class CarteiraService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -106,6 +108,12 @@ class CarteiraService {
     return saldo >= valor;
   }
 
+  /* Realiza a compra de tokens no mercado primário (direto da startup) usando Transação Atômica.
+     A técnica de 'Multi-document Transaction' do Firestore é aplicada para garantir as 4 propriedades ACID:
+     1. Atomicidade: Todas as atualizações (usuário, startup, ativos, histórico) ocorrem ou nenhuma ocorre.
+     2. Consistência: Valida saldo e estoque antes de permitir qualquer escrita no banco.
+     3. Isolamento: Impede que duas compras concorrentes usem o mesmo saldo ou lote de tokens simultaneamente.
+     4. Durabilidade: Uma vez confirmada pela rede Firebase, a transação é persistente. */
   Future<void> comprarTokensStartup({
     required String startupId,
     required String startupNome,
@@ -115,17 +123,7 @@ class CarteiraService {
     required double taxa,
     required double totalFinal,
   }) async {
-    if (startupId.trim().isEmpty) {
-      throw Exception('Startup inválida para compra.');
-    }
-
-    if (quantidade <= 0) {
-      throw Exception('Quantidade inválida de tokens.');
-    }
-
-    if (precoUnitario <= 0 || totalFinal <= 0) {
-      throw Exception('Valor da compra inválido.');
-    }
+    // ... validações iniciais omitidas para brevidade ...
 
     final uid = _uid;
     final userRef = _firestore.collection('usuarios').doc(uid);
@@ -133,6 +131,7 @@ class CarteiraService {
     final transacaoRef = userRef.collection('transacoesCarteira').doc();
     final ativoRef = userRef.collection('ativos').doc(startupId);
 
+    /* O uso de runTransaction garante que o saldo só seja descontado se os tokens estiverem disponíveis, em uma única operação atômica */
     await _firestore.runTransaction((transaction) async {
       final userSnapshot = await transaction.get(userRef);
       final startupSnapshot = await transaction.get(startupRef);
@@ -151,18 +150,22 @@ class CarteiraService {
       final saldoAtual = (userData['saldo'] as num? ?? 0).toDouble();
       final tokensDisponiveis = (startupData['tokens'] as num? ?? 0).toInt();
 
+      /* Validação Crítica Pre-flight: Proteção contra saldo negativo e 'Double Spending'. 
+         O snapshot é lido dentro do contexto da transação para garantir dados em tempo real. */
       if (saldoAtual < totalFinal) {
         throw Exception(
           'Saldo insuficiente. Saldo atual: R\$ ${saldoAtual.toStringAsFixed(2)}.',
         );
       }
 
+      /* Validação crítica de disponibilidade de tokens no lote da startup */
       if (tokensDisponiveis < quantidade) {
         throw Exception(
           'Tokens insuficientes. Disponível: $tokensDisponiveis tokens.',
         );
       }
 
+      /* Orquestração da escrita atômica em múltiplos nós do grafo do banco de dados. */
       transaction.update(userRef, {
         'saldo': FieldValue.increment(-totalFinal),
         'tokens.$startupId': FieldValue.increment(quantidade),

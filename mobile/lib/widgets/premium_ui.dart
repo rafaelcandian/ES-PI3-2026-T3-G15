@@ -1,6 +1,10 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import '../themes/app_theme.dart';
 
+/* Utilitários de UI para garantir a estética Premium consistente em todo o aplicativo */
+
+/* Decoração padrão para cards com gradientes e sombras suaves */
 BoxDecoration premiumCardDecoration({double radius = 24, bool shadow = true}) {
   return BoxDecoration(
     color: AppColors.card,

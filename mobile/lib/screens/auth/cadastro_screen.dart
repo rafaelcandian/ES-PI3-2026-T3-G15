@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +14,9 @@ import 'package:mescla_invest/widgets/auth/auth_text_field.dart';
 import 'package:mescla_invest/widgets/shared/app_button.dart';
 import 'package:mescla_invest/widgets/shared/app_snackbar.dart';
 
+/* Orquestrador de Registro de Usuários (User Provisioning).
+   Gerencia o ciclo de vida do formulário de adesão, implementando validações algorítmicas 
+   locais e a sincronização assíncrona com o Firebase Auth e Firestore. */
 class CadastroPage extends StatefulWidget {
   const CadastroPage({super.key});
 
@@ -30,6 +35,7 @@ class _CadastroPageState extends State<CadastroPage> {
   final senhaController = TextEditingController();
   final confirmarSenhaController = TextEditingController();
 
+  /* Controla o estado de submissão do formulário. */
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -59,6 +65,10 @@ class _CadastroPageState extends State<CadastroPage> {
     super.dispose();
   }
 
+  /* Validação de Integridade de Identidade (CPF).
+     Implementa o algoritmo de validação de dígitos verificadores (Módulo 11) conforme 
+     especificação da Receita Federal. Previne a entrada de dados sintaticamente inválidos
+     antes mesmo da chamada à API, economizando recursos de rede e processamento. */
   bool validarCPF(String cpf) {
     final numeros = cpf.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -83,11 +93,13 @@ class _CadastroPageState extends State<CadastroPage> {
         segundoDigito == int.parse(numeros[10]);
   }
 
+  /* Verifica se o telefone possui a quantidade correta de dígitos. */
   bool validarTelefone(String telefone) {
     final numeros = telefone.replaceAll(RegExp(r'[^0-9]'), '');
     return numeros.length == 11;
   }
 
+  /* Exige requisitos mínimos de segurança para a senha do usuário. */
   bool validarSenha(String senha) {
     return senha.length >= 6 && RegExp(r'[0-9]').hasMatch(senha);
   }
@@ -437,6 +449,7 @@ class _CadastroPageState extends State<CadastroPage> {
     );
   }
 
+  /* Garante o consentimento do usuário quanto às diretrizes da plataforma. */
   Widget _buildTermosCheckbox() {
     return GestureDetector(
       onTap: () {
@@ -539,6 +552,7 @@ class _CadastroPageState extends State<CadastroPage> {
     );
   }
 
+  /* Garante que os termos foram aceitos antes de processar o cadastro. */
   void _validarEEnviarCadastro() {
     if (!_aceitouTermos) {
       _showSnackBar(
@@ -551,6 +565,10 @@ class _CadastroPageState extends State<CadastroPage> {
     _submitForm();
   }
 
+  /* Lógica de Persistência e Provisionamento.
+     1. Desacopla a interface (FocusScope.unfocus) para evitar artefatos de teclado.
+     2. Realiza a chamada atômica ao AuthService.register.
+     3. Trata a resposta polimórfica (sucesso ou erro tipificado) para feedback ao usuário. */
   Future<void> _submitForm() async {
     FocusScope.of(context).unfocus();
 
@@ -596,6 +614,7 @@ class _CadastroPageState extends State<CadastroPage> {
     }
   }
 
+  /* Mapeia erros técnicos do Firebase para mensagens amigáveis ao usuário. */
   String _formatarErroCadastro(String erro) {
     final mensagem = erro.toLowerCase();
 
@@ -628,6 +647,7 @@ class _CadastroPageState extends State<CadastroPage> {
     AppSnackBar.show(context, message: message, success: success, error: error);
   }
 
+  /* Feedback visual positivo após a criação bem-sucedida da conta. */
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -703,6 +723,9 @@ class _CadastroPageState extends State<CadastroPage> {
   }
 }
 
+/* Formatador de Input de Documentação (Masking).
+   Aplica uma máscara dinâmica de tempo real para CPF (000.000.000-00), 
+   melhorando a legibilidade e garantindo a entrada padronizada de dados. */
 class CpfInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

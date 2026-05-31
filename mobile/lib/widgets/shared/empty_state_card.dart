@@ -1,7 +1,9 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
+/* Widget para exibir feedback visual quando uma lista ou seção está vazia */
 class EmptyStateCard extends StatelessWidget {
   final IconData icon;
   final String title;

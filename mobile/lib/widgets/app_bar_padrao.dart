@@ -1,5 +1,7 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 
+/* Barra superior padronizada para navegação e títulos das telas */
 class AppBarPadrao extends StatelessWidget implements PreferredSizeWidget {
   final String titulo;
 

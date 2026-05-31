@@ -1,8 +1,11 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
@@ -16,10 +19,10 @@ import 'package:mescla_invest/widgets/shared/ticker_box.dart';
 
 import 'ordem_confirm_screen.dart';
 
-/// Tela responsável por configurar uma ordem de compra ou venda.
-///
-/// Usa componentes globais do projeto para manter o padrão visual:
-/// AtmosphericBackground, AppButton, SectionCard, InfoRow e TickerBox.
+/* Motor de Execução de Ordens (Trade Execution Engine).
+   Responsável pela parametrização de ordens Limit (Preço Fixo). Implementa a lógica 
+   de 'Pre-trade Risk Management', validando saldo, estoque de tokens e limites de 
+   investimento antes da submissão ao motor de matching do backend. */
 class OrdemExeScreen extends StatefulWidget {
   final Oferta oferta;
   final ModoNegociacao modo;
@@ -55,13 +58,15 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
 
   bool get _isCompra => widget.modo == ModoNegociacao.compra;
 
-  /// Quantidade máxima que o saldo permite comprar ao preço atual.
+  /* Motor de Cálculo de Poder de Compra (Buying Power Engine).
+     Determina dinamicamente a quantidade máxima de tokens (Floor do quociente Saldo / Preço) 
+     para prevenir rejeições por falta de fundos na camada de serviço. */
   int get _quantidadeMaximaPorSaldo {
     if (_saldoUsuario == null || _preco <= 0) return 0;
     return (_saldoUsuario! / _preco).floor();
   }
 
-  /// Indica se o saldo é insuficiente para comprar ao menos 1 token.
+  /// Indica se le saldo é insuficiente para comprar ao menos 1 token.
   bool get _saldoInsuficiente {
     return _isCompra && _saldoUsuario != null && _quantidadeMaximaPorSaldo <= 0;
   }
@@ -90,6 +95,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     return _isCompra && _preco < widget.oferta.minBuyPrice;
   }
 
+  /* Define le teto da operação respeitando saldo, estoque e tipo de ordem. */
   int get _maximoQuantidade {
     if (!_isCompra && widget.quantidadeMaximaUsuario != null) {
       return widget.quantidadeMaximaUsuario!;
@@ -122,7 +128,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       setState(() => _precoMedioReal = preco);
     });
 
-    // Busca o saldo do usuário para limitar a compra.
+    // Busca le saldo do usuário para limitar a compra.
     _carregarSaldoUsuario();
   }
 
@@ -142,10 +148,11 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
       setState(() => _saldoUsuario = saldo);
     } catch (_) {
       // Em caso de erro, mantém _saldoUsuario como null
-      // e a tela usará apenas o limite da oferta.
+      // e a tela usará apenas le limite da oferta.
     }
   }
 
+  /* Busca le histórico para oferecer uma base de comparação de preço ao usuário. */
   Future<double> _calcularPrecoMedioReal() async {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -174,6 +181,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     }
   }
 
+  /* Sincroniza a entrada de texto do preço com le estado interno do componente. */
   void _atualizarPrecoDigitado() {
     final texto = _precoController.text.replaceAll(',', '.');
     final valor = double.tryParse(texto);
@@ -183,7 +191,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     setState(() {
       _preco = valor;
 
-      // Recalcula o máximo ao alterar preço (afeta limite por saldo).
+      // Recalcula le máximo ao alterar preço (afeta limite por saldo).
       final novoMaximo = _maximoQuantidade;
       if (_quantidade > novoMaximo) {
         _quantidade = novoMaximo;
@@ -257,7 +265,7 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
         TextPosition(offset: _precoController.text.length),
       );
 
-      // Recalcula o máximo ao alterar preço (afeta limite por saldo).
+      // Recalcula le máximo ao alterar preço (afeta limite por saldo).
       final novoMaximo = _maximoQuantidade;
       if (_quantidade > novoMaximo) {
         _quantidade = novoMaximo;
@@ -266,6 +274,11 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
     });
   }
 
+  /* Algoritmo de Validação Final (Pre-submission Validation).
+     Realiza o sanity check final dos parâmetros:
+     1. Solvência: Saldo >= (Preço * Quantidade) + Taxas.
+     2. Conformidade: Preço >= Preço Mínimo da Startup (Price Floor).
+     3. Liquidez: Quantidade <= Oferta Disponível. */
   void _confirmarOrdem() {
     if (_saldoInsuficiente) {
       AppSnackBar.show(
@@ -361,7 +374,10 @@ class _OrdemExeScreenState extends State<OrdemExeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _OrderHeader(isCompra: _isCompra),
+                        PageHeader(
+                          title: _isCompra ? 'Comprar tokens' : 'Vender tokens',
+                          subtitle: 'Revise os detalhes da operação antes de confirmar.',
+                        ),
                         const SizedBox(height: 22),
                         _StartupOrderHero(
                           oferta: widget.oferta,
@@ -570,42 +586,6 @@ class _OrderTopBar extends StatelessWidget {
           const Expanded(child: SizedBox()),
         ],
       ),
-    );
-  }
-}
-
-class _OrderHeader extends StatelessWidget {
-  final bool isCompra;
-
-  const _OrderHeader({required this.isCompra});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          isCompra ? 'Comprar tokens' : 'Vender tokens',
-          textAlign: TextAlign.left,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.w900,
-            height: 1.1,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Revise os detalhes da operação antes de confirmar.',
-          textAlign: TextAlign.left,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.72),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            height: 1.45,
-          ),
-        ),
-      ],
     );
   }
 }

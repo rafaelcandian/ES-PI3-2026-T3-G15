@@ -1,3 +1,5 @@
+/* Victória Nobre - 25016398 */
+
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +12,7 @@ import 'package:mescla_invest/models/balcao_model.dart';
 import 'package:mescla_invest/services/carteira_service.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/shared/app_button.dart';
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/widgets/app_bar_padrao.dart';
 import 'package:mescla_invest/widgets/bottom_nav_bar.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
@@ -24,6 +27,10 @@ import 'package:mescla_invest/widgets/shared/wallet_chart_card.dart';
 import 'adicionar_fundos_screen.dart';
 import 'ativo_detalhe_screen.dart';
 
+/* Hub de Patrimônio do Investidor.
+   Implementa o padrão 'Materialized View' na UI, agregando dados de múltiplas coleções
+   (Usuários, Startups, Transações e Histórico de Preços) para fornecer uma visão 
+   holística e consolidada da exposição financeira do usuário. */
 class CarteiraPage extends StatefulWidget {
   const CarteiraPage({super.key});
 
@@ -34,6 +41,7 @@ class CarteiraPage extends StatefulWidget {
 class _CarteiraPageState extends State<CarteiraPage> {
   String selectedTimePeriod = '1 mês';
 
+  /* Dados do gráfico de evolução patrimonial */
   List<double> _chartData = [];
   List<Map<String, dynamic>> _chartPoints = [];
   double _chartStartValue = 0.0;
@@ -47,7 +55,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
   List<AtivoCarteira> _ativos = [];
   List<Map<String, dynamic>> _movimentacoes = [];
   bool _loading = true;
-  bool _ocultarValores = false;
+  bool _ocultarValores = false; /* Implementação de privacidade para o usuário (Sensitive Data Masking) */
 
   @override
   void initState() {
@@ -55,6 +63,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
     _loadData();
   }
 
+  /* Abre a modal de aporte financeiro e recarrega os dados em caso de sucesso. */
   Future<void> _abrirAdicionarFundos() async {
     final resultado = await Navigator.push(
       context,
@@ -77,6 +86,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
     await _loadData();
   }
 
+  /* Motor de Agregação de Dados Financeiros.
+     Realiza o 'Join' lógico entre o mapa de tokens do usuário e a coleção global de startups.
+     A arquitetura prioriza a consistência eventual: dados de preço são buscados em tempo 
+     real para garantir que o Valuation da carteira reflita o mercado atual. */
   Future<void> _loadData() async {
     try {
       final carteiraService = CarteiraService();
@@ -86,7 +99,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
         if (mounted) {
           setState(() => _loading = false);
         }
-
         return;
       }
 
@@ -108,7 +120,8 @@ class _CarteiraPageState extends State<CarteiraPage> {
         final quantidade = entry.value;
 
         if ((quantidade as num) > 0) {
-          final doc = await firestore.collection('startups').doc(startupId).get();
+          final doc =
+          await firestore.collection('startups').doc(startupId).get();
 
           if (doc.exists) {
             final data = doc.data()!;
@@ -126,12 +139,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
               fallback: tokenValue,
             );
 
-            final variacaoInformada =
-            ((data['variacao'] ??
+            final variacaoInformada = ((data['variacao'] ??
                 data['variation'] ??
                 data['variacaoPercentual'] ??
-                0.0)
-            as num)
+                0.0) as num)
                 .toDouble();
 
             final variacaoCalculada = precoMedio > 0
@@ -142,8 +153,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
                 ? variacaoCalculada
                 : variacaoInformada;
 
-            final volume =
-            (data['volume'] ??
+            final volume = (data['volume'] ??
                 data['volumeNegociado'] ??
                 data['volumeTotal'] ??
                 'Não informado')
@@ -210,7 +220,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
         } else if (chartData.length == 1) {
           chartData = [chartData.first, chartData.first];
         }
-
       } catch (e) {
         debugPrint('Erro ao carregar gráfico da carteira: $e');
         chartPoints = [];
@@ -247,6 +256,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
   }
 
+  /* Processa os pontos de dados para exibir a variação nominal e percentual do período. */
   Map<String, dynamic> _calcularResumoGrafico({
     required List<Map<String, dynamic>> chartPoints,
     required List<double> chartData,
@@ -265,15 +275,13 @@ class _CarteiraPageState extends State<CarteiraPage> {
     }
 
     final startValue = valoresSeguros.first;
-    final endValue = valoresSeguros.length == 1
-        ? valoresSeguros.first
-        : valoresSeguros.last;
+    final endValue =
+    valoresSeguros.length == 1 ? valoresSeguros.first : valoresSeguros.last;
 
     final variation = endValue - startValue;
 
-    final variationPercent = startValue.abs() > 0
-        ? (variation / startValue.abs()) * 100
-        : 0.0;
+    final variationPercent =
+    startValue.abs() > 0 ? (variation / startValue.abs()) * 100 : 0.0;
 
     String startLabel = 'Início';
     String endLabel = 'Atual';
@@ -293,6 +301,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
     };
   }
 
+  /* Algoritmo de Cálculo de Preço Médio Ponderado (VWAP - Volume Weighted Average Price).
+     Essencial para contabilidade de investimentos, este método mitiga o impacto de 
+     múltiplas compras em diferentes níveis de preço, fornecendo o 'Break-even Point' 
+     real para o investidor (Total Investido / Total de Tokens). */
   Future<double> _calcularPrecoMedio({
     required FirebaseFirestore firestore,
     required String uid,
@@ -312,8 +324,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
     for (final doc in historicoCarteira.docs) {
       final data = doc.data();
 
-      final type =
-      (data['type'] ??
+      final type = (data['type'] ??
           data['operationType'] ??
           data['tipo'] ??
           data['method'] ??
@@ -321,11 +332,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
           .toString()
           .toLowerCase();
 
-      final isCompra =
-          type.contains('purchase') ||
-              type.contains('buy') ||
-              type.contains('compra') ||
-              type.contains('startup_investment');
+      final isCompra = type.contains('purchase') ||
+          type.contains('buy') ||
+          type.contains('compra') ||
+          type.contains('startup_investment');
 
       if (!isCompra) continue;
 
@@ -391,15 +401,15 @@ class _CarteiraPageState extends State<CarteiraPage> {
 
       final ofertas = snapshot.docs.map((doc) {
         final data = doc.data();
-        final tipo = data['type'] == 'buy'
-            ? TipoOferta.compra
-            : TipoOferta.venda;
+
+        final tipo =
+        data['type'] == 'buy' ? TipoOferta.compra : TipoOferta.venda;
 
         return Oferta(
           tipo: tipo,
           quantidade: (data['quantity'] as num?)?.toInt() ?? 0,
-          preco:
-          (data['pricePerToken'] as num?)?.toDouble() ?? ativo.valorToken,
+          preco: (data['pricePerToken'] as num?)?.toDouble() ??
+              ativo.valorToken,
           empresa: ativo.nome,
           simbolo: ativo.simbolo,
           variacao: ativo.variacao,
@@ -489,8 +499,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
   double get saldoDisponivel => _saldo;
 
   String _normalizarTipoMovimentacao(Map<String, dynamic> mov) {
-    final type =
-    (mov['type'] ??
+    final type = (mov['type'] ??
         mov['operationType'] ??
         mov['tipo'] ??
         mov['method'] ??
@@ -522,11 +531,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 
   Timestamp? _timestampMovimentacao(Map<String, dynamic> mov) {
-    final valor =
-        mov['createdAt'] ??
-            mov['createAt'] ??
-            mov['created_at'] ??
-            mov['criado_em'];
+    final valor = mov['createdAt'] ??
+        mov['createAt'] ??
+        mov['created_at'] ??
+        mov['criado_em'];
 
     return valor is Timestamp ? valor : null;
   }
@@ -542,10 +550,9 @@ class _CarteiraPageState extends State<CarteiraPage> {
     final hora = data.hour.toString().padLeft(2, '0');
     final minuto = data.minute.toString().padLeft(2, '0');
 
-    final mesmoDia =
-        data.year == agora.year &&
-            data.month == agora.month &&
-            data.day == agora.day;
+    final mesmoDia = data.year == agora.year &&
+        data.month == agora.month &&
+        data.day == agora.day;
 
     if (mesmoDia) return 'Hoje às $hora:$minuto';
 
@@ -574,8 +581,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
     final tipo = _normalizarTipoMovimentacao(mov);
     final ticker = (mov['ticker'] ?? mov['simbolo'] ?? '').toString();
 
-    final startupName =
-    (mov['startupName'] ??
+    final startupName = (mov['startupName'] ??
         mov['startupNome'] ??
         mov['empresa'] ??
         mov['startup'] ??
@@ -616,15 +622,13 @@ class _CarteiraPageState extends State<CarteiraPage> {
     if (amount != null && amount != 0) {
       valor = amount.abs();
     } else {
-      valor =
-          ((mov['totalPrice'] ??
-              mov['total'] ??
-              mov['totalFinal'] ??
-              mov['valor'] ??
-              0.0)
-          as num)
-              .toDouble()
-              .abs();
+      valor = ((mov['totalPrice'] ??
+          mov['total'] ??
+          mov['totalFinal'] ??
+          mov['valor'] ??
+          0.0) as num)
+          .toDouble()
+          .abs();
     }
 
     final entrada = tipo == 'deposit' || tipo == 'sale';
@@ -669,7 +673,7 @@ class _CarteiraPageState extends State<CarteiraPage> {
       child: Scaffold(
         backgroundColor: AppColors.fundo,
         extendBody: false,
-        appBar: const AppBarPadrao(titulo: 'Minha Carteira'),
+        appBar: const AppBarPadrao(titulo: ''),
         bottomNavigationBar: const BottomNavBar(selectedIndex: 2),
         body: Stack(
           children: [
@@ -693,15 +697,10 @@ class _CarteiraPageState extends State<CarteiraPage> {
                       const SliverToBoxAdapter(
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(22, 16, 22, 16),
-                          child: Text(
+                          child: PageHeader(
+                            title: 'Carteira',
+                            subtitle:
                             'Acompanhe seus ativos, saldo disponível e movimentações.',
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                              height: 1.5,
-                              fontWeight: FontWeight.w500,
-                            ),
                           ),
                         ),
                       ),
@@ -821,15 +820,6 @@ class _CarteiraPageState extends State<CarteiraPage> {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.shrink();
-  }
-}
-
 class _PatrimonioCard extends StatelessWidget {
   final double patrimonioTotal;
   final double saldoDisponivel;
@@ -857,9 +847,8 @@ class _PatrimonioCard extends StatelessWidget {
         ? 'R\$ ••••••'
         : 'R\$ ${patrimonioTotal.toStringAsFixed(2)}';
 
-    final saldoTexto = ocultarValores
-        ? 'R\$ ••••••'
-        : 'R\$ ${saldoDisponivel.toStringAsFixed(2)}';
+    final saldoTexto =
+    ocultarValores ? 'R\$ ••••••' : 'R\$ ${saldoDisponivel.toStringAsFixed(2)}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -1058,10 +1047,10 @@ class _AtivoCard extends StatelessWidget {
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: AppColors.destaque.withValues(alpha: 0.10),
+                      color: AppColors.destaque.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(13),
                       border: Border.all(
-                        color: AppColors.destaque.withValues(alpha: 0.22),
+                        color: AppColors.destaque.withOpacity(0.22),
                       ),
                     ),
                     child: const Icon(

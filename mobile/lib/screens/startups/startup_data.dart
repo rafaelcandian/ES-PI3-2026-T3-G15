@@ -1,5 +1,10 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/* Modelo de Domínio (Business Entity).
+   Centraliza a lógica de representação de uma Startup. Atua como o 'Single Source of Truth' 
+   para os dados financeiros e operacionais consumidos pela interface do investidor. */
 class StartupData {
   final String id;
 
@@ -54,6 +59,10 @@ class StartupData {
     required this.partners,
   });
 
+  /* Motor de Normalização de Dados (Data Mapper Pattern).
+     Resolve disparidades de nomenclatura entre diferentes versões da base de dados do Firestore.
+     Garante a robustez do sistema ao lidar com alias de campos (ex: valorToken vs tokenValue) 
+     e realiza o casting defensivo para tipos Double/Int. */
   factory StartupData.fromMap(Map<String, dynamic> data, {String id = ''}) {
     final tokenValue =
         (data['tokenValue'] as num?)?.toDouble() ??
@@ -122,6 +131,7 @@ class StartupData {
   }
 }
 
+/* Estrutura para representação detalhada dos sócios fundadores. */
 class StartupPartner {
   final String name;
   final String role;

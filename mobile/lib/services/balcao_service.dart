@@ -1,3 +1,4 @@
+/* Victória Nobre - 25016398 */
 // Autor: Arthur Valerio De Santi
 // RA: 25006924
 
@@ -9,6 +10,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mescla_invest/models/order_model.dart';
 
+/* Gerencia operações do balcão de negociações P2P via Cloud Functions para garantir atomicidade */
 class BalcaoService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -35,6 +37,7 @@ class BalcaoService {
         );
   }
 
+  /* Cria uma oferta de compra no balcão. Usa Cloud Functions para validar saldo e bloquear o valor em 'garantia' no backend */
   Future<String?> createPurchaseOffer({
     required String startupId,
     required int quantity,
@@ -54,6 +57,7 @@ class BalcaoService {
 
       return null;
     } on FirebaseFunctionsException catch (e) {
+      /* Tratamento de erros específicos retornados pelas regras de negócio do servidor */
       return _handleFunctionError(e, fallback: 'Erro ao criar ordem de compra');
     } catch (e) {
       return 'Erro inesperado: $e';

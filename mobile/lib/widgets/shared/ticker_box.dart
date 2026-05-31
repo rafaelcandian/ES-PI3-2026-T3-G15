@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Identificador visual de ativos (tickers) para facilitar o reconhecimento rápido */
 class TickerBox extends StatelessWidget {
   final String simbolo;
   final Color color;

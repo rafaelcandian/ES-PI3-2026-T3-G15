@@ -1,7 +1,9 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
+/* Widget para exibir pares de informação (Chave: Valor) de forma padronizada */
 class InfoRow extends StatelessWidget {
   final String label;
   final String value;

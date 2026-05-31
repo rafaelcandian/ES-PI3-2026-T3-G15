@@ -1,5 +1,7 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 
+/* Rótulo de seção com marcador visual colorido para organização de formulários */
 class AuthSectionLabel extends StatelessWidget {
   final String label;
 

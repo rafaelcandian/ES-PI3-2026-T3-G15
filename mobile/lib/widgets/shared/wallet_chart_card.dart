@@ -1,3 +1,4 @@
+/* Victória Nobre - 25016398 */
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
+/* Componente de Visualização Analítica (Dashboard). 
+   Abstrai o motor de renderização gráfica e gerencia a normalização de escalas financeiras 
+   para exibir a curva de patrimônio líquido (Net Worth) ao longo do tempo. */
 class WalletChartCard extends StatelessWidget {
   final List<double> data;
   final List<Map<String, dynamic>> points;
@@ -46,6 +50,9 @@ class WalletChartCard extends StatelessWidget {
     return value.isFinite ? value : fallback;
   }
 
+  /* Realiza o 'Clamping' e a normalização dos dados. 
+     Garante que valores infinitos ou nulos (NaN) provenientes de erros de divisão por zero 
+     no cálculo de variação não quebrem o pipeline de renderização (Canvas). */
   List<double> _safeChartData() {
     final cleaned = data.where((value) => value.isFinite).toList();
 
@@ -339,6 +346,10 @@ class _ChartMetricBox extends StatelessWidget {
   }
 }
 
+/* Motor de Renderização de Baixo Nível (Canvas Engine).
+   Utiliza a API de CustomPainter do Flutter para desenhar a curva de patrimônio. 
+   O algoritmo converte coordenadas financeiras (Valor x Tempo) em coordenadas de pixel (X x Y)
+   usando interpolação linear e suavização por Curvas de Bézier Cúbicas. */
 class _LineChartPainter extends CustomPainter {
   final List<double> data;
 
@@ -350,6 +361,7 @@ class _LineChartPainter extends CustomPainter {
 
     if (values.length < 2 || size.width <= 0 || size.height <= 0) return;
 
+    /* Desenha linhas de grade horizontais para referência visual de profundidade */
     final gridPaint = Paint()
       ..color = AppColors.bordaClara
       ..strokeWidth = 1;
@@ -359,6 +371,10 @@ class _LineChartPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
+    /* Cálculo de Normalização de Escala (Min-Max Scaling).
+       Mapeia o domínio dos dados [min, max] para o intervalo de pixels da tela.
+       Se a variação for desprezível (Flat Line), aplica um 'padding' artificial para evitar
+       artefatos visuais de linhas colapsadas. */
     var minValue = values.reduce(math.min);
     var maxValue = values.reduce(math.max);
 
@@ -399,6 +415,10 @@ class _LineChartPainter extends CustomPainter {
 
     if (points.length < 2) return;
 
+    /* Interpolação de Splines (Bezier Smoothing).
+       Em vez de linhas retas (polilinhas), utiliza path.cubicTo para gerar uma curva 
+       suave, calculando pontos de controle (CP1, CP2) que garantem continuidade visual 
+       mesmo com poucos pontos de dados. */
     final path = Path()..moveTo(points.first.dx, points.first.dy);
 
     for (int i = 1; i < points.length; i++) {

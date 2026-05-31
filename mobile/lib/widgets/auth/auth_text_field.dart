@@ -1,7 +1,9 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Campo de texto customizado para formulários de autenticação com estilização premium */
 class AuthTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;

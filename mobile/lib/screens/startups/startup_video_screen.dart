@@ -1,9 +1,15 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/widgets/premium_ui.dart';
 
+/* Módulo de Reprodução de Mídia (Video Streaming Hub).
+   Implementa o player para Pitch em Vídeo. Gerencia a inicialização assíncrona 
+   dos codecs de hardware e garante o encerramento correto dos recursos (Dispose) 
+   para evitar vazamentos de memória (Memory Leaks). */
 class StartupVideoScreen extends StatefulWidget {
   final String title;
   final String videoUrl;
@@ -29,6 +35,9 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
     _inicializarVideo();
   }
 
+  /* Motor de Inicialização de Vídeo (Codec Provisioning).
+     Configura o player via Network URL, realizando o buffering inicial. 
+     Aplica o padrão 'Autoplay' para reduzir a fricção no consumo do pitch da startup. */
   Future<void> _inicializarVideo() async {
     try {
       _controller = VideoPlayerController.networkUrl(
@@ -61,6 +70,7 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
     super.dispose();
   }
 
+  /* Controle manual de reprodução do pitch em vídeo. */
   void _togglePlayPause() {
     if (_error || _loading) return;
 
@@ -105,6 +115,7 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
     );
   }
 
+  /* Gerencia os estados de carregamento, erro e exibição do player. */
   Widget _buildVideoContent() {
     if (_loading) {
       return const CircularProgressIndicator(color: AppColors.destaque);
@@ -125,7 +136,7 @@ class _StartupVideoScreenState extends State<StartupVideoScreen> {
             ),
             SizedBox(height: 14),
             Text(
-              'Não foi possível carregar o vídeo desta startup.',
+              'Não foi possível carregar le vídeo desta startup.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textoPrincipal,

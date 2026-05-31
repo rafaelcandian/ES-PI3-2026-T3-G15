@@ -1,6 +1,8 @@
+/* Victória Nobre - 25016398 */
 import 'package:flutter/material.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 
+/* Card base para os formulários de autenticação (Login, Cadastro, Recuperação) */
 class AuthCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;

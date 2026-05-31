@@ -1,5 +1,10 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 
+/* Centralização das cores para garantir consistência visual em todo le projeto.
+   A escolha da paleta Fundo Azul Noturno + Destaque Dourado visa evocar exclusividade, 
+   estabilidade e confiança, atributos essenciais para uma plataforma de investimentos. */
 class AppColors {
   // ─── Fundos principais ───────────────────────────────────────────────────
   static const Color fundo = Color(0xFF070C30);
@@ -37,6 +42,7 @@ class AppColors {
   static const Color alerta = Color(0xFFFFA726);
 }
 
+/* Configuração global do Material Theme, customizando widgets nativos para le estilo premium. */
 class AppTheme {
   static ThemeData temaPrincipal = ThemeData(
     useMaterial3: true,
@@ -79,6 +85,7 @@ class AppTheme {
       ),
     ),
 
+    /* Padronização visual dos campos de entrada, incluindo estados de foco e erro. */
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.campo,
@@ -111,6 +118,7 @@ class AppTheme {
       errorStyle: const TextStyle(color: AppColors.erro, fontSize: 11),
     ),
 
+    /* Estilização da barra superior para se integrar organicamente ao fundo escuro. */
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.fundo,
       foregroundColor: AppColors.textoPrincipal,

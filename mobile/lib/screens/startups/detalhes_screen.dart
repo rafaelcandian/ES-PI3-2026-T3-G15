@@ -1,7 +1,10 @@
+/* Victória Nobre - 25016398 */
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:mescla_invest/widgets/shared/page_header.dart';
 import 'package:mescla_invest/screens/startups/startup_data.dart';
 import 'package:mescla_invest/themes/app_theme.dart';
 import 'package:mescla_invest/services/pergunta_service.dart';
@@ -12,6 +15,9 @@ import 'package:mescla_invest/screens/startups/startup_video_screen.dart';
 import '../../models/balcao_model.dart';
 import '../ordens/ordem_exe_screen.dart';
 
+/* Página de Detalhes da Startup: Centraliza Pitch, Métricas de Captação e Governança.
+   A implementação do "Canal do Investidor" valida a posse de tokens para liberar 
+   comunicação privada, simulando um ambiente real de relacionamento com investidores. */
 class DetalhesStartupPage extends StatefulWidget {
   const DetalhesStartupPage({super.key});
 
@@ -22,6 +28,7 @@ class DetalhesStartupPage extends StatefulWidget {
 class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   final PerguntaService _perguntaService = PerguntaService();
 
+  /* Controllers para gestão de inputs de comunicação com a startup. */
   final TextEditingController _perguntaPrivadaController =
   TextEditingController();
   final TextEditingController _perguntaPublicaController =
@@ -43,6 +50,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     super.dispose();
   }
 
+  /* Controla o acesso ao canal privado conforme os tokens do usuário. */
   Future<void> _verificarSeUsuarioTemToken(String startupId) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -86,6 +94,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     }
   }
 
+  /* Carrega perguntas públicas e privadas vinculadas à startup. */
   Future<void> _carregarPerguntas(String startupId) async {
     if (!mounted) return;
 
@@ -103,6 +112,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     });
   }
 
+  /* Envia pergunta pública visível para todos os usuários da tela. */
   Future<void> _enviarPerguntaPublica(StartupData startup) async {
     final texto = _perguntaPublicaController.text.trim();
 
@@ -136,6 +146,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     }
   }
 
+  /* Envia pergunta privada apenas quando o usuário possui tokens da startup. */
   Future<void> _enviarPerguntaPrivada(StartupData startup) async {
     final texto = _perguntaPrivadaController.text.trim();
 
@@ -204,7 +215,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
     final StartupData startup = arguments;
 
-    final totalTokens = startup.totalTokens <= 0 ? startup.tokens : startup.totalTokens;
+    final totalTokens =
+    startup.totalTokens <= 0 ? startup.tokens : startup.totalTokens;
     final soldTokens = (totalTokens - startup.tokens).clamp(0, totalTokens);
     final captacaoProgress = totalTokens <= 0 ? 0.0 : soldTokens / totalTokens;
     final captacaoPercent = (captacaoProgress * 100).round();
@@ -226,13 +238,6 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
         backgroundColor: AppColors.fundo,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
-          'Sobre a Startup',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       bottomNavigationBar: _InvestBottomBar(
@@ -247,26 +252,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _HeroImage(startup: startup),
-                const SizedBox(height: 24),
-                Text(
-                  startup.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  startup.subtitle,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    height: 1.5,
-                    fontWeight: FontWeight.w500,
-                  ),
+                PageHeader(
+                  title: startup.title,
+                  subtitle: startup.subtitle,
                 ),
                 const SizedBox(height: 18),
                 Wrap(
@@ -283,6 +271,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+                _HeroImage(startup: startup),
                 const SizedBox(height: 24),
                 _MetricCard(
                   startup: startup,
@@ -376,7 +366,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
 
                         return Padding(
                           padding: EdgeInsets.only(
-                            bottom: index == startup.partners.length - 1
+                            bottom:
+                            index == startup.partners.length - 1
                                 ? 0
                                 : 12,
                           ),
@@ -389,6 +380,11 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
                       },
                     ),
                   ),
+                ),
+                const SizedBox(height: 18),
+                _buildSectionCard(
+                  title: 'Pitch Deck',
+                  child: const _PitchDeckTile(),
                 ),
                 const SizedBox(height: 18),
                 _buildSectionCard(
@@ -567,7 +563,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             decoration: InputDecoration(
               hintText: 'Envie uma pergunta privada para a startup...',
               hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.45),
+                color: Colors.white.withOpacity(0.45),
               ),
             ),
           ),
@@ -640,7 +636,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  static String _iniciaisSocio(String nome) {
+  String _iniciaisSocio(String nome) {
     final partes = nome
         .trim()
         .split(RegExp(r'\s+'))
@@ -656,7 +652,8 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     return '${partes.first[0]}${partes.last[0]}'.toUpperCase();
   }
 
-  static Widget _buildPartnerCard({
+  /* Apresenta o quadro societário e a distribuição de equity da startup. */
+  Widget _buildPartnerCard({
     required String name,
     required String role,
     required double equityPercent,
@@ -664,10 +661,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardElevado.withValues(alpha: 0.72),
+        color: AppColors.cardElevado.withOpacity(0.72),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.destaque.withValues(alpha: 0.16),
+          color: AppColors.destaque.withOpacity(0.16),
           width: 1,
         ),
       ),
@@ -678,9 +675,9 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.destaque.withValues(alpha: 0.10),
+              color: AppColors.destaque.withOpacity(0.10),
               border: Border.all(
-                color: AppColors.destaque.withValues(alpha: 0.20),
+                color: AppColors.destaque.withOpacity(0.20),
                 width: 1,
               ),
             ),
@@ -728,10 +725,10 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
             decoration: BoxDecoration(
-              color: AppColors.destaque.withValues(alpha: 0.08),
+              color: AppColors.destaque.withOpacity(0.08),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.destaque.withValues(alpha: 0.18),
+                color: AppColors.destaque.withOpacity(0.18),
                 width: 1,
               ),
             ),
@@ -749,7 +746,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  static Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: premiumFieldDecoration(radius: 16),
@@ -783,7 +780,7 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
     );
   }
 
-  static Widget _buildQuestionCard({
+  Widget _buildQuestionCard({
     required String usuario,
     required String tempo,
     required String pergunta,
@@ -852,12 +849,69 @@ class _DetalhesStartupPageState extends State<DetalhesStartupPage> {
   }
 }
 
+/* Fundo atmosférico usado para manter o padrão visual premium. */
 class _AtmosphericBackground extends StatelessWidget {
   const _AtmosphericBackground();
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(child: Container());
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -150,
+            right: -120,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.azul.withOpacity(0.22),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 240,
+            left: -130,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.destaque.withOpacity(0.07),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 90,
+            right: -120,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.roxo.withOpacity(0.18),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -923,8 +977,8 @@ class _HeroImage extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withValues(alpha: 0.10),
-                    Colors.black.withValues(alpha: 0.72),
+                    Colors.black.withOpacity(0.10),
+                    Colors.black.withOpacity(0.72),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -946,7 +1000,7 @@ class _HeroImage extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.destaque.withValues(alpha: 0.30),
+                      color: AppColors.destaque.withOpacity(0.30),
                       blurRadius: 26,
                       offset: const Offset(0, 8),
                     ),
@@ -995,6 +1049,7 @@ class _HeroImage extends StatelessWidget {
   }
 }
 
+/* Exibe o progresso da captação e o valor unitário do token. */
 class _MetricCard extends StatelessWidget {
   final StartupData startup;
   final double captacaoProgress;
@@ -1152,7 +1207,7 @@ class _PublicQuestionInput extends StatelessWidget {
           decoration: InputDecoration(
             hintText: 'Envie uma pergunta pública...',
             hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.45),
+              color: Colors.white.withOpacity(0.45),
             ),
           ),
         ),
@@ -1167,6 +1222,7 @@ class _PublicQuestionInput extends StatelessWidget {
   }
 }
 
+/* Call to action fixo para facilitar o início do investimento. */
 class _InvestBottomBar extends StatelessWidget {
   final VoidCallback onInvestir;
 
@@ -1181,10 +1237,10 @@ class _InvestBottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         decoration: BoxDecoration(
-          color: AppColors.fundo.withValues(alpha: 0.98),
+          color: AppColors.fundo.withOpacity(0.98),
           border: Border(
             top: BorderSide(
-              color: AppColors.bordaClara.withValues(alpha: 0.8),
+              color: AppColors.bordaClara.withOpacity(0.8),
             ),
           ),
         ),
@@ -1193,6 +1249,52 @@ class _InvestBottomBar extends StatelessWidget {
           icon: Icons.trending_up_rounded,
           onTap: onInvestir,
         ),
+      ),
+    );
+  }
+}
+
+/* Card informativo do pitch deck sem depender de campo extra no modelo StartupData. */
+class _PitchDeckTile extends StatelessWidget {
+  const _PitchDeckTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: premiumFieldDecoration(radius: 18),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.destaque.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.destaque.withOpacity(0.26),
+              ),
+            ),
+            child: const Icon(
+              Icons.description_outlined,
+              color: AppColors.destaque,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Pitch deck disponível para análise da startup.',
+              style: TextStyle(
+                color: AppColors.textoPrincipal,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
