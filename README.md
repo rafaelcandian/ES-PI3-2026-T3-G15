@@ -152,4 +152,37 @@ O aplicativo será iniciado em um emulador Android ou dispositivo físico conect
 
 Este projeto possui finalidade acadêmica e educacional, sendo utilizado como prática de desenvolvimento de software no curso de Engenharia de Software da PUC-Campinas.
 
+## 💻 Contribuições 
+
+Gabriel Bosso
+  Neste projeto (equipe de 5 pessoas), atuei principalmente no desenvolvimento 
+  do backend (Cloud Functions/Firebase) e na integração com o frontend Flutter:
+
+  **Backend e arquitetura**
+  - Implementação das regras de segurança do Firestore
+  - Criação dos módulos compartilhados de backend (conexão com Firestore e 
+    validação de autenticação de usuário usada em todas as Cloud Functions)
+  - Modelagem e repositórios (models/repositories) de Usuários, Startups e Orders
+
+  **Cloud Functions**
+  - Criação e atualização de conta de usuário (createUser, getUserDetails)
+  - Funcionalidades de carteira: consulta de saldo, depósito com validação de 
+    limites (getBalance, loadWallet, verifyBalance)
+  - Listagem e detalhamento de startups (listStartups, getStartupDetails)
+  - Compra direta de tokens com transação atômica — debita saldo, credita 
+    tokens, atualiza contadores e histórico (directPurchase)
+
+  **Integração Frontend (Flutter) ↔ Backend**
+  - Conexão das telas de carteira e balcão de negociações com dados reais do 
+    Firestore, substituindo dados mockados
+  - Conexão do fluxo de compra/venda de tokens ao backend real
+  - Conexão da tela de perfil com dados reais do usuário
+  - Implementação de regras de investimento mínimo por startup (backend e telas)
+
+  **Correções e infraestrutura**
+  - Correção de bug crítico de referência de coleção incorreta no Firestore, 
+    afetando múltiplas telas
+  - Resolução de erros de permissão (IAM) no Google Cloud para as Cloud Functions
+  - Configuração e execução do deploy das Cloud Functions no Firebase
+
 ---
